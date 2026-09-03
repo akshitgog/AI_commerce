@@ -36,6 +36,8 @@ Core codes: `UNAUTHENTICATED`, `FORBIDDEN`, `NOT_FOUND`, `VALIDATION_ERROR`, `PR
 | `PATCH /merchants/{merchant_id}/products/{product_id}` | Merchant editor | Update product and increment version |
 | `POST /merchants/{merchant_id}/products/{product_id}/publish` | Merchant editor | Publish reviewed version |
 | `POST /merchants/{merchant_id}/products/{product_id}/unpublish` | Merchant editor | Remove from buyer discovery |
+| `POST /merchants/{merchant_id}/products/{product_id}/images` | Merchant editor | Validate/upload image through storage abstraction and create metadata |
+| `DELETE /merchants/{merchant_id}/products/{product_id}/images/{image_id}` | Merchant editor | Delete owned image metadata and storage object |
 | `POST /merchants/{merchant_id}/catalog/import` | Merchant editor | Validate/import CSV |
 | `POST /merchants/{merchant_id}/products/{product_id}/enrich` | Merchant editor | Suggest descriptive metadata only |
 | `GET /merchants/{merchant_id}/policy` | Merchant member | Read purchase policy |
@@ -53,6 +55,18 @@ Every route verifies the authenticated user's membership and role for the path m
 | `GET /catalog/products/{product_id}` | Read current published product |
 
 V1 requires `merchant_id`; it does not perform global cross-merchant ranking.
+
+Published product responses may include ordered safe image metadata: `id`, `url`, `alt_text`, `sort_order`. They never expose storage credentials or internal upload authorization.
+
+## Storage application contract
+
+```text
+storage.upload_product_image
+storage.delete_product_image
+storage.get_public_url
+```
+
+Storage implementations own object transfer and URL generation only. Product ownership, publication and image-count rules remain in catalog application services. MCP may return safe product image metadata from catalog responses but never performs storage operations.
 
 ## Proposal and authorization routes
 

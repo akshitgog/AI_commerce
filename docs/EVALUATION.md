@@ -8,8 +8,8 @@ Architecture and expected behavior are claims, not proof. A scenario passes only
 
 | ID | Scenario | Expected result |
 |---|---|---|
-| J01 | Merchant creates and publishes product | Product is visible via MCP only after publication |
-| J02 | AI discovers product and creates proposal | Proposal contains server-derived money, version, hash and expiry |
+| J01 | Merchant creates and publishes product | Product is visible to reference chat and MCP only after publication |
+| J02 | Reference buyer chat discovers product and creates proposal | Proposal contains server-derived money, version, hash and expiry |
 | J03 | Buyer authorization absent | Execution blocked before provider contact |
 | J04 | Merchant policy requires review | Execution blocked until authenticated merchant acceptance |
 | J05 | Complete Test Mode checkout | Provider order and payment phases are distinct; verified completion reaches `SUCCEEDED` |
@@ -22,6 +22,7 @@ Architecture and expected behavior are claims, not proof. A scenario passes only
 | J12 | Malicious catalog prompt | Trusted money, scope and tool permissions remain unchanged |
 | J13 | Merchant A accesses Merchant B data | Denied for catalog management, transactions and audit |
 | J14 | Audit reconstruction | Timeline explains actor, proposal, both gates, provider action, recovery and outcome |
+| J15 | External MCP interoperability | Compatible external client discovers the catalog and creates a proposal through the same backend semantics; no MCP-local financial logic |
 
 ## Test layers
 
@@ -30,7 +31,8 @@ Architecture and expected behavior are claims, not proof. A scenario passes only
 - **Contract:** authentication, schemas, stable errors, idempotency and MCP-to-application mapping.
 - **Provider integration:** real Razorpay Test Mode initiation and verified payment-state mapping.
 - **Adversarial:** prompt injection, forged webhooks, tenant access, replay and stale proposals.
-- **Judge smoke test:** dashboard plus one MCP client through the complete journey.
+- **Judge smoke test:** dashboard plus reference buyer chat through the complete journey.
+- **Interoperability:** a separate MCP client/trace proves discovery and proposal creation over the same services.
 
 ## Acceptance metrics
 
@@ -49,22 +51,23 @@ Architecture and expected behavior are claims, not proof. A scenario passes only
 ## Five-minute judge sequence
 
 1. Publish one product and show the merchant policy.
-2. Discover it and create a proposal through MCP.
+2. Discover it and create a proposal through the reference buyer chat.
 3. Show buyer authorization and merchant-policy decisions separately.
 4. Complete Test Mode checkout and show verified payment success.
 5. Replay execution and show the same provider order.
 6. Trigger an over-limit or stale-proposal rejection.
 7. Inject timeout-after-dispatch and show reconciliation.
 8. Open the audit timeline and reconstruct the transaction.
+9. Separately show MCP discovery/proposal interoperability against the same backend.
 
 ## Required evidence package
 
-- Setup and MCP configuration.
+- Setup for the reference chat and separate MCP configuration.
 - Test command and full summarized output.
 - Commit identifier, environment and timestamp.
 - Redacted Razorpay Test Mode order/payment evidence.
 - Database/provider evidence for duplicate suppression.
 - Timeout/reconciliation trace.
 - Webhook, prompt-injection and tenant-isolation results.
-- Dashboard and MCP-flow screenshots or recording.
+- Dashboard/reference-chat journey plus separate MCP-flow screenshots or recording.
 - Explicit limitations beside affected claims.

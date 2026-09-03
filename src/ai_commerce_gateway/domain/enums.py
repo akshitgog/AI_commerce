@@ -1,0 +1,64 @@
+from enum import StrEnum
+
+
+class RecordStatus(StrEnum):
+    ACTIVE = "ACTIVE"
+    INACTIVE = "INACTIVE"
+
+
+class ProductStatus(StrEnum):
+    DRAFT = "DRAFT"
+    PUBLISHED = "PUBLISHED"
+    UNPUBLISHED = "UNPUBLISHED"
+
+
+class ReviewStatus(StrEnum):
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+
+
+class PolicyMode(StrEnum):
+    MANUAL_ALL = "MANUAL_ALL"
+    AUTO_BELOW_LIMIT = "AUTO_BELOW_LIMIT"
+    DENY_ALL = "DENY_ALL"
+
+
+class ProposalStatus(StrEnum):
+    PROPOSED = "PROPOSED"
+    EXPIRED = "EXPIRED"
+    CANCELLED = "CANCELLED"
+
+
+class AuthorizationStatus(StrEnum):
+    REQUESTED = "REQUESTED"
+    APPROVED = "APPROVED"
+    REVOKED = "REVOKED"
+    EXPIRED = "EXPIRED"
+
+
+class MerchantDecisionValue(StrEnum):
+    ALLOW = "ALLOW"
+    DENY = "DENY"
+    REVIEW_REQUIRED = "REVIEW_REQUIRED"
+
+
+class TransactionState(StrEnum):
+    PROPOSED = "PROPOSED"
+    BUYER_AUTH_REQUIRED = "BUYER_AUTH_REQUIRED"
+    MERCHANT_POLICY_PENDING = "MERCHANT_POLICY_PENDING"
+    MERCHANT_REVIEW_REQUIRED = "MERCHANT_REVIEW_REQUIRED"
+    READY = "READY"
+    EXECUTING = "EXECUTING"
+    PAYMENT_PENDING = "PAYMENT_PENDING"
+    UNKNOWN = "UNKNOWN"
+    VERIFYING = "VERIFYING"
+    RECONCILING = "RECONCILING"
+    SUCCEEDED = "SUCCEEDED"
+    FAILED = "FAILED"
+    CANCELLED = "CANCELLED"
+    EXPIRED = "EXPIRED"
+
+
+class ProviderName(StrEnum):
+    RAZORPAY = "RAZORPAY"

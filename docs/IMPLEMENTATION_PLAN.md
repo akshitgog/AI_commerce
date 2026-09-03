@@ -36,9 +36,9 @@ Implement checkout verification, webhook verification/deduplication, provider lo
 
 Exit: verified payments reach `SUCCEEDED`; failed/abandoned payments do not; ambiguous requests reconcile without blind retry.
 
-## Phase 6 — MCP and dashboard
+## Phase 6 — reference chat, MCP and dashboard
 
-Expose the seven canonical MCP tools over the same application layer. Build merchant product, policy, review, transaction and audit views. Configure one MCP-capable client.
+Build the reference buyer chat over the shared application layer as the guaranteed buyer demo. Expose the seven canonical tools through a separate remote MCP adapter over that same layer. Build merchant product, policy, review, transaction and audit views. Configure one compatible external MCP client for interoperability proof.
 
 Exit: the full judge journey works without direct API manipulation.
 
@@ -55,4 +55,4 @@ Cut in this order if constrained:
 3. Dashboard animation and visual extras.
 4. Nonessential MCP convenience tools.
 
-Do not cut merchant publication, one MCP flow, independent buyer/merchant gates, provider verification, durable idempotency, reconciliation, tenant isolation or audit evidence.
+Do not cut merchant publication, the reference buyer-chat flow, independent buyer/merchant gates, provider verification, durable idempotency, reconciliation, tenant isolation or audit evidence. If constrained, reduce MCP proof breadth but preserve at least catalog discovery and proposal creation over the same backend.

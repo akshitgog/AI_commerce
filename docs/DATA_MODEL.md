@@ -26,6 +26,12 @@ Unique merchant SKU: `(merchant_id, sku)`. Buyer discovery returns only `PUBLISH
 
 AI enrichment can change descriptive metadata only after merchant review; it cannot change price, currency, stock or publication status.
 
+### ProductImage
+
+`id`, `merchant_id`, `product_id`, `storage_path`, `public_url`, `alt_text`, `sort_order`, `created_at`
+
+V1 supports approximately 1–3 ordered images per product. PostgreSQL stores metadata and safe URL information only; image bytes live in object storage behind the storage abstraction. `merchant_id` is retained for direct tenant-scoped constraints and queries.
+
 ### MerchantPolicy
 
 `id`, `merchant_id`, `mode`, `auto_accept_max_minor`, `currency`, `version`, `status`, `created_at`, `updated_at`
