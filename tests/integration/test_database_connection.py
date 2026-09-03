@@ -10,5 +10,8 @@ def test_postgresql_connection_when_configured() -> None:
     if not database_url:
         pytest.skip("TEST_DATABASE_URL is not configured")
     engine = create_engine(database_url, pool_pre_ping=True)
-    with engine.connect() as connection:
-        assert connection.execute(text("SELECT 1")).scalar_one() == 1
+    try:
+        with engine.connect() as connection:
+            assert connection.execute(text("SELECT 1")).scalar_one() == 1
+    finally:
+        engine.dispose()
