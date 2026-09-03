@@ -2,9 +2,18 @@
 
 ## Current result
 
-The documentation package has been reviewed for cross-document consistency. No implementation, automated test output, deployed MCP server or Razorpay Test Mode transaction evidence was available in this documentation workspace at the time of writing.
+The Milestone 0 foundation has local automated-test evidence. The feature scenarios below remain
+**NOT RUN** because merchant, buyer-chat, MCP and Razorpay behavior is intentionally not implemented
+in M0. This status is intentionally conservative.
 
-Therefore all runtime scenarios are **NOT RUN**. This status is intentionally conservative.
+## Milestone 0 validation
+
+On 2026-09-04, `uv run ruff check .`, `uv run mypy`,
+`uv run pytest --cov=ai_commerce_gateway` and
+`uv run alembic upgrade head --sql` passed locally. The test run passed 20 tests, skipped the
+PostgreSQL connection test because `TEST_DATABASE_URL` was not configured, and reported 98% line
+coverage. Real PostgreSQL migration and connection validation is configured in
+`.github/workflows/m0.yml` but is not recorded as passed until that workflow runs successfully.
 
 ## Allowed statuses
 
@@ -35,7 +44,7 @@ Never record credentials, webhook secrets, payment instrument data or unredacted
 | ID | Status | Actual result | Evidence |
 |---|---|---|---|
 | J01 Merchant publication | NOT RUN | — | — |
-| J02 MCP discovery and proposal | NOT RUN | — | — |
+| J02 Reference buyer-chat discovery and proposal | NOT RUN | — | — |
 | J03 Missing buyer authorization | NOT RUN | — | — |
 | J04 Merchant manual-review gate | NOT RUN | — | — |
 | J05 Verified Test Mode payment | NOT RUN | — | — |
@@ -48,19 +57,22 @@ Never record credentials, webhook secrets, payment instrument data or unredacted
 | J12 Catalog prompt injection | NOT RUN | — | — |
 | J13 Tenant isolation | NOT RUN | — | — |
 | J14 Audit reconstruction | NOT RUN | — | — |
+| J15 External MCP interoperability | NOT RUN | — | — |
 
 ## Judge smoke-test procedure
 
 1. Start the documented backend, database, dashboard and MCP server.
 2. Sign in as the demo merchant.
 3. Create and publish a product below the configured automatic merchant-acceptance limit.
-4. Connect the documented MCP client.
+4. Open the reference buyer chat.
 5. Ask it to find the product and create a proposal for one unit.
 6. Approve the exact proposal through the buyer-controlled approval surface.
 7. Execute and complete Razorpay Test Mode checkout.
 8. Confirm the platform shows `PAYMENT_PENDING` before verified completion and `SUCCEEDED` only afterward.
 9. Repeat execution with the same idempotency key and confirm the same provider order.
 10. Open the audit timeline and identify buyer consent, merchant policy, revalidation, provider action and verification.
+
+Run the external MCP interoperability scenario separately: connect the documented compatible client, discover the same product and create a proposal, then prove it reached the same backend services.
 
 ## Graceful-failure procedure
 
@@ -78,7 +90,7 @@ Verify that the platform queries provider truth before allowing any new provider
 ```text
 PASS: 0
 FAIL: 0
-NOT RUN: 14
+NOT RUN: 15
 BLOCKED: 0
 ```
 

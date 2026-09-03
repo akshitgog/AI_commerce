@@ -63,6 +63,10 @@ When code and documentation disagree, inspect the implementation and record the 
 
 ## 3. Mandatory Startup Procedure
 
+For feature work, first read `docs/MASTER_DEVELOPMENT_PLAN.md`, then read only the assigned `docs/workstreams/<NN-name>/WORKSTREAM.md` plus the canonical contracts it links. This workstream brief defines local ownership; `docs/ARCHITECTURE.md` remains authoritative for buyer-chat, MCP and financial-authority boundaries.
+
+Before parallel implementation begins, confirm the shared entity, application-service, provider and storage contracts listed in the master plan are frozen. Do not silently change a shared contract from inside a workstream.
+
 Before doing meaningful development work:
 
 1. Read `AGENT.md`.
@@ -626,6 +630,8 @@ Do not weaken a transaction invariant merely to make a demo pass.
 Keep Razorpay-specific code inside the provider adapter.
 
 Keep MCP thin.
+
+Keep Reference Buyer Chat as the primary guaranteed buyer demo path. Treat the Remote MCP Server as a separate external-interoperability adapter over the same services, never as a prerequisite for the primary demo.
 
 Keep trusted money/policy/state logic in application/domain services.
 
