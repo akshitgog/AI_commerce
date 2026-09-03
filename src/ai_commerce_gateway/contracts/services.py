@@ -1,106 +1,141 @@
-from collections.abc import AsyncIterator
-from contextlib import AbstractAsyncContextManager
-from typing import BinaryIO, Protocol
+from collections.abc import Callable
+from typing import Protocol
 
 from ai_commerce_gateway.contracts.models import (
     ActorContext,
+    AddProductImageCommand,
     ApproveAuthorizationCommand,
     AuditPage,
     BuyerAuthorizationView,
     CatalogSearchQuery,
     CatalogSearchResult,
+    CreateMerchantCommand,
+    CreateProductCommand,
     CreateProposalCommand,
-    CreateProviderOrderCommand,
     CreateTransactionCommand,
+    DeleteProductImageCommand,
     EvaluateMerchantPolicyCommand,
     ExecuteTransactionCommand,
-    HandleWebhookCommand,
     MerchantDecisionView,
+    MerchantPolicyView,
+    MerchantReviewPage,
+    MerchantView,
+    ProductImageView,
+    ProductPage,
     ProductView,
-    ProviderEvidence,
-    ProviderLookupCommand,
+    PurchaseProposalView,
     ReconcileTransactionCommand,
     RecordMerchantDecisionCommand,
     RequestAuthorizationCommand,
+    SetProductPublicationCommand,
     StoredImage,
+    TransactionPage,
     TransactionView,
-    VerifyCheckoutCommand,
+    UpdateMerchantPolicyCommand,
+    UpdateProductCommand,
 )
 
 
 class CatalogService(Protocol):
-    async def search(
-        self, query: CatalogSearchQuery, actor: ActorContext
-    ) -> CatalogSearchResult: ...
-    async def get_product(self, product_id: str, actor: ActorContext) -> ProductView: ...
+    def search(self, query: CatalogSearchQuery, actor: ActorContext) -> CatalogSearchResult: ...
+    def get_product(self, product_id: str, actor: ActorContext) -> ProductView: ...
+
+
+class MerchantCatalogService(Protocol):
+    def create_merchant(
+        self, command: CreateMerchantCommand, actor: ActorContext
+    ) -> MerchantView: ...
+    def get_merchant(self, merchant_id: str, actor: ActorContext) -> MerchantView: ...
+    def get_product(self, product_id: str, actor: ActorContext) -> ProductView: ...
+    def list_products(
+        self, merchant_id: str, actor: ActorContext, cursor: str | None = None
+    ) -> ProductPage: ...
+    def create_product(self, command: CreateProductCommand, actor: ActorContext) -> ProductView: ...
+    def update_product(self, command: UpdateProductCommand, actor: ActorContext) -> ProductView: ...
+    def publish_product(
+        self, command: SetProductPublicationCommand, actor: ActorContext
+    ) -> ProductView: ...
+    def unpublish_product(
+        self, command: SetProductPublicationCommand, actor: ActorContext
+    ) -> ProductView: ...
+    def add_product_image(
+        self, command: AddProductImageCommand, actor: ActorContext
+    ) -> ProductImageView: ...
+    def delete_product_image(
+        self, command: DeleteProductImageCommand, actor: ActorContext
+    ) -> None: ...
 
 
 class ProposalService(Protocol):
-    async def create(
+    def create(
         self, command: CreateProposalCommand, actor: ActorContext
-    ) -> "PurchaseProposalView": ...
+    ) -> PurchaseProposalView: ...
+    def get(self, proposal_id: str, actor: ActorContext) -> PurchaseProposalView: ...
 
 
 class AuthorizationService(Protocol):
-    async def request(
+    def request(
         self, command: RequestAuthorizationCommand, actor: ActorContext
     ) -> BuyerAuthorizationView: ...
-    async def approve(
+    def approve(
         self, command: ApproveAuthorizationCommand, actor: ActorContext
     ) -> BuyerAuthorizationView: ...
 
 
 class MerchantPolicyService(Protocol):
-    async def evaluate(
+    def get_policy(self, merchant_id: str, actor: ActorContext) -> MerchantPolicyView: ...
+    def update_policy(
+        self, command: UpdateMerchantPolicyCommand, actor: ActorContext
+    ) -> MerchantPolicyView: ...
+    def list_reviews(
+        self, merchant_id: str, actor: ActorContext, cursor: str | None = None
+    ) -> MerchantReviewPage: ...
+    def evaluate(
         self, command: EvaluateMerchantPolicyCommand, actor: ActorContext
     ) -> MerchantDecisionView: ...
-    async def record_manual_decision(
+    def record_manual_decision(
         self, command: RecordMerchantDecisionCommand, actor: ActorContext
     ) -> MerchantDecisionView: ...
 
 
 class TransactionService(Protocol):
-    async def create(
+    def create(
         self, command: CreateTransactionCommand, actor: ActorContext
     ) -> TransactionView: ...
-    async def execute(
+    def execute(
         self, command: ExecuteTransactionCommand, actor: ActorContext
     ) -> TransactionView: ...
-    async def get_status(self, transaction_id: str, actor: ActorContext) -> TransactionView: ...
-    async def reconcile(
+    def get_status(self, transaction_id: str, actor: ActorContext) -> TransactionView: ...
+    def list_for_merchant(
+        self, merchant_id: str, actor: ActorContext, cursor: str | None = None
+    ) -> TransactionPage: ...
+    def reconcile(
         self, command: ReconcileTransactionCommand, actor: ActorContext
     ) -> TransactionView: ...
-    async def get_audit(
+    def get_audit(
         self, transaction_id: str, actor: ActorContext, cursor: str | None = None
     ) -> AuditPage: ...
 
 
-class ProviderService(Protocol):
-    async def create_order(self, command: CreateProviderOrderCommand) -> ProviderEvidence: ...
-    async def verify_checkout(self, command: VerifyCheckoutCommand) -> ProviderEvidence: ...
-    async def handle_webhook(self, command: HandleWebhookCommand) -> ProviderEvidence: ...
-    async def lookup_order(self, command: ProviderLookupCommand) -> ProviderEvidence: ...
-    async def lookup_payment(self, command: ProviderLookupCommand) -> ProviderEvidence: ...
-
-
 class StorageService(Protocol):
-    async def upload_product_image(
-        self, *, merchant_id: str, product_id: str, filename: str, content: BinaryIO
+    def upload_product_image(
+        self,
+        *,
+        merchant_id: str,
+        product_id: str,
+        filename: str,
+        content_type: str,
+        content: bytes,
     ) -> StoredImage: ...
-    async def delete_product_image(self, *, storage_path: str) -> None: ...
-    async def get_public_url(self, *, storage_path: str) -> str: ...
+    def delete_product_image(self, *, storage_path: str) -> None: ...
+    def get_public_url(self, *, storage_path: str) -> str: ...
 
 
 class UnitOfWork(Protocol):
-    async def __aenter__(self) -> "UnitOfWork": ...
-    async def __aexit__(self, exc_type: object, exc: object, traceback: object) -> None: ...
-    async def commit(self) -> None: ...
-    async def rollback(self) -> None: ...
+    def __enter__(self) -> "UnitOfWork": ...
+    def __exit__(self, exc_type: object, exc: object, traceback: object) -> None: ...
+    def commit(self) -> None: ...
+    def rollback(self) -> None: ...
 
 
-UnitOfWorkFactory = AbstractAsyncContextManager[UnitOfWork]
-EventStream = AsyncIterator[object]
-
-
-# Imported last to keep the protocol section readable and avoid circular annotations.
-from ai_commerce_gateway.contracts.models import PurchaseProposalView  # noqa: E402
+UnitOfWorkFactory = Callable[[], UnitOfWork]

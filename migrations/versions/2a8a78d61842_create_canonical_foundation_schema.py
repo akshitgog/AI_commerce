@@ -498,12 +498,6 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column("processed_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column(
-            "created_at",
-            sa.DateTime(timezone=True),
-            server_default=sa.text("(CURRENT_TIMESTAMP)"),
-            nullable=False,
-        ),
         sa.ForeignKeyConstraint(
             ["transaction_id"],
             ["transactions.id"],

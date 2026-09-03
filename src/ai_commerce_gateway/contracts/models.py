@@ -3,9 +3,13 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from ai_commerce_gateway.core.errors import ErrorCode
 from ai_commerce_gateway.domain.enums import (
+    ActorType,
     AuthorizationStatus,
     MerchantDecisionValue,
+    MerchantRole,
+    NextRequiredGate,
     PolicyMode,
     ProductStatus,
     ProposalStatus,
@@ -23,12 +27,34 @@ class Money(ContractModel):
     currency: str = Field(pattern=r"^[A-Z]{3}$")
 
 
+class ErrorBody(ContractModel):
+    code: ErrorCode
+    message: str
+    details: dict[str, Any] = Field(default_factory=dict)
+
+
+class ErrorEnvelope(ContractModel):
+    error: ErrorBody
+    correlation_id: str
+
+
 class ActorContext(ContractModel):
     actor_id: str
-    actor_type: str
+    actor_type: ActorType
     merchant_ids: frozenset[str] = frozenset()
-    roles: frozenset[str] = frozenset()
+    roles: frozenset[MerchantRole] = frozenset()
     correlation_id: str
+
+
+class MerchantView(ContractModel):
+    id: str
+    name: str
+    status: str
+
+
+class CreateMerchantCommand(ContractModel):
+    name: str = Field(min_length=1, max_length=255)
+    idempotency_key: str = Field(min_length=1, max_length=255)
 
 
 class ProductImageView(ContractModel):
@@ -50,6 +76,54 @@ class ProductView(ContractModel):
     status: ProductStatus
     version: int = Field(ge=1)
     images: tuple[ProductImageView, ...] = ()
+
+
+class CreateProductCommand(ContractModel):
+    merchant_id: str
+    sku: str = Field(min_length=1, max_length=128)
+    title: str = Field(min_length=1, max_length=255)
+    description: str
+    category: str | None = None
+    price: Money
+    available_quantity: int = Field(ge=0)
+    idempotency_key: str = Field(min_length=1, max_length=255)
+
+
+class UpdateProductCommand(ContractModel):
+    merchant_id: str
+    product_id: str
+    expected_version: int = Field(ge=1)
+    title: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = None
+    category: str | None = None
+    price: Money | None = None
+    available_quantity: int | None = Field(default=None, ge=0)
+    idempotency_key: str = Field(min_length=1, max_length=255)
+
+
+class SetProductPublicationCommand(ContractModel):
+    merchant_id: str
+    product_id: str
+    expected_version: int = Field(ge=1)
+    idempotency_key: str = Field(min_length=1, max_length=255)
+
+
+class AddProductImageCommand(ContractModel):
+    merchant_id: str
+    product_id: str
+    filename: str
+    content_type: str
+    content: bytes
+    alt_text: str | None = Field(default=None, max_length=500)
+    sort_order: int = Field(ge=0, le=2)
+    idempotency_key: str = Field(min_length=1, max_length=255)
+
+
+class DeleteProductImageCommand(ContractModel):
+    merchant_id: str
+    product_id: str
+    image_id: str
+    idempotency_key: str = Field(min_length=1, max_length=255)
 
 
 class CatalogSearchQuery(ContractModel):
@@ -78,6 +152,11 @@ class CatalogSearchResult(ContractModel):
     next_cursor: str | None = None
 
 
+class ProductPage(ContractModel):
+    items: tuple[ProductView, ...]
+    next_cursor: str | None = None
+
+
 class CreateProposalCommand(ContractModel):
     merchant_id: str
     product_id: str
@@ -96,6 +175,7 @@ class PurchaseProposalView(ContractModel):
     total: Money
     proposal_hash: str
     status: ProposalStatus
+    next_required_gate: NextRequiredGate
     expires_at: datetime
     created_at: datetime
 
@@ -149,6 +229,22 @@ class MerchantPolicyView(ContractModel):
     version: int
 
 
+class UpdateMerchantPolicyCommand(ContractModel):
+    merchant_id: str
+    mode: PolicyMode
+    auto_accept_max: Money | None = None
+    expected_version: int | None = Field(default=None, ge=1)
+    idempotency_key: str = Field(min_length=1, max_length=255)
+
+    @model_validator(mode="after")
+    def validate_limit(self) -> "UpdateMerchantPolicyCommand":
+        if self.mode is PolicyMode.AUTO_BELOW_LIMIT and self.auto_accept_max is None:
+            raise ValueError("AUTO_BELOW_LIMIT requires auto_accept_max")
+        if self.mode is not PolicyMode.AUTO_BELOW_LIMIT and self.auto_accept_max is not None:
+            raise ValueError("auto_accept_max is valid only for AUTO_BELOW_LIMIT")
+        return self
+
+
 class MerchantDecisionView(ContractModel):
     id: str
     proposal_id: str
@@ -160,6 +256,17 @@ class MerchantDecisionView(ContractModel):
     decided_by: str
     expires_at: datetime | None
     created_at: datetime
+
+
+class MerchantReviewItem(ContractModel):
+    proposal: PurchaseProposalView
+    authorization: BuyerAuthorizationView
+    review_reason: str
+
+
+class MerchantReviewPage(ContractModel):
+    items: tuple[MerchantReviewItem, ...]
+    next_cursor: str | None = None
 
 
 class CreateTransactionCommand(ContractModel):
@@ -201,7 +308,7 @@ class TransactionEventView(ContractModel):
     id: str
     transaction_id: str
     event_type: str
-    actor_type: str
+    actor_type: ActorType
     actor_id: str | None
     reason_code: str
     previous_state: TransactionState | None
@@ -214,6 +321,11 @@ class TransactionEventView(ContractModel):
 
 class AuditPage(ContractModel):
     items: tuple[TransactionEventView, ...]
+    next_cursor: str | None = None
+
+
+class TransactionPage(ContractModel):
+    items: tuple[TransactionView, ...]
     next_cursor: str | None = None
 
 
@@ -242,16 +354,16 @@ class ProviderLookupCommand(ContractModel):
     provider_payment_id: str | None = None
 
 
-class ProviderEvidence(ContractModel):
+class ProviderObservation(ContractModel):
     provider: ProviderName
     provider_order_id: str | None = None
     provider_payment_id: str | None = None
     provider_order_state: str | None = None
     provider_payment_state: str | None = None
     capture_state: str | None = None
-    verified: bool = False
+    authenticity_verified: bool
     observed_at: datetime
-    evidence_source: str
+    observation_source: str
 
 
 class StoredImage(ContractModel):

@@ -249,7 +249,7 @@ class PaymentAttempt(Base, UpdatedTimestampMixin):
     last_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
-class ProviderWebhook(Base, TimestampMixin):
+class ProviderWebhook(Base):
     __tablename__ = "provider_webhooks"
     __table_args__ = (UniqueConstraint("provider", "provider_event_id"),)
     id: Mapped[str] = mapped_column(String(64), primary_key=True)

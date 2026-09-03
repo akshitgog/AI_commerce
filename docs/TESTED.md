@@ -2,9 +2,18 @@
 
 ## Current result
 
-The documentation package has been reviewed for cross-document consistency. No implementation, automated test output, deployed MCP server or Razorpay Test Mode transaction evidence was available in this documentation workspace at the time of writing.
+The Milestone 0 foundation has local automated-test evidence. The feature scenarios below remain
+**NOT RUN** because merchant, buyer-chat, MCP and Razorpay behavior is intentionally not implemented
+in M0. This status is intentionally conservative.
 
-Therefore all runtime scenarios are **NOT RUN**. This status is intentionally conservative.
+## Milestone 0 validation
+
+On 2026-09-04, `uv run ruff check .`, `uv run mypy`,
+`uv run pytest --cov=ai_commerce_gateway` and
+`uv run alembic upgrade head --sql` passed locally. The test run passed 20 tests, skipped the
+PostgreSQL connection test because `TEST_DATABASE_URL` was not configured, and reported 98% line
+coverage. Real PostgreSQL migration and connection validation is configured in
+`.github/workflows/m0.yml` but is not recorded as passed until that workflow runs successfully.
 
 ## Allowed statuses
 

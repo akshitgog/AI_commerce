@@ -9,13 +9,14 @@ This folder is the authoritative specification for the v1 project. If another no
 3. [PRD.md](PRD.md) — actors, journeys, requirements and definition of done.
 4. [ARCHITECTURE.md](ARCHITECTURE.md) — authoritative trust boundaries, interfaces and lifecycle.
 5. [DATA_MODEL.md](DATA_MODEL.md) — records, relationships and invariants.
-6. [API.md](API.md) — HTTP, application-service and MCP contracts.
-7. [SECURITY.md](SECURITY.md) — identity, authorization, policies and payment safety.
-8. [EVALUATION.md](EVALUATION.md) — acceptance scenarios and evidence requirements.
-9. [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) — build sequence and cut order.
-10. [workstreams/](workstreams/) — bounded execution briefs; read only the assigned workstream.
-11. [DEVELOPMENT.md](DEVELOPMENT.md) — implemented repository layout, setup and foundation validation.
-12. [TESTED.md](TESTED.md) — actual execution ledger; planned behavior is never recorded as passed.
+6. [SHARED_CONTRACTS.md](SHARED_CONTRACTS.md) — concise frozen/provisional contract register.
+7. [API.md](API.md) — HTTP, application-service and MCP contracts.
+8. [SECURITY.md](SECURITY.md) — identity, authorization, policies and payment safety.
+9. [EVALUATION.md](EVALUATION.md) — acceptance scenarios and evidence requirements.
+10. [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) — build sequence and cut order.
+11. [workstreams/](workstreams/) — bounded execution briefs; read only the assigned workstream.
+12. [DEVELOPMENT.md](DEVELOPMENT.md) — implemented repository layout, setup and foundation validation.
+13. [TESTED.md](TESTED.md) — actual execution ledger; planned behavior is never recorded as passed.
 
 ## Locked v1 decisions
 

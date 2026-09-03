@@ -8,7 +8,7 @@ Milestone 0 provides contracts and infrastructure only. It intentionally contain
 src/ai_commerce_gateway/
 ├── api/               # HTTP adapter and health endpoints
 ├── application/       # future application-service implementations
-├── contracts/         # frozen DTOs and service/provider/storage ports
+├── contracts/         # frozen application/storage contracts; provisional provider port
 ├── core/              # settings, error envelope and opaque IDs
 ├── domain/            # provider-independent enums/domain vocabulary
 ├── infrastructure/
@@ -46,7 +46,7 @@ uv run pytest --cov=ai_commerce_gateway
 uv run alembic upgrade head --sql
 ```
 
-The PostgreSQL connection integration test runs only when `TEST_DATABASE_URL` is configured. Migration round-trip and PostgreSQL SQL compilation are always tested without external services.
+Database access and service ports are synchronous throughout. The PostgreSQL connection integration test runs locally only when `TEST_DATABASE_URL` is configured and is mandatory in CI. Migration round-trip and PostgreSQL SQL compilation are also tested without external services.
 
 ## Contract-change rule
 

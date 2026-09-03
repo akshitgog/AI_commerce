@@ -6,6 +6,20 @@ class RecordStatus(StrEnum):
     INACTIVE = "INACTIVE"
 
 
+class ActorType(StrEnum):
+    PLATFORM = "PLATFORM"
+    MERCHANT_USER = "MERCHANT_USER"
+    BUYER = "BUYER"
+    SYSTEM = "SYSTEM"
+
+
+class MerchantRole(StrEnum):
+    ADMIN = "ADMIN"
+    EDITOR = "EDITOR"
+    APPROVER = "APPROVER"
+    VIEWER = "VIEWER"
+
+
 class ProductStatus(StrEnum):
     DRAFT = "DRAFT"
     PUBLISHED = "PUBLISHED"
@@ -41,6 +55,13 @@ class MerchantDecisionValue(StrEnum):
     ALLOW = "ALLOW"
     DENY = "DENY"
     REVIEW_REQUIRED = "REVIEW_REQUIRED"
+
+
+class NextRequiredGate(StrEnum):
+    BUYER_AUTH_REQUIRED = "BUYER_AUTH_REQUIRED"
+    MERCHANT_POLICY_PENDING = "MERCHANT_POLICY_PENDING"
+    MERCHANT_REVIEW_REQUIRED = "MERCHANT_REVIEW_REQUIRED"
+    READY = "READY"
 
 
 class TransactionState(StrEnum):

@@ -185,7 +185,7 @@ The solo developer remains architecture owner, shared-contract owner, integratio
 
 ## 7. Shared contracts to freeze before feature work
 
-Milestone 0 freeze status: **IMPLEMENTED on 2026-09-04**. The executable contract baseline is `src/ai_commerce_gateway/contracts/`, with method-name contract tests in `tests/contract/`. Future changes follow the approval process below.
+Milestone 0 freeze status: **CANDIDATE UNDER REVIEW**. Frozen application/storage contracts and provisional provider contracts are listed in `SHARED_CONTRACTS.md`. Future changes follow the approval process below.
 
 ### Entities
 
