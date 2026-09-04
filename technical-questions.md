@@ -8,27 +8,38 @@ Do not invent answers.
 
 ## Q: What exact Razorpay Test Mode condition should map to platform `SUCCEEDED`?
 
-Status: OPEN
-Branch-raised: <fill when investigated>
-Last-updated-by: <developer/agent>
+Status: RESOLVED
+Branch-raised: phase/b4-razorpay-adapter
+Last-updated-by: Codex Agent B
 
 Context:
 Creating a Razorpay order is not equivalent to a successful payment. The implementation must identify the provider truth required before setting the platform transaction to `SUCCEEDED`.
 
 Current Answer:
-Not yet verified against an implementation/provider spike.
+B5 implemented the strict five-condition success gate. Platform `SUCCEEDED` requires all of:
+(1) valid checkout HMAC-SHA256 or webhook HMAC authenticity; (2) provider payment and order IDs
+correlated to the stored attempt; (3) payment state `captured` with `captured: true` from an
+independent lookup; (4) order state `paid` with zero amount due from an independent lookup; and
+(5) provider amount and currency matching the immutable transaction. The two-step transition
+(PAYMENT_PENDING → VERIFYING → SUCCEEDED) ensures that neither order creation, authorization,
+failure, a valid signature alone, nor a mismatched amount can produce SUCCEEDED.
 
 Evidence:
-None yet.
+Razorpay Standard Checkout integration and Test/Live Mode documentation reviewed on 2026-09-04;
+B4 adapter tests prove that `created` yields only `PAYMENT_PENDING`. Real Test Mode run
+`B4-RZP-20260904-01` passed with redacted order suffix `...JzsC44` and no payment/capture truth.
+B5 integration tests prove the two-step transition and that each insufficient condition blocks
+success. Real Test Mode run `B5-RZP-20260904-01` created and looked up a redacted order ending
+`...qM0YHJ`. See `docs/RAZORPAY_TEST_MODE.md`.
 
 Decision:
-Do not mark platform transactions `SUCCEEDED` until the provider spike establishes and tests the required condition.
+Resolved in B5 by D-010.
 
 Confidence:
-LOW
+HIGH
 
 Last updated:
-<date>
+2026-09-04
 
 Related modules:
 Razorpay adapter, transaction authority, webhook verification, reconciliation.

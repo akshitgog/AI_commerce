@@ -99,9 +99,7 @@ class MerchantPolicyService(Protocol):
 
 
 class TransactionService(Protocol):
-    def create(
-        self, command: CreateTransactionCommand, actor: ActorContext
-    ) -> TransactionView: ...
+    def create(self, command: CreateTransactionCommand, actor: ActorContext) -> TransactionView: ...
     def execute(
         self, command: ExecuteTransactionCommand, actor: ActorContext
     ) -> TransactionView: ...

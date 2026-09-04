@@ -24,7 +24,21 @@ frozen DTO, enum, service method or persistence table changes for A7/C7.
 
 ## Provisional
 
-The provider port, provider commands and provider observations are provisional until the Razorpay Test Mode truth spike. They are owned by Workstream 04 and consumed only by Workstream 03. Provider observations never decide platform `SUCCEEDED`.
+### Provider contract resolution
+
+The provider method and M0 DTO shapes remain unchanged. B4 resolved `provider.create_order`: one
+non-retried create call returns order evidence only, and a `created` order can advance the platform
+no further than `PAYMENT_PENDING`. B5 resolves checkout, webhook and lookup semantics inside
+Workstream 04. Webhook event identity remains HTTP transport metadata. B5-owned evidence adds
+provider amount/currency internally so the transaction authority can compare it with trusted
+transaction money without expanding the frozen `ProviderObservation` DTO.
+
+A valid checkout signature or webhook is authenticity evidence, not success by itself. The
+platform requires correlated provider payment `captured`, provider order `paid`, exact money and
+stored attempt identity before the canonical state machine may enter `SUCCEEDED`. B6 remains the
+owner of uncertain-outcome reconciliation.
+
+### Other provisional behavior
 
 The product-image URL policy remains provisional: `StoredImage.public_url` is optional until public versus signed delivery is selected.
 

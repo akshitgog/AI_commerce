@@ -309,7 +309,182 @@ Workstream C (Buyer/MCP) must supply the merchant_id when fetching a product (th
 ### Evidence / Trigger
 
 Phase A3 escalation during implementation of buyer-safe reads. Gate approved by human integrator.
+## D-009 — Create Razorpay Test Mode orders once without adapter retries
+
+Status: ACTIVE
+Date: 2026-09-04
+Branch: phase/b4-razorpay-adapter
+Owner: Workstream 04 / Agent B
+
+### Decision
+
+Implement `provider.create_order` as one direct authenticated Razorpay REST request with automatic
+retries disabled. Accept only `rzp_test_*` credentials and the approved HTTPS API host. Validate the
+entire initial order identity, amount, currency, receipt, state and counters before persisting its
+normalized observation. A `created` order maps only to `PAYMENT_PENDING`.
+
+Construct Standard Checkout options from the public key ID, trusted amount/currency and stored
+provider order ID. Never expose the key secret. Keep checkout verification, webhooks and lookup out
+of B4.
+
+### Why
+
+A timeout may occur after Razorpay creates an order but before the response reaches the platform.
+An SDK or transport retry at this boundary could create a second physical order outside the B3
+durable one-attempt guard. Strict response matching also prevents provider drift or mismatched
+money from being accepted as local truth.
+
+### Alternatives Considered
+
+- Enable the official SDK's retry option.
+- Retry only timeout or server responses inside the adapter.
+- Treat any HTTP 2xx body containing an order ID as sufficient.
+- Treat order creation as payment success.
+
+### Consequences
+
+Provider exceptions after B3's pre-dispatch commit follow the existing conservative `UNKNOWN`
+path and require later reconciliation. Test Mode credentials and secrets are server-only. B5 must
+independently establish checkout/payment authenticity and captured-payment success.
+
+### Evidence / Trigger
+
+Official Razorpay Orders and Standard Checkout documentation, B3's unknown-no-blind-retry
+invariant, B4 mock-transport/transaction-seam tests and real Test Mode run
+`B4-RZP-20260904-01`.
 
 ### Supersedes
 
 None.
+
+---
+
+## D-010 — Centralize typed developer configuration in YAML
+
+Status: ACTIVE
+Date: 2026-09-04
+Branch: feature/transaction-core
+Owner: Project team / Workstream 06
+
+### Decision
+
+Use `config/default.yaml` for the safe complete configuration shape and ignored
+`config/local.yaml` for developer overrides. Allow `APP_CONFIG_FILE` to select a deployment YAML
+overlay. Validate YAML through typed `Settings`, reject unknown fields and wrap secrets in
+`SecretStr`. Existing flat environment variables remain higher-priority deployment and
+secret-manager overrides; feature code must not read them directly.
+
+### Why
+
+Database connections, LLM selections, provider credentials and other inputs need one discoverable,
+validated location without scattering developer setup through source code and shell state.
+
+### Alternatives Considered
+
+- Retain `.env` as the primary developer interface.
+- Permit arbitrary untyped YAML values.
+- Commit environment-specific files containing credentials.
+
+### Consequences
+
+New runtime inputs require a typed setting, YAML mapping, safe default/example and tests. B5 adds
+the distinct Razorpay webhook secret through this path. Existing B1â€“B4 consumers and CI environment
+overrides remain compatible.
+
+### Evidence / Trigger
+
+User-approved configuration requirement and automated overlay, validation, redaction and B4
+compatibility tests.
+
+### Supersedes
+
+Refines the environment-template portion of D-005; no frozen commerce or persistence contract is
+changed.
+
+---
+
+## D-011 — Require five independent conditions for platform SUCCEEDED
+
+Status: ACTIVE
+Date: 2026-09-04
+Branch: phase/b5-provider-verification
+Owner: Workstream 04 / Agent B
+
+### Decision
+
+Platform `SUCCEEDED` requires all of: (1) valid checkout HMAC or webhook HMAC authenticity;
+(2) provider payment and order IDs correlated to the stored attempt; (3) payment state `captured`
+with `captured: true` from an independent lookup; (4) order state `paid` with zero amount due from
+an independent lookup; and (5) provider amount and currency matching the immutable transaction.
+
+Neither a created order, an authorized payment, a failed payment, a valid signature alone, nor a
+mismatched amount can produce SUCCEEDED.
+
+### Why
+
+Order creation is not payment. Checkout signatures prove message integrity, not payment capture.
+Only an independent provider lookup can confirm the actual financial state. Amount verification
+prevents partial-payment or currency-mismatch acceptance.
+
+### Alternatives Considered
+
+- Accept signature validity alone as success.
+- Accept any non-failed payment state as success.
+- Skip independent lookup and trust webhook payload.
+- Allow checkout callback without amount verification.
+
+### Consequences
+
+The verification service always performs two independent lookups (payment + order) before
+transitioning to SUCCEEDED. This adds latency but prevents accepting unverified or inconsistent
+provider states as platform truth.
+
+### Evidence / Trigger
+
+B5 integration tests prove the two-step transition (PAYMENT_PENDING â†’ VERIFYING â†’ SUCCEEDED) and
+that each insufficient condition blocks success. Official Razorpay documentation for Standard
+Checkout verification and payment capture states.
+
+### Supersedes
+
+Resolves the open question in technical-questions.md about the exact SUCCEEDED condition.
+
+---
+
+## D-012 — Merchant AI-assisted catalog creation in A6
+
+Status: ACTIVE
+Date: 2026-09-04
+Branch: main (docs commit 928409f)
+Owner: Project team
+
+### Decision
+
+Phase A6 includes an AI-assisted catalog creation flow: 'Add with AI' is the primary merchant path
+for product creation. The extraction endpoint (POST /merchants/{id}/products/extract-draft) returns
+a proposed ProductDraft only — it never persists; the human merchant reviews, edits, saves the
+draft, and publishes through the normal confirmation flow.
+
+### Why
+
+AI-assisted catalog creation demonstrates the merchant side of agentic commerce while keeping the
+AI propose-only: it cannot set trusted price, stock, currency, or publication state on its own.
+
+### Alternatives Considered
+
+- Manual form only.
+- Let the AI write directly to the catalog (rejected: no trusted-field mutation by AI).
+
+### Consequences
+
+The workstream 01 references to 'D-010' now point here (renumbered during the three-lane merge to
+avoid collision with transaction-lane decision numbering).
+
+### Evidence / Trigger
+
+Docs commit 928409f added the A6 scope; the merge into an integrated ledger required a unique ID.
+
+### Supersedes
+
+None.
+

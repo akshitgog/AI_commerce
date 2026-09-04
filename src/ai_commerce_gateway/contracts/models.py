@@ -23,7 +23,7 @@ class ContractModel(BaseModel):
 
 
 class Money(ContractModel):
-    amount_minor: int = Field(ge=0)
+    amount_minor: int = Field(ge=0, strict=True)
     currency: str = Field(pattern=r"^[A-Z]{3}$")
 
 
@@ -61,7 +61,7 @@ class ProductImageView(ContractModel):
     id: str
     url: str
     alt_text: str | None = None
-    sort_order: int = Field(ge=0)
+    sort_order: int = Field(ge=0, strict=True)
 
 
 class ProductView(ContractModel):
@@ -72,9 +72,9 @@ class ProductView(ContractModel):
     description: str
     category: str | None = None
     price: Money
-    available_quantity: int = Field(ge=0)
+    available_quantity: int = Field(ge=0, strict=True)
     status: ProductStatus
-    version: int = Field(ge=1)
+    version: int = Field(ge=1, strict=True)
     images: tuple[ProductImageView, ...] = ()
 
 
@@ -85,26 +85,26 @@ class CreateProductCommand(ContractModel):
     description: str
     category: str | None = None
     price: Money
-    available_quantity: int = Field(ge=0)
+    available_quantity: int = Field(ge=0, strict=True)
     idempotency_key: str = Field(min_length=1, max_length=255)
 
 
 class UpdateProductCommand(ContractModel):
     merchant_id: str
     product_id: str
-    expected_version: int = Field(ge=1)
+    expected_version: int = Field(ge=1, strict=True)
     title: str | None = Field(default=None, min_length=1, max_length=255)
     description: str | None = None
     category: str | None = None
     price: Money | None = None
-    available_quantity: int | None = Field(default=None, ge=0)
+    available_quantity: int | None = Field(default=None, ge=0, strict=True)
     idempotency_key: str = Field(min_length=1, max_length=255)
 
 
 class SetProductPublicationCommand(ContractModel):
     merchant_id: str
     product_id: str
-    expected_version: int = Field(ge=1)
+    expected_version: int = Field(ge=1, strict=True)
     idempotency_key: str = Field(min_length=1, max_length=255)
 
 
@@ -115,7 +115,7 @@ class AddProductImageCommand(ContractModel):
     content_type: str
     content: bytes
     alt_text: str | None = Field(default=None, max_length=500)
-    sort_order: int = Field(ge=0, le=2)
+    sort_order: int = Field(ge=0, le=2, strict=True)
     idempotency_key: str = Field(min_length=1, max_length=255)
 
 
@@ -130,11 +130,11 @@ class CatalogSearchQuery(ContractModel):
     merchant_id: str
     query: str | None = None
     category: str | None = None
-    min_price_minor: int | None = Field(default=None, ge=0)
-    max_price_minor: int | None = Field(default=None, ge=0)
+    min_price_minor: int | None = Field(default=None, ge=0, strict=True)
+    max_price_minor: int | None = Field(default=None, ge=0, strict=True)
     currency: str | None = Field(default=None, pattern=r"^[A-Z]{3}$")
     cursor: str | None = None
-    limit: int = Field(default=20, ge=1, le=100)
+    limit: int = Field(default=20, ge=1, le=100, strict=True)
 
     @model_validator(mode="after")
     def validate_price_range(self) -> "CatalogSearchQuery":
@@ -160,7 +160,7 @@ class ProductPage(ContractModel):
 class CreateProposalCommand(ContractModel):
     merchant_id: str
     product_id: str
-    quantity: int = Field(ge=1)
+    quantity: int = Field(ge=1, strict=True)
     idempotency_key: str = Field(min_length=1, max_length=255)
 
 
@@ -188,7 +188,7 @@ class RequestAuthorizationCommand(ContractModel):
 class ApproveAuthorizationCommand(ContractModel):
     proposal_id: str
     proposal_hash: str
-    max_quantity: int = Field(ge=1)
+    max_quantity: int = Field(ge=1, strict=True)
     max_amount: Money
     expires_at: datetime
     idempotency_key: str = Field(min_length=1, max_length=255)
@@ -226,14 +226,14 @@ class MerchantPolicyView(ContractModel):
     merchant_id: str
     mode: PolicyMode
     auto_accept_max: Money | None = None
-    version: int
+    version: int = Field(strict=True)
 
 
 class UpdateMerchantPolicyCommand(ContractModel):
     merchant_id: str
     mode: PolicyMode
     auto_accept_max: Money | None = None
-    expected_version: int | None = Field(default=None, ge=1)
+    expected_version: int | None = Field(default=None, ge=1, strict=True)
     idempotency_key: str = Field(min_length=1, max_length=255)
 
     @model_validator(mode="after")

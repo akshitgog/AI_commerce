@@ -16,6 +16,61 @@ coverage. GitHub Actions run `33817667540` then passed the PostgreSQL-backed M0 
 `1640869`, including dependency sync, Ruff, mypy, migration upgrade, tests with the 90% coverage
 gate, migration downgrade and a second upgrade.
 
+## B4 adapter validation
+
+On 2026-09-04, the concrete Razorpay adapter passed strict mock-transport and B3 transaction-seam
+tests for request mapping, Test Mode/live-mode isolation, response correlation, one-call/no-retry
+behavior, secret redaction, checkout options and order-not-success semantics. With the supplied Test
+Mode credentials loaded transiently, the full suite passed 373 tests with 97% coverage and skipped
+four PostgreSQL-dependent tests.
+
+The real provider test `tests/integration/test_razorpay_test_mode.py` passed and created an initial
+`created` order ending `...JzsC44`, with no payment or capture truth. No J05 or other project
+scenario status changes: an order-only Test Mode call is not verified payment-completion evidence.
+
+## YAML configuration validation
+
+On 2026-09-04, the transaction lane passed 382 tests with 96% coverage after adopting typed YAML;
+five live credential/PostgreSQL tests skipped. Ten configuration tests executed default/local and
+explicit deployment loading, deep merge, precedence, secret redaction, invalid types, unknown
+fields/shapes and missing-file failure. Ruff, mypy and offline Alembic validation passed. This does
+not change any J01–J16 status.
+
+## B5 provider verification validation
+
+On 2026-09-04, the provider verification phase passed 439 tests with 95% coverage, five
+credential/PostgreSQL tests skipped. Ruff, mypy and offline Alembic validation passed. Frozen
+M0 enums, DTOs, ORM models and migration have zero diff from the B4 lane head.
+
+57 new B5 tests exercise: checkout HMAC signature verification and four tampering cases; raw-body
+webhook HMAC verification with distinct webhook secret; durable webhook deduplication and
+payload-hash reuse rejection; supported and ignored webhook event dispatch; captured/authorized/
+failed payment lookup mapping; order lookup with paid/created/mismatch states; money-mismatch
+rejection without state corruption; two-step causal state transition (PAYMENT_PENDING → VERIFYING
+→ SUCCEEDED); terminal state downgrade prevention; out-of-order webhook ordering (failed then
+captured, authorized after success); orphan and ignored webhook recording; interrupted webhook
+resumption on duplicate; replay safety requiring valid signature; sanitized API error envelopes;
+contract shape tests for frozen webhook command and callback routes; and real Test Mode order
+creation and lookup.
+
+Real provider run `B5-RZP-20260904-01` created and looked up a redacted order ending `...qM0YHJ`
+in `created` state with matching INR 1.00 amount. No captured Test Mode payment or live webhook
+delivery was exercised because those require an interactive checkout session and a separately
+configured webhook secret. J05 and J11 therefore remain `NOT RUN`.
+
+## B6 reconciliation validation
+
+On 2026-09-04, the reconciliation phase passed 447 tests with 95% coverage, five
+credential/PostgreSQL tests skipped. Ruff, mypy and offline Alembic validation passed.
+
+8 new B6 tests exercise: strict state-machine bounds for RECONCILING transitions;
+failing fast on missing payment attempts (no blind retry);
+restoring stuck transactions with paid order + captured payment to SUCCEEDED;
+gracefully falling back to PAYMENT_PENDING if order exists but payment is incomplete;
+preserving UNKNOWN if the provider lookup fails, allowing safe retry.
+All logic relies only on the verified provider lookup operations from B5, satisfying
+the timeout-after-dispatch safety guarantees without breaking B1-B3 idempotency rules.
+J05 and J11 remain `NOT RUN`.
 ## Allowed statuses
 
 - `PASS`: executed, matched expected behavior and evidence is linked.

@@ -4,6 +4,7 @@ from ai_commerce_gateway.contracts.models import (
     ApproveAuthorizationCommand,
     CreateProductCommand,
     ErrorEnvelope,
+    HandleWebhookCommand,
     ProductView,
     PurchaseProposalView,
     TransactionView,
@@ -137,6 +138,10 @@ def test_cross_lane_enum_values_are_frozen() -> None:
         "CANCELLED",
         "EXPIRED",
     }
+
+
+def test_b5_preserves_frozen_webhook_command_shape() -> None:
+    assert field_names(HandleWebhookCommand) == {"raw_body", "signature"}
 
 
 def test_error_codes_and_id_prefixes_are_frozen() -> None:

@@ -1,4 +1,6 @@
 .env
+config/local.yaml
+config/*.local.yaml
 .venv/
 __pycache__/
 *.py[cod]
@@ -11,9 +13,11 @@ dist/
 build/
 *.egg-info/
 graphify-out/
+.b5_evidence.db
 
 # local secrets / tooling
 rzp-key.csv
 opencode.json
 frontend-handoff/
 # canonical copy lives in the buyer lane
+

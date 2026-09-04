@@ -130,7 +130,35 @@ The authenticated buyer is derived from actor context. The response contains the
 | `POST /webhooks/razorpay` | Verify signature, deduplicate event, map reference and update state |
 | `POST /checkout/razorpay/verify` | Verify supported checkout-return signature/data for the selected integration |
 
-Exact required fields are finalized from the Razorpay Test Mode spike and isolated inside the adapter contract.
+`POST /checkout/razorpay/verify` accepts only `transaction_id`, `razorpay_order_id`,
+`razorpay_payment_id` and `razorpay_signature`. The server checks the submitted order against the
+stored payment attempt, verifies the HMAC using the API key secret, then independently fetches both
+payment and order. It reaches `SUCCEEDED` only when the payment is `captured`, the order is `paid`,
+both references correlate and provider amount/currency exactly match the immutable transaction.
+
+`POST /webhooks/razorpay` requires `X-Razorpay-Signature` and `X-Razorpay-Event-Id`. Signature
+verification uses the exact raw request bytes and a separately configured webhook secret before
+JSON parsing. The event ID is transport metadata used for durable deduplication and is not added to
+the frozen webhook business command. Captured events are independently confirmed through payment
+and order lookup before financial success. Unsupported signed events are recorded as ignored;
+unmatched references are recorded as orphans.
+
+### Razorpay order and checkout initiation
+
+B4 maps `provider.create_order` to exactly one authenticated `POST /v1/orders` call. The adapter
+sends the server-derived amount in currency subunits, currency, a receipt no longer than 40
+characters, `partial_payment: false`, and correlation notes for the logical transaction, attempt
+and provider-request fingerprint. Automatic provider retries are disabled.
+
+A valid initial response must be an `order` entity with matching amount, currency and receipt,
+`status: created`, zero amount paid, the full amount due and zero attempts. The normalized result
+contains an order ID/state but no payment ID/state or capture state. It therefore maps only to
+platform `PAYMENT_PENDING`, never `SUCCEEDED`.
+
+Standard Checkout receives only the Test Mode key ID, amount, currency, provider order ID, display
+name and description. The key secret remains server-side. B5 now implements checkout response
+verification, webhook processing and provider lookup as described above. B6 owns uncertain-outcome
+reconciliation and never creates a replacement order without resolving provider truth.
 
 ## MCP tools
 

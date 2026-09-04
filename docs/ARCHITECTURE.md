@@ -216,7 +216,12 @@ After dispatch, the adapter records provider references and transitions to `PAYM
 
 ## Provider verification
 
-The initial implementation spike must establish the exact Razorpay Test Mode payment/capture condition. Checkout-return signatures and webhook signatures are verified according to the selected integration, and provider lookup is used whenever local and provider state disagree or delivery is uncertain.
+B4 creates exactly one Razorpay order and validates the returned order fields before exposing safe
+Standard Checkout options. An initial `created` order is evidence only that checkout may begin; it
+is not payment success and advances the platform no further than `PAYMENT_PENDING`. Checkout-return
+signatures and webhook signatures are verified in B5, and provider lookup is used whenever local
+and provider state disagree or delivery is uncertain. The exact Test Mode `captured` success gate
+remains unapproved until the real provider verification spike is executed.
 
 ## Audit model
 
@@ -226,6 +231,8 @@ Every consequential event records actor, action, reason code, merchant, buyer, p
 
 - Backend: FastAPI or equivalent modular monolith.
 - Data: PostgreSQL or equivalent transactional relational database.
+- Configuration: typed YAML under `config/`, with ignored local overrides and deployment
+  environment variables reserved for overlay selection and secret-manager compatibility.
 - Dashboard: thin React/Next.js or equivalent client.
 - Buyer access: reference chat connected to the same backend application services.
 - External agent interoperability: one remote MCP server with isolated buyer and merchant endpoints connected to those same application services.

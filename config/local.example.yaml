@@ -1,0 +1,26 @@
+# Copy this file to config/local.yaml and edit it for local development.
+# config/local.yaml is ignored by Git. Never commit real credentials.
+
+app:
+  environment: development
+  log_level: DEBUG
+
+database:
+  url: postgresql+psycopg://postgres:postgres@localhost:5432/ai_commerce_gateway
+  test_url: postgresql+psycopg://postgres:postgres@localhost:5432/ai_commerce_gateway_test
+
+llm:
+  provider: openai
+  model: gpt-5.4-mini
+  api_key: replace-locally
+
+storage:
+  provider: unconfigured
+
+razorpay:
+  key_id: replace-locally
+  key_secret: replace-locally
+  webhook_secret: replace-with-the-dashboard-configured-webhook-secret
+
+merchant_mcp:
+  publication_secret: replace-with-a-dedicated-random-secret

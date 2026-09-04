@@ -17,7 +17,8 @@ This folder is the authoritative specification for the v1 project. If another no
 11. [PHASE_EXECUTION.md](PHASE_EXECUTION.md) — phase branches, status lifecycle, review gate and evidence template.
 12. [workstreams/](workstreams/) — bounded ownership briefs and lane phase maps; read only the assigned workstream.
 13. [DEVELOPMENT.md](DEVELOPMENT.md) — implemented repository layout, setup and foundation validation.
-14. [TESTED.md](TESTED.md) — actual execution ledger; planned behavior is never recorded as passed.
+14. [RAZORPAY_TEST_MODE.md](RAZORPAY_TEST_MODE.md) — B4 provider contract, evidence status and reproducible Test Mode check.
+15. [TESTED.md](TESTED.md) — actual execution ledger; planned behavior is never recorded as passed.
 
 ## Locked v1 decisions
 
