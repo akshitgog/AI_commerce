@@ -524,3 +524,34 @@ A4 neither changes frozen contracts/DTOs/enums/schema nor introduces any idempot
 
 **A7 Obstruction Check:**
 A5 leaves `idempotency_key` semantics and database models completely untouched, wrapping canonical product image operations without interfering with future Phase A7 durable fingerprinted idempotency or 5-minute publication confirmation tokens.
+
+---
+
+## Entry — Phase A6: Merchant AI-Assisted Catalog Creation (Backend Extraction, D-010)
+
+Date/time:       2026-09-04
+Git branch:      phase/a6-merchant-dashboard
+Author/Agent:    Agent A (Merchant/Catalog Lane)
+Workstream:      01 Merchant Experience / 02 Catalog Domain
+Phase:           A6 phase/a6-merchant-dashboard (backend extraction slice)
+Status:          IMPLEMENTED — READY FOR REVIEW
+
+**Implemented:**
+1. **ProductDraftExtractor** (pplication/product_draft_extraction.py):
+   - ProductDraft propose-only schema (source, missing_fields, attributes)
+   - StubProductDraftExtractor: deterministic offline heuristics (rupee price, unit count, ports, title)
+   - LLMProductDraftExtractor: OpenAI-compatible chat completions, strict JSON schema prompt, null-for-unstated
+2. **Extraction endpoint** (pi/merchant/router.py):
+   - POST /merchants/{merchant_id}/products/extract-draft — propose-only, persisted: false
+   - Tenant-scoped demo actor from headers (real auth = A6 auth work); role-gated ADMIN/EDITOR
+   - Stub when no llm_api_key, real LLM when configured
+3. **Config**: llm_provider_url, llm_api_key (repr=False), llm_model — additive
+
+**Trust boundary (D-010):** endpoint has NO repository access — propose-only by construction; the merchant reviews the draft and creation/publication flow through the frozen MerchantCatalogService.
+
+**Tests (16 new):** stub heuristics, missing-field reporting, determinism, LLM valid/transport-failure/non-dict/never-invents, endpoint 200/400/403/422, no-persistence signature check.
+
+**Validation:**
+- uv run ruff check . -> PASS
+- uv run mypy -> PASS (33 source files)
+- uv run pytest -rs -> PASS (182 passed, 27 skipped, 0 failed)
