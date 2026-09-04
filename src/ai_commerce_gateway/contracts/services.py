@@ -38,7 +38,7 @@ from ai_commerce_gateway.contracts.models import (
 
 class CatalogService(Protocol):
     def search(self, query: CatalogSearchQuery, actor: ActorContext) -> CatalogSearchResult: ...
-    def get_product(self, product_id: str, actor: ActorContext) -> ProductView: ...
+    def get_product(self, merchant_id: str, product_id: str, actor: ActorContext) -> ProductView: ...  # noqa: E501
 
 
 class MerchantCatalogService(Protocol):
@@ -50,8 +50,8 @@ class MerchantCatalogService(Protocol):
     def list_products(
         self, merchant_id: str, actor: ActorContext, cursor: str | None = None
     ) -> ProductPage: ...
-    def create_product(self, command: CreateProductCommand, actor: ActorContext) -> ProductView: ...
-    def update_product(self, command: UpdateProductCommand, actor: ActorContext) -> ProductView: ...
+    def create_product(self, command: CreateProductCommand, actor: ActorContext) -> ProductView: ...  # noqa: E501
+    def update_product(self, command: UpdateProductCommand, actor: ActorContext) -> ProductView: ...  # noqa: E501
     def publish_product(
         self, command: SetProductPublicationCommand, actor: ActorContext
     ) -> ProductView: ...

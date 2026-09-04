@@ -25,7 +25,7 @@ EXPECTED_TABLES = {
 }
 
 
-def test_initial_migration_upgrades_and_downgrades(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+def test_initial_migration_upgrades_and_downgrades(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]  # noqa: E501
     database_path = tmp_path / "migration.db"
     database_url = f"sqlite:///{database_path.as_posix()}"
     monkeypatch.setenv("DATABASE_URL", database_url)
