@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     storage_provider: str = "unconfigured"
     storage_bucket: str = "product-images"
     storage_public_base_url: str | None = None
+    llm_provider_url: str = "https://api.openai.com/v1/chat/completions"
+    llm_api_key: str | None = Field(default=None, repr=False)
+    llm_model: str = "gpt-4o-mini"
 
 
 @lru_cache

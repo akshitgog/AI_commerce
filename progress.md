@@ -325,3 +325,47 @@ Uses stub services which must be replaced by real implementations from workstrea
 ### Next Step
 
 Merge Phase C2, then begin Phase C3.
+
+---
+
+## Entry 007 — Phase C3 Tool Orchestration Implemented
+
+Date/time:       2026-09-04 (Asia/Calcutta)
+Git branch:      phase/c3-tool-orchestration
+Commit:          PENDING
+Author/Agent:    Antigravity
+Workstream:      05-buyer-ai-mcp
+Change:          Implemented ToolOrchestrator and LLMClient with httpx OpenAI compatibility.
+Files/modules:   src/ai_commerce_gateway/application/buyer_adapter/
+
+### What Changed
+
+- Created LLMClient protocol and StubLLMClient for testing.
+- Created OpenAILLMClient using httpx for real LLM API communication, configured via core/config.py.
+- Implemented ToolOrchestrator to constrain LLM tool execution to the 7 canonical buyer tools.
+- Enforced explicit authorization handoff: AI cannot self-approve; returns UI handoff on proposal/auth-request.
+- Added /chat endpoint to buyer router.
+
+### Reason
+
+Satisfy Phase C3 requirements for intent-to-tool mapping, safe tool execution, and prompt-injection/no-self-approval guarantees.
+
+### Technical Impact
+
+Adds real HTTP LLM connectivity. No changes to frozen contracts or database schemas. The orchestrator effectively isolates the AI from unauthorized endpoints.
+
+### Validation
+
+Passed ruff, mypy, and pytest. Tests confirm prompt-injection isolation and strict permission bounding.
+
+### Evidence
+
+Repository files and local test execution.
+
+### Result
+
+SUCCESS
+
+### Next Step
+
+Merge Phase C3 and await next instructions.

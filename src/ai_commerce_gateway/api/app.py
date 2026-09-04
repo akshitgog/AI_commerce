@@ -31,7 +31,6 @@ def create_app() -> FastAPI:
             },
         )
 
-
     @app.middleware("http")
     async def correlation_id(request: Request, call_next):  # type: ignore[no-untyped-def]
         request.state.correlation_id = (

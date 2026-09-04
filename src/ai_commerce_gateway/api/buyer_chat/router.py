@@ -27,6 +27,8 @@ from ai_commerce_gateway.api.buyer_chat.stubs import (
     get_transaction_service,
 )
 from ai_commerce_gateway.application.buyer_adapter.adapter import BuyerAdapter
+from ai_commerce_gateway.application.buyer_adapter.llm_client import StubLLMClient
+from ai_commerce_gateway.application.buyer_adapter.orchestrator import ToolOrchestrator
 from ai_commerce_gateway.application.buyer_adapter.schemas import (
     CreatePurchaseProposalRequest,
     ExecuteTransactionRequest,
@@ -62,6 +64,13 @@ def get_buyer_adapter(
     return BuyerAdapter(catalog=catalog, proposal=proposal, auth=auth, transaction=transaction)
 
 
+def get_tool_orchestrator(
+    adapter: Annotated[BuyerAdapter, Depends(get_buyer_adapter)],
+) -> ToolOrchestrator:
+    # Use StubLLMClient for the C3 demo / testing
+    return ToolOrchestrator(llm_client=StubLLMClient(), adapter=adapter)
+
+
 # ---------------------------------------------------------------------------
 # Request bodies
 # ---------------------------------------------------------------------------
@@ -89,6 +98,15 @@ class RequestAuthorizationBody(BaseModel):
 
 class ExecuteTransactionBody(BaseModel):
     proposal_id: str
+
+
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+
+class ChatRequestBody(BaseModel):
+    messages: list[ChatMessage]
 
 
 # ---------------------------------------------------------------------------
@@ -196,5 +214,20 @@ def get_transaction_audit(
     return {
         "items": [e.model_dump() for e in page.items],
         "next_cursor": page.next_cursor,
+        "correlation_id": invocation.correlation_id,
+    }
+
+
+@router.post("/chat")
+def chat(
+    body: ChatRequestBody,
+    actor: Annotated[ActorContext, Depends(get_buyer_actor)],
+    invocation: Annotated[InvocationContext, Depends(get_invocation_context)],
+    orchestrator: Annotated[ToolOrchestrator, Depends(get_tool_orchestrator)],
+) -> dict[str, Any]:
+    messages = [m.model_dump() for m in body.messages]
+    result = orchestrator.chat(actor, invocation, messages)
+    return {
+        **result,
         "correlation_id": invocation.correlation_id,
     }
