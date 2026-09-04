@@ -404,7 +404,7 @@ ext_cursor logic with 55 created products.
 ## [2026-09-04] Phase A3 Catalog Publication
 
 **Role:** Agent A (Merchant/Catalog Lane)
-**Status:** READY FOR RE-REVIEW
+**Status:** REVIEWED AND APPROVED
 **Branch:** phase/a3-catalog-publication
 
 **Implemented:**
@@ -426,4 +426,14 @@ ext_cursor logic with 55 created products.
 - `uv run mypy` -> PASS (0 issues across 27 source files)
 - `uv run pytest --cov=ai_commerce_gateway --cov-report=term-missing` -> PASS (144 passed, 27 skipped, 0 failed, 96% coverage)
 - `uv run alembic upgrade head --sql` -> PASS (clean schema build)
+
+**Minor / Optional Review Notes Recorded:**
+1. Search filtering in memory over tenant-scoped `list_published` is documented and appropriate for V1 merchant scale; can revisit if buyer search scale warrants dedicated repository methods.
+2. Search cursor pagination edge case (when in-memory filtering reduces result count) is noted and preserves keyset correctness.
+3. Root `decisions.md` and `docs/decisions.md` duplicate D-008; recommendation noted for canonicalization.
+4. Future roadmap option for SQL-level filtering via `search_published(filters)` deferred until scale requires it.
+
+**A7 Obstruction Check:**
+A3 neither adds nor removes `idempotency_key` semantics and leaves `MerchantCatalogService`, enums, `contracts/models.py` DTOs, and the database schema completely untouched. Future Phase A7 durable fingerprinted idempotency and publication confirmation can wrap canonical operations seamlessly. The only carried-forward note is that `CatalogService.get_product` (buyer path) now requires `merchant_id`, which is relevant to Workstream C integration.
+
 
