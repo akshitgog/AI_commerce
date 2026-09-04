@@ -34,8 +34,14 @@ GET_PRODUCT_SCHEMA = {
     "description": "Retrieve full details of a specific published product.",
     "inputSchema": {
         "type": "object",
-        "properties": {"product_id": {"type": "string", "description": "The ID of the product."}},
-        "required": ["product_id"],
+        "properties": {
+            "merchant_id": {
+                "type": "string",
+                "description": "The merchant ID from the search result (tenant scope).",
+            },
+            "product_id": {"type": "string", "description": "The ID of the product."},
+        },
+        "required": ["merchant_id", "product_id"],
     },
 }
 

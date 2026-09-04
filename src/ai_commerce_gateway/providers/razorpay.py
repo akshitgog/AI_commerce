@@ -6,6 +6,7 @@ import json
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
+from time import sleep
 from typing import Any, Final
 
 import httpx
@@ -29,6 +30,13 @@ RAZORPAY_PAYMENT_PATH: Final = "/v1/payments"
 _TEST_KEY_PREFIX: Final = "rzp_test_"
 _ORDER_ID_PREFIX: Final = "order_"
 _PAYMENT_ID_PREFIX: Final = "pay_"
+
+# Receipt-based recovery lookup tolerates the Test Mode list index being
+# read-after-write inconsistent (measured ~16-22s in live probes). The loop is
+# GET-only and never creates a second order; when the list never converges the
+# caller keeps the transaction in UNKNOWN for later reconciliation.
+_RECEIPT_LOOKUP_MAX_ATTEMPTS: Final = 6
+_RECEIPT_LOOKUP_BACKOFF_SECONDS: Final = 2.0
 _CREATED_ORDER_STATE: Final = "created"
 _ORDER_STATES: Final = frozenset({"created", "attempted", "paid"})
 _PAYMENT_STATES: Final = frozenset({"created", "authorized", "captured", "refunded", "failed"})
@@ -309,31 +317,60 @@ class RazorpayAdapter:
         This is an internal recovery capability rather than an addition to the frozen
         provider contract. The deterministic transaction receipt and request notes bind
         the discovered order to the durable payment attempt.
+
+        Razorpay Test Mode realities (live evidence, 2026-09-04):
+        * the orders LIST index is read-after-write inconsistent for freshly
+          created orders (observed ~16-22s), so discovery retries briefly;
+        * list items use a slimmer shape for unpaid orders (``amount_paid``
+          is ``null``), so the list is used only to DISCOVER the candidate
+          order id; all money/notes/receipt validation runs against the
+          authoritative single-order GET payload.
         """
 
         _validate_order_command(command)
-        payload = self._get(
-            RAZORPAY_ORDER_PATH,
-            params={"receipt": command.receipt, "count": "100"},
-        )
-        if payload.get("entity") != "collection":
-            raise RazorpayProtocolError("Razorpay returned an invalid order collection.")
-        items = payload.get("items")
-        if not isinstance(items, list):
-            raise RazorpayProtocolError("Razorpay returned an invalid order collection.")
 
-        matches: list[Mapping[str, Any]] = []
-        for item in items:
-            if not isinstance(item, dict):
-                raise RazorpayProtocolError("Razorpay returned an invalid order entry.")
-            if item.get("receipt") == command.receipt:
-                matches.append(item)
-        if len(matches) != 1:
+        candidate_id: str | None = None
+        for attempt in range(1, _RECEIPT_LOOKUP_MAX_ATTEMPTS + 1):
+            payload = self._get(
+                RAZORPAY_ORDER_PATH,
+                params={"receipt": command.receipt, "count": "100"},
+            )
+            if payload.get("entity") != "collection":
+                raise RazorpayProtocolError("Razorpay returned an invalid order collection.")
+            items = payload.get("items")
+            if not isinstance(items, list):
+                raise RazorpayProtocolError("Razorpay returned an invalid order collection.")
+
+            matches: list[Mapping[str, Any]] = []
+            for item in items:
+                if not isinstance(item, dict):
+                    raise RazorpayProtocolError("Razorpay returned an invalid order entry.")
+                if item.get("receipt") == command.receipt:
+                    matches.append(item)
+            if len(matches) == 1:
+                candidate = matches[0]
+                raw_id = candidate.get("id")
+                if not isinstance(raw_id, str):
+                    raise RazorpayProtocolError(
+                        "Razorpay returned a receipt candidate without an order id."
+                    )
+                _validate_reference(raw_id, _ORDER_ID_PREFIX, "order")
+                candidate_id = raw_id
+                break
+            if len(matches) > 1:
+                raise RazorpayProtocolError(
+                    "Razorpay receipt lookup matched multiple orders."
+                )
+            if attempt < _RECEIPT_LOOKUP_MAX_ATTEMPTS:
+                sleep(_RECEIPT_LOOKUP_BACKOFF_SECONDS * attempt)
+
+        if candidate_id is None:
             raise RazorpayProtocolError(
                 "Razorpay receipt lookup did not identify exactly one trustworthy order."
             )
 
-        order = matches[0]
+        # The single-order GET is the authoritative payload for validation.
+        order = self._get(f"{RAZORPAY_ORDER_PATH}/{candidate_id}")
         _validate_recovered_order(order, command)
         return _order_observation(order, source="razorpay_order_receipt_lookup")
 

@@ -21,6 +21,8 @@ class SearchCatalogRequest(BaseModel):
 
 
 class GetProductRequest(BaseModel):
+    # merchant_id is required by the D-008 tenant-isolated catalog read.
+    merchant_id: str
     product_id: str
 
 

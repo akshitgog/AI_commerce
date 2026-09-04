@@ -71,7 +71,7 @@ def test_search_catalog_no_price_field_in_body(client: TestClient) -> None:
 
 def test_get_product_returns_200(client: TestClient) -> None:
     resp = client.get(
-        "/v1/buyer/catalog/products/prod_001",
+        "/v1/buyer/catalog/products/prod_001?merchant_id=mer_123",
         headers=BUYER_HEADERS,
     )
     assert resp.status_code == 200

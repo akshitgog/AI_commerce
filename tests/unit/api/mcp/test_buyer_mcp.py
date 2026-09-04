@@ -169,7 +169,9 @@ async def test_tools_use_session_buyer_identity(
 async def test_get_product_and_status(running_server: tuple[str, str]) -> None:
     _, mcp_url = running_server
     async with mcp_buyer_client(mcp_url, "buyer_1") as client:
-        prod = await client.call_tool("get_product", {"product_id": "prod_fake_001"})
+        prod = await client.call_tool(
+            "get_product", {"merchant_id": "mer_1", "product_id": "prod_fake_001"}
+        )
         assert json.loads(prod.content[0].text)["id"] == "prod_fake_001"  # type: ignore[index]
 
         status = await client.call_tool(

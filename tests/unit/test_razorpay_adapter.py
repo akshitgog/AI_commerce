@@ -236,20 +236,25 @@ def test_receipt_lookup_recovers_one_exact_order_without_creating_another() -> N
 
     def handler(request: httpx.Request) -> httpx.Response:
         requests.append(request)
-        return httpx.Response(
-            200,
-            json={"entity": "collection", "count": 1, "items": [recovered_order()]},
-        )
+        if request.url.path == "/v1/orders":
+            return httpx.Response(
+                200,
+                json={"entity": "collection", "count": 1, "items": [recovered_order()]},
+            )
+        # Authoritative single-order GET (full shape) after discovery.
+        return httpx.Response(200, json=recovered_order())
 
     with client_for(handler) as client:
         adapter = RazorpayAdapter(key_id=KEY_ID, key_secret=KEY_SECRET, client=client)
         observation = adapter.lookup_order_by_receipt(command())
 
-    assert len(requests) == 1
-    assert requests[0].method == "GET"
+    assert len(requests) == 2
+    assert all(request.method == "GET" for request in requests)
     assert requests[0].url.path == "/v1/orders"
     assert requests[0].url.params["receipt"] == "txn_test"
     assert requests[0].url.params["count"] == "100"
+    # The authoritative validation happens against the single-order GET.
+    assert requests[1].url.path == "/v1/orders/order_test_123456"
     assert observation.provider_order_id == "order_test_123456"
     assert observation.provider_amount == Money(amount_minor=50_000, currency="INR")
     assert observation.authenticity_verified is True
@@ -286,11 +291,50 @@ def test_receipt_lookup_recovers_one_exact_order_without_creating_another() -> N
 )
 def test_receipt_lookup_rejects_absent_ambiguous_or_mismatched_orders(
     payload: dict[str, object],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    # Skip the real backoff sleeps; retry behavior is covered separately.
+    monkeypatch.setattr(
+        "ai_commerce_gateway.providers.razorpay.sleep", lambda _seconds: None
+    )
     with client_for(lambda _: httpx.Response(200, json=payload)) as client:
         adapter = RazorpayAdapter(key_id=KEY_ID, key_secret=KEY_SECRET, client=client)
         with pytest.raises(RazorpayProtocolError):
             adapter.lookup_order_by_receipt(command())
+
+
+def test_receipt_lookup_retries_until_the_list_index_converges(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A fresh order appears in the list index after a few attempts; the
+    lookup must retry (GET-only) and then validate the single-order payload."""
+    sleeps: list[float] = []
+    monkeypatch.setattr(
+        "ai_commerce_gateway.providers.razorpay.sleep", sleeps.append
+    )
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.url.path == "/v1/orders":
+            if len(requests) < 3:
+                return httpx.Response(
+                    200, json={"entity": "collection", "count": 0, "items": []}
+                )
+            return httpx.Response(
+                200,
+                json={"entity": "collection", "count": 1, "items": [recovered_order()]},
+            )
+        return httpx.Response(200, json=recovered_order())
+
+    with client_for(handler) as client:
+        adapter = RazorpayAdapter(key_id=KEY_ID, key_secret=KEY_SECRET, client=client)
+        observation = adapter.lookup_order_by_receipt(command())
+
+    assert observation.provider_order_id == "order_test_123456"
+    assert len(sleeps) == 2
+    assert sleeps[0] < sleeps[1]  # backoff grows
+    assert len(requests) == 4  # 3 list polls + 1 authoritative GET
 
 
 @pytest.mark.parametrize(

@@ -157,11 +157,11 @@ def create_buyer_mcp_server(
         )
 
     @mcp.tool()
-    def get_product(ctx: Context, product_id: str) -> str:
+    def get_product(ctx: Context, merchant_id: str, product_id: str) -> str:
         """Retrieve full details of a specific published product."""
         actor = _actor_from_context(ctx, session_service)
         invocation = _invocation_from_context(ctx)
-        req = GetProductRequest(product_id=product_id)
+        req = GetProductRequest(merchant_id=merchant_id, product_id=product_id)
         with services_factory() as services:
             adapter = _adapter_from(services)
             result = adapter.get_product(actor, invocation, req)

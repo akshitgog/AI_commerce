@@ -62,7 +62,7 @@ def test_search_catalog(
 def test_get_product(
     adapter: BuyerAdapter, actor: ActorContext, invocation: InvocationContext
 ) -> None:
-    request = GetProductRequest(product_id="prod_123")
+    request = GetProductRequest(merchant_id="mer_123", product_id="prod_123")
     result = adapter.get_product(actor, invocation, request)
     assert result.id == "prod_123"
     assert result.price == Money(amount_minor=1000, currency="INR")

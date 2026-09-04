@@ -115,7 +115,7 @@ class BuyerAdapter:
         request: GetProductRequest,
     ) -> ProductView:
         logger.info(f"get_product invoked [corr={invocation.correlation_id}]")
-        return self._catalog.get_product(request.product_id, actor)
+        return self._catalog.get_product(request.merchant_id, request.product_id, actor)
 
     def create_purchase_proposal(
         self,

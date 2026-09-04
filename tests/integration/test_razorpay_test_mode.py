@@ -20,9 +20,13 @@ def eventually_lookup_order_by_receipt(
     adapter: RazorpayAdapter,
     command: CreateProviderOrderCommand,
     *,
-    timeout_seconds: float = 10.0,
+    timeout_seconds: float = 90.0,
 ) -> ProviderEvidence:
-    """Allow the Test Mode order-list index to become consistent after creation."""
+    """Allow the Test Mode order-list index to become consistent after creation.
+
+    This tolerance is test-only: the adapter stays strict (exactly one
+    trustworthy receipt match, GET-only, no blind retry ever).
+    """
 
     deadline = monotonic() + timeout_seconds
     while True:
@@ -31,7 +35,7 @@ def eventually_lookup_order_by_receipt(
         except RazorpayProtocolError:
             if monotonic() >= deadline:
                 raise
-            sleep(0.25)
+            sleep(0.5)
 
 
 @pytest.mark.provider

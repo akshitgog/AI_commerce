@@ -110,7 +110,7 @@ def test_catalog_get_product_wire_contract() -> None:
         )
 
     service = RemoteCatalogService(_client(handler), CATALOG_BASE)
-    product = service.get_product("prod_1", _actor())
+    product = service.get_product("mer_1", "prod_1", _actor())
     assert seen["method"] == "GET"
     assert seen["path"] == "/internal/buyer/catalog/products/prod_1"
     assert product.id == "prod_1"

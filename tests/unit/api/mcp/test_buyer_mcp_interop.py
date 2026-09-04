@@ -99,7 +99,10 @@ async def test_interop_full_buyer_journey_over_http(
         product_id = search_data["items"][0]["id"]
 
         # ---- get_product ----
-        product_result = await client.call_tool("get_product", {"product_id": product_id})
+        product_result = await client.call_tool(
+            "get_product",
+            {"merchant_id": search_data["items"][0]["merchant_id"], "product_id": product_id},
+        )
         product_data = json.loads(product_result.content[0].text)  # type: ignore[index]
         assert product_data["id"] == product_id
 

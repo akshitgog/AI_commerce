@@ -141,57 +141,47 @@ def test_in_process_factory_composes_integrated_services(
             self.gates = gates
             self.verifier = verifier
 
-    class FakeProvider:
-        def __init__(self, **kwargs: object) -> None:
-            self.kwargs = kwargs
+    fake_session = SimpleNamespace(name="fake-session")
+    fake_txn = SimpleNamespace(request_session=fake_session)
 
-    def fake_compose_transaction_services(
-        *, request_session: object, session_factory: object, provider_service: object
-    ) -> object:
-        return SimpleNamespace(
-            transactions=SimpleNamespace(
-                request_session=request_session,
-                session_factory=session_factory,
-                provider_service=provider_service,
-            )
-        )
+    class FakeTransactionRoot:
+        session_factory = SimpleNamespace(name="fake-session-factory")
+        provider_service = SimpleNamespace(name="fake-provider")
+
+        def for_request(self, request_session: object) -> object:
+            assert request_session is fake_session
+            return SimpleNamespace(transactions=fake_txn)
+
+    fake_root = FakeTransactionRoot()
 
     monkeypatch.setattr(
         composition,
         "_import_integrated_services",
         lambda: SimpleNamespace(
             ApplicationCatalogService=FakeCatalogService,
-            compose_transaction_services=fake_compose_transaction_services,
+            TransactionCompositionRoot=SimpleNamespace(from_settings=lambda s: fake_root),
             AuthorizationApplicationService=FakeAuthorizationService,
             ProposalApplicationService=FakeProposalService,
             SqlAlchemyProductImageRepository=FakeImageRepo,
             SqlAlchemyProductRepository=FakeProductRepo,
             SqlAlchemyProposalGateRepository=FakeGateRepo,
-            RazorpayAdapter=FakeProvider,
         ),
-    )
-    monkeypatch.setattr(
-        session_module, "create_engine", lambda settings: SimpleNamespace(name="fake-engine")
-    )
-    monkeypatch.setattr(
-        session_module,
-        "create_session_factory",
-        lambda engine: SimpleNamespace(name="fake-session-factory"),
     )
     monkeypatch.setattr(
         session_module,
         "session_scope",
-        lambda factory: _null_context(SimpleNamespace(name="fake-session")),
+        lambda factory: _null_context(fake_session),
     )
 
     factory = compose_in_process_buyer_services_factory(_settings())
     assert callable(factory)
+    assert factory.transaction_root is fake_root  # type: ignore[attr-defined]
     with factory() as bundle:
         assert isinstance(bundle.catalog, FakeCatalogService)
         assert isinstance(bundle.proposal, FakeProposalService)
         assert isinstance(bundle.auth, FakeAuthorizationService)
         assert isinstance(bundle.auth.verifier, SessionBuyerApprovalVerifier)
-        assert bundle.transaction.request_session.name == "fake-session"  # type: ignore[attr-defined]
+        assert bundle.transaction is fake_txn
 
 
 class _null_context:

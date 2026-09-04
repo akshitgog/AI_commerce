@@ -246,8 +246,9 @@ def get_product(
     actor: Annotated[ActorContext, Depends(get_buyer_actor)],
     invocation: Annotated[InvocationContext, Depends(get_invocation_context)],
     adapter: Annotated[BuyerAdapter, Depends(get_buyer_adapter)],
+    merchant_id: str = Query(..., description="Tenant scope (D-008)"),
 ) -> dict[str, Any]:
-    req = GetProductRequest(product_id=product_id)
+    req = GetProductRequest(merchant_id=merchant_id, product_id=product_id)
     product = adapter.get_product(actor, invocation, req)
     return {**product.model_dump(), "correlation_id": invocation.correlation_id}
 

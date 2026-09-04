@@ -174,10 +174,12 @@ class RemoteCatalogService:
         )
         return CatalogSearchResult.model_validate(payload)
 
-    def get_product(self, product_id: str, actor: ActorContext) -> ProductView:
+    def get_product(
+        self, merchant_id: str, product_id: str, actor: ActorContext
+    ) -> ProductView:
         payload = self._base._request(
             method="GET",
-            path=f"/internal/buyer/catalog/products/{product_id}",
+            path=f"/internal/buyer/catalog/products/{product_id}?merchant_id={merchant_id}",
             actor=actor,
         )
         return ProductView.model_validate(payload)
