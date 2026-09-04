@@ -289,3 +289,105 @@ def test_merchant_catalog_service_system_get_product_not_implemented(memory_sess
     
     assert "System actor lookup without merchant_id not implemented" in str(exc.value)
 
+def test_merchant_catalog_service_create_product_db_race(memory_session, monkeypatch):
+    m_repo = SqlAlchemyMerchantRepository(memory_session)
+    p_repo = SqlAlchemyProductRepository(memory_session)
+    service = ApplicationMerchantCatalogService(m_repo, p_repo)
+
+    sys_actor = ActorContext(actor_id="sys1", actor_type=ActorType.SYSTEM, correlation_id='cor1')
+    m_view = service.create_merchant(CreateMerchantCommand(name="M1", idempotency_key="ik1"), sys_actor)  # noqa: E501
+    memory_session.commit()
+
+    actor_admin = ActorContext(
+        actor_id="u1", 
+        actor_type=ActorType.MERCHANT_USER, 
+        merchant_ids=frozenset([m_view.id]),
+        roles=frozenset([MerchantRole.ADMIN]),
+        correlation_id='cor1'
+    )
+    
+    cmd = CreateProductCommand(
+        merchant_id=m_view.id,
+        sku="SKU-RACE",
+        title="Prod1",
+        description="Desc1",
+        price=Money(amount_minor=1000, currency="USD"),
+        available_quantity=5,
+        idempotency_key="pk1"
+    )
+    
+    # First create succeeds
+    service.create_product(cmd, actor_admin)
+    memory_session.commit()
+    
+    # Mock the app-level check to simulate a concurrent race condition
+    # where both transactions pass the application-level sku_exists_for_merchant check
+    monkeypatch.setattr(p_repo, "sku_exists_for_merchant", lambda m_id, sku: False)
+    
+    # Second create should hit the DB unique constraint and raise AppError 409
+    with pytest.raises(AppError) as exc:
+        service.create_product(cmd, actor_admin)
+    
+    assert exc.value.status_code == 409
+    assert "already exists" in str(exc.value)
+def test_merchant_catalog_service_update_product_db_race(memory_session, monkeypatch):
+    m_repo = SqlAlchemyMerchantRepository(memory_session)
+    p_repo = SqlAlchemyProductRepository(memory_session)
+    service = ApplicationMerchantCatalogService(m_repo, p_repo)
+
+    sys_actor = ActorContext(actor_id="sys1", actor_type=ActorType.SYSTEM, correlation_id='cor1')
+    m_view = service.create_merchant(CreateMerchantCommand(name="M1", idempotency_key="ik1"), sys_actor)  # noqa: E501
+    memory_session.commit()
+
+    actor_admin = ActorContext(
+        actor_id="u1", 
+        actor_type=ActorType.MERCHANT_USER, 
+        merchant_ids=frozenset([m_view.id]),
+        roles=frozenset([MerchantRole.ADMIN]),
+        correlation_id='cor1'
+    )
+    
+    cmd_create = CreateProductCommand(
+        merchant_id=m_view.id,
+        sku="SKU-UP-RACE",
+        title="Prod1",
+        description="Desc1",
+        price=Money(amount_minor=1000, currency="USD"),
+        available_quantity=5,
+        idempotency_key="pk1"
+    )
+    p_view = service.create_product(cmd_create, actor_admin)
+    memory_session.commit()
+    
+    cmd_update = UpdateProductCommand(
+        merchant_id=m_view.id,
+        product_id=p_view.id,
+        expected_version=1,
+        title="Updated Title",
+        idempotency_key="pk2"
+    )
+    
+    # First update succeeds, incrementing version to 2
+    service.update_product(cmd_update, actor_admin)
+    memory_session.commit()
+    
+    # Mock the app-level check to simulate a concurrent race condition
+    # where both transactions passed the expected_version check in get_by_id
+    # We patch get_by_id to return a mock product with version 1
+    original_get = p_repo.get_by_id
+    from dataclasses import replace
+    def mock_get_by_id(merchant_id, product_id):
+        prod = original_get(merchant_id, product_id)
+        if prod:
+            prod = replace(prod, version=1) # Fake the version so the app-level check passes
+        return prod
+    monkeypatch.setattr(p_repo, "get_by_id", mock_get_by_id)
+
+    
+    # Second update should hit the DB atomic constraint (rowcount == 0) and raise AppError 409
+    with pytest.raises(AppError) as exc:
+        service.update_product(cmd_update, actor_admin)
+    
+    assert exc.value.status_code == 409
+    assert "stale write" in str(exc.value)
+

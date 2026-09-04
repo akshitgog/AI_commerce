@@ -283,28 +283,49 @@ class SqlAlchemyProductRepository:
         return _orm_product_to_entity(row) if row is not None else None
 
     def update(self, entity: ProductEntity) -> ProductEntity:
-        stmt = select(orm.Product).where(
-            orm.Product.id == entity.id,
-            orm.Product.merchant_id == entity.merchant_id,  # tenant guard
-        )
-        row = self._session.scalars(stmt).first()
-        if row is None:
-            raise AppError(
-                ErrorCode.NOT_FOUND,
-                "Product not found or does not belong to this merchant.",
-                status_code=404,
+        from sqlalchemy import update as sql_update
+        stmt = (
+            sql_update(orm.Product)
+            .where(
+                orm.Product.id == entity.id,
+                orm.Product.merchant_id == entity.merchant_id,
+                orm.Product.version == entity.version - 1,
             )
-        row.sku = entity.sku
-        row.title = entity.title
-        row.description = entity.description
-        row.category = entity.category
-        row.price_minor = entity.price.amount_minor
-        row.currency = entity.price.currency
-        row.available_quantity = entity.available_quantity
-        row.status = entity.status.value
-        row.version = entity.version
-        row.updated_at = entity.updated_at
+            .values(
+                sku=entity.sku,
+                title=entity.title,
+                description=entity.description,
+                category=entity.category,
+                price_minor=entity.price.amount_minor,
+                currency=entity.price.currency,
+                available_quantity=entity.available_quantity,
+                status=entity.status.value,
+                version=entity.version,
+                updated_at=entity.updated_at,
+            )
+        )
         try:
+            result = self._session.execute(stmt)
+            if getattr(result, 'rowcount', 0) == 0:
+                # Distinguish between 404 (not found) and 409 (stale write)
+                exists = self._session.scalar(
+                    select(orm.Product.id).where(
+                        orm.Product.id == entity.id,
+                        orm.Product.merchant_id == entity.merchant_id
+                    )
+                )
+                if not exists:
+                    raise AppError(
+                        ErrorCode.NOT_FOUND,
+                        "Product not found or does not belong to this merchant.",
+                        status_code=404,
+                    )
+                raise AppError(
+                    ErrorCode.VALIDATION_ERROR,
+                    "Version mismatch (stale write) or product not found.",
+                    status_code=409,
+                )
+
             self._session.flush()
         except IntegrityError as exc:
             raise AppError(
@@ -313,7 +334,18 @@ class SqlAlchemyProductRepository:
                 status_code=409,
                 details={"sku": entity.sku, "merchant_id": entity.merchant_id},
             ) from exc
+        
+        # Fetch the updated row to return
+        row = self._session.scalars(
+            select(orm.Product).where(
+                orm.Product.id == entity.id,
+                orm.Product.merchant_id == entity.merchant_id
+            )
+        ).first()
+        assert row is not None, "Row must exist after successful update"
         return _orm_product_to_entity(row)
+
+
 
     def list_for_merchant(
         self,

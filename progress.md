@@ -366,7 +366,7 @@ All frozen shared contracts remain completely untouched. Phase A1 is now fully c
 ## [2026-09-04] Phase A2 Product CRUD
 
 **Role:** Agent A (Merchant/Catalog Lane)
-**Status:** READY FOR REVIEW
+**Status:** REVIEWED AND APPROVED
 **Branch:** phase/a2-product-crud
 
 **Changes Made:**
@@ -395,3 +395,8 @@ All frozen shared contracts remain completely untouched. Phase A1 is now fully c
 ext_cursor logic with 55 created products.
 3. **SYSTEM actor test (F3):** Authored 	est_merchant_catalog_service_system_get_product_not_implemented to cover the explicit NotImplementedError raised for SYSTEM actors querying without a merchant_id context in get_product.
 4. **SQLite Warnings (F5):** Repaired ResourceWarning: unclosed database leaks by calling ngine.dispose() within test fixtures yielding Session objects across all of 	ests/unit/.
+
+**Final IMPORTANT Correction (Phase A2 Review):**
+1. **DB Atomic Concurrency Enforcement:** Refactored SqlAlchemyProductRepository.update to execute an atomic UPDATE ... WHERE id = X AND merchant_id = Y AND version = expected_version instead of a select-and-modify. This enforces optimistic concurrency natively at the SQL level, ensuring a concurrent race maps cleanly to a 409 VALIDATION_ERROR (stale write) rather than causing unexpected overwrite behavior. Added a rigorous 	est_merchant_catalog_service_update_product_db_race unit test verifying that bypassing the application-level pre-checks still hits this SQL-level lock properly.
+2. **Review Status Updated:** Phase A2 is reviewed and approved.
+
