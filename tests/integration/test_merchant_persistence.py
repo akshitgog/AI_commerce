@@ -71,7 +71,13 @@ def engine():  # type: ignore[no-untyped-def]
     eng = create_engine(url, pool_pre_ping=True)
     Base.metadata.create_all(eng)
     yield eng
-    Base.metadata.drop_all(eng)
+    if eng.dialect.name == "postgresql":
+        from sqlalchemy import text
+        with eng.begin() as conn:
+            for table in reversed(Base.metadata.sorted_tables):
+                conn.execute(text(f"TRUNCATE {table.name} RESTART IDENTITY CASCADE"))
+    else:
+        Base.metadata.drop_all(eng)
     eng.dispose()
 
 

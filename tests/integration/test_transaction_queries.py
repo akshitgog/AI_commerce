@@ -28,7 +28,13 @@ def session_factory():
     factory = sessionmaker(bind=engine, expire_on_commit=False, autoflush=False)
     _seed(factory)
     yield factory
-    models.Base.metadata.drop_all(engine)
+    if engine.dialect.name == "postgresql":
+        from sqlalchemy import text
+        with engine.begin() as conn:
+            for table in reversed(models.Base.metadata.sorted_tables):
+                conn.execute(text(f"TRUNCATE {table.name} RESTART IDENTITY CASCADE"))
+    else:
+        models.Base.metadata.drop_all(engine)
     engine.dispose()
 
 

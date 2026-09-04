@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+@theme {
+  /* Surfaces & text */
+  --color-background: #fafaf9; /* stone-50 — warm neutral page */
+  --color-foreground: #1c1917; /* stone-900 — near-black text */
+  --color-card: #ffffff; /* white surfaces */
+  --color-card-foreground: #1c1917;
+  --color-muted: #f5f5f4; /* stone-100 */
+  --color-muted-foreground: #57534e; /* stone-600 */
+
+  /* Borders & focus */
+  --color-border: #e7e5e4; /* stone-200 — subtle cool-gray borders */
+  --color-input: #d6d3d1; /* stone-300 — stronger form control border */
+  --color-ring: #4f46e5; /* indigo-600 — visible focus */
+
+  /* Single restrained action accent */
+  --color-primary: #4f46e5; /* indigo-600 */
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f5f5f4;
+  --color-secondary-foreground: #1c1917;
+
+  /* Semantic colors — strong text values (light bg pairings below) */
+  --color-success: #15803d; /* green-700 */
+  --color-success-bg: #f0fdf4; /* green-50 */
+  --color-success-border: #bbf7d0; /* green-200 */
+  --color-warning: #b45309; /* amber-700 */
+  --color-warning-bg: #fffbeb; /* amber-50 */
+  --color-warning-border: #fde68a; /* amber-200 */
+  --color-recovery: #b45309; /* amber-based, distinct from destructive */
+  --color-recovery-bg: #fffbeb;
+  --color-recovery-border: #fcd34d; /* amber-300 */
+  --color-destructive: #b91c1c; /* red-700 */
+  --color-destructive-bg: #fef2f2; /* red-50 */
+  --color-destructive-border: #fecaca; /* red-200 */
+
+  /* Medium radii (~0.5rem) */
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --radius: 0.5rem;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/*
+ * Semantic pairings: strong text color on a subtle tinted background.
+ * Unlayered so they deterministically resolve bg-success / bg-warning /
+ * bg-recovery / bg-destructive to the light treatment, while
+ * text-success / text-warning / text-recovery / text-destructive
+ * (theme-generated) stay strong for AA contrast.
+ */
+.bg-success {
+  background-color: var(--color-success-bg);
+}
+.bg-warning {
+  background-color: var(--color-warning-bg);
+}
+.bg-recovery {
+  background-color: var(--color-recovery-bg);
+}
+.bg-destructive {
+  background-color: var(--color-destructive-bg);
+}
+.border-recovery {
+  border-color: var(--color-recovery-border);
+}
+
+/* Tabular numerals for money, IDs, timestamps */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}

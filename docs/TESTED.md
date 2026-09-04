@@ -160,3 +160,10 @@ BLOCKED: 0
 ```
 
 Update totals only from the scenario table after a reproducible run.
+
+## Integration Merge Validation
+
+On 2026-09-04, the integrated M0 system was validated against Razorpay Test Mode with transient credentials. The reconciliation recovery logic correctly handled Razorpay's read-after-write eventual consistency (Error 1) and payload shape mismatch between list and detail endpoints (Error 2).
+
+The test suite executed the recovery path by polling the list endpoint for discovery and fetching the authoritative order payload. The live test 	ests/integration/test_razorpay_test_mode.py passed in 48.52s, demonstrating successful integration and correct retry logic without duplicate order creation. Additionally, PostgreSQL tests correctly passed after resolving Unit of Work FK ordering and drop_all schema destruction bugs.
+

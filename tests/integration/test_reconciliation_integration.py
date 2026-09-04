@@ -30,8 +30,19 @@ def db_engine():
     url = os.environ.get("TEST_DATABASE_URL", "sqlite:///:memory:")
     engine = create_engine(url)
     models.Base.metadata.create_all(engine)
+    if engine.dialect.name == "postgresql":
+        from sqlalchemy import text
+        with engine.begin() as conn:
+            for table in reversed(models.Base.metadata.sorted_tables):
+                conn.execute(text(f"TRUNCATE {table.name} RESTART IDENTITY CASCADE"))
     yield engine
-    models.Base.metadata.drop_all(engine)
+    if engine.dialect.name == "postgresql":
+        from sqlalchemy import text
+        with engine.begin() as conn:
+            for table in reversed(models.Base.metadata.sorted_tables):
+                conn.execute(text(f"TRUNCATE {table.name} RESTART IDENTITY CASCADE"))
+    else:
+        models.Base.metadata.drop_all(engine)
     engine.dispose()
 
 
@@ -84,6 +95,7 @@ def seed_data(session_factory) -> str:
                 state=TransactionState.EXECUTING.value,
             )
         )
+        session.flush()
         session.add(
             models.PaymentAttempt(
                 id="pay_1",
