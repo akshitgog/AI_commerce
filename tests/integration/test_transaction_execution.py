@@ -1,3 +1,4 @@
+import json
 import os
 from collections.abc import Callable, Iterator
 from concurrent.futures import ThreadPoolExecutor
@@ -7,6 +8,7 @@ from pathlib import Path
 from threading import Event, Lock
 from uuid import uuid4
 
+import httpx
 import pytest
 from sqlalchemy import create_engine, func, select, text
 from sqlalchemy.engine import Engine
@@ -49,6 +51,7 @@ from ai_commerce_gateway.infrastructure.database.execution import (
 from ai_commerce_gateway.infrastructure.database.proposal_gates import (
     SqlAlchemyProposalGateRepository,
 )
+from ai_commerce_gateway.providers.razorpay import RazorpayAdapter
 
 NOW = datetime(2026, 9, 4, 12, 0, tzinfo=UTC)
 SessionFactory = sessionmaker[Session]
@@ -615,3 +618,54 @@ def test_postgresql_concurrent_execution_creates_one_attempt_when_configured() -
         with administration_engine.begin() as connection:
             connection.execute(text(f'DROP SCHEMA IF EXISTS "{schema}" CASCADE'))
         administration_engine.dispose()
+
+
+def test_real_razorpay_adapter_seam_creates_order_but_never_success(tmp_path: Path) -> None:
+    provider_calls = 0
+
+    def razorpay_api(request: httpx.Request) -> httpx.Response:
+        nonlocal provider_calls
+        provider_calls += 1
+        payload = json.loads(request.read())
+        return httpx.Response(
+            200,
+            json={
+                "id": "order_adapter_1234",
+                "entity": "order",
+                "amount": 100_000,
+                "amount_paid": 0,
+                "amount_due": 100_000,
+                "currency": "INR",
+                "receipt": payload["receipt"],
+                "status": "created",
+                "attempts": 0,
+            },
+        )
+
+    with execution_database(tmp_path / "razorpay-adapter.db") as (_, factory):
+        transaction_id = seed_ready_transaction(factory)
+        with httpx.Client(transport=httpx.MockTransport(razorpay_api)) as client:
+            provider = RazorpayAdapter(
+                key_id="rzp_test_integration",
+                key_secret="integration-secret",
+                client=client,
+            )
+            result = service(factory, provider).execute(
+                ExecuteTransactionCommand(
+                    transaction_id=transaction_id,
+                    idempotency_key="razorpay-adapter-key",
+                ),
+                actor(),
+            )
+
+        assert result.state is TransactionState.PAYMENT_PENDING
+        assert result.state is not TransactionState.SUCCEEDED
+        assert provider_calls == 1
+        with factory() as session:
+            attempt = session.scalar(select(models.PaymentAttempt))
+            assert attempt is not None
+            assert attempt.provider_order_id == "order_adapter_1234"
+            assert attempt.provider_order_state == "created"
+            assert attempt.provider_payment_id is None
+            assert attempt.provider_payment_state is None
+            assert attempt.capture_state is None

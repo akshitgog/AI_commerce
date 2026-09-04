@@ -16,6 +16,18 @@ coverage. GitHub Actions run `33817667540` then passed the PostgreSQL-backed M0 
 `1640869`, including dependency sync, Ruff, mypy, migration upgrade, tests with the 90% coverage
 gate, migration downgrade and a second upgrade.
 
+## B4 adapter validation
+
+On 2026-09-04, the concrete Razorpay adapter passed strict mock-transport and B3 transaction-seam
+tests for request mapping, Test Mode/live-mode isolation, response correlation, one-call/no-retry
+behavior, secret redaction, checkout options and order-not-success semantics. With the supplied Test
+Mode credentials loaded transiently, the full suite passed 373 tests with 97% coverage and skipped
+four PostgreSQL-dependent tests.
+
+The real provider test `tests/integration/test_razorpay_test_mode.py` passed and created an initial
+`created` order ending `...JzsC44`, with no payment or capture truth. No J05 or other project
+scenario status changes: an order-only Test Mode call is not verified payment-completion evidence.
+
 ## Allowed statuses
 
 - `PASS`: executed, matched expected behavior and evidence is linked.

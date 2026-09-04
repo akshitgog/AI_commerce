@@ -222,3 +222,53 @@ locking, idempotency, provider verification and reconciliation.
 ### Supersedes
 
 Refines D-004; does not change its ownership boundaries.
+
+---
+
+## D-008 — Create Razorpay Test Mode orders once without adapter retries
+
+Status: ACTIVE
+Date: 2026-09-04
+Branch: phase/b4-razorpay-adapter
+Owner: Workstream 04 / Agent B
+
+### Decision
+
+Implement `provider.create_order` as one direct authenticated Razorpay REST request with automatic
+retries disabled. Accept only `rzp_test_*` credentials and the approved HTTPS API host. Validate the
+entire initial order identity, amount, currency, receipt, state and counters before persisting its
+normalized observation. A `created` order maps only to `PAYMENT_PENDING`.
+
+Construct Standard Checkout options from the public key ID, trusted amount/currency and stored
+provider order ID. Never expose the key secret. Keep checkout verification, webhooks and lookup out
+of B4.
+
+### Why
+
+A timeout may occur after Razorpay creates an order but before the response reaches the platform.
+An SDK or transport retry at this boundary could create a second physical order outside the B3
+durable one-attempt guard. Strict response matching also prevents provider drift or mismatched
+money from being accepted as local truth.
+
+### Alternatives Considered
+
+- Enable the official SDK's retry option.
+- Retry only timeout or server responses inside the adapter.
+- Treat any HTTP 2xx body containing an order ID as sufficient.
+- Treat order creation as payment success.
+
+### Consequences
+
+Provider exceptions after B3's pre-dispatch commit follow the existing conservative `UNKNOWN`
+path and require later reconciliation. Test Mode credentials and secrets are server-only. B5 must
+independently establish checkout/payment authenticity and captured-payment success.
+
+### Evidence / Trigger
+
+Official Razorpay Orders and Standard Checkout documentation, B3's unknown-no-blind-retry
+invariant, B4 mock-transport/transaction-seam tests and real Test Mode run
+`B4-RZP-20260904-01`.
+
+### Supersedes
+
+None.

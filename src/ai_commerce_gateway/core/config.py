@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     storage_provider: str = "unconfigured"
     storage_bucket: str = "product-images"
     storage_public_base_url: str | None = None
+    razorpay_key_id: str | None = None
+    razorpay_key_secret: SecretStr | None = None
+    razorpay_api_base_url: str = "https://api.razorpay.com"
+    razorpay_timeout_seconds: float = Field(default=10.0, gt=0)
+    razorpay_checkout_name: str = "AI Commerce Gateway"
 
 
 @lru_cache
