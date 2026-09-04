@@ -1,6 +1,12 @@
+from collections.abc import Callable
 from dataclasses import replace
 from datetime import UTC, datetime
 
+from ai_commerce_gateway.application.catalog_audit import (
+    CatalogAuditEvent,
+    emit_catalog_audit,
+    product_snapshot,
+)
 from ai_commerce_gateway.contracts.models import (
     ActorContext,
     AddProductImageCommand,
@@ -81,11 +87,46 @@ class ApplicationMerchantCatalogService:
         product_repo: ProductRepository,
         image_repo: ProductImageRepository | None = None,
         storage_svc: StorageService | None = None,
+        audit_emitter: Callable[[CatalogAuditEvent], None] | None = emit_catalog_audit,
     ) -> None:
         self._merchant_repo = merchant_repo
         self._product_repo = product_repo
         self._image_repo = image_repo
         self._storage_svc = storage_svc
+        self._audit_emitter = audit_emitter
+
+    def _audit(
+        self,
+        *,
+        action: str,
+        actor: ActorContext,
+        merchant_id: str,
+        target_id: str,
+        causation: str | None,
+        before: dict[str, object] | None,
+        after: dict[str, object] | None,
+        version_before: int | None,
+        version_after: int | None,
+    ) -> None:
+        if self._audit_emitter is None:
+            return
+        self._audit_emitter(
+            CatalogAuditEvent(
+                actor_id=actor.actor_id,
+                actor_type=actor.actor_type.value,
+                action=action,
+                merchant_id=merchant_id,
+                target_type="product",
+                target_id=target_id,
+                correlation_id=actor.correlation_id,
+                causation=causation,
+                before=before,
+                after=after,
+                version_before=version_before,
+                version_after=version_after,
+                occurred_at=_now(),
+            )
+        )
 
     def _get_product_images(
         self, merchant_id: str, product_id: str
@@ -202,7 +243,7 @@ class ApplicationMerchantCatalogService:
 
         self._product_repo.add(prod)
 
-        return ProductView(
+        view = ProductView(
             id=prod.id,
             merchant_id=prod.merchant_id,
             sku=prod.sku,
@@ -215,6 +256,18 @@ class ApplicationMerchantCatalogService:
             version=prod.version,
             images=(),
         )
+        self._audit(
+            action="product.create",
+            actor=actor,
+            merchant_id=prod.merchant_id,
+            target_id=prod.id,
+            causation=command.idempotency_key,
+            before=None,
+            after=product_snapshot(view),
+            version_before=None,
+            version_after=prod.version,
+        )
+        return view
 
     def update_product(self, command: UpdateProductCommand, actor: ActorContext) -> ProductView:
         _require_merchant_access(
@@ -255,7 +308,19 @@ class ApplicationMerchantCatalogService:
 
         self._product_repo.update(updated_prod)
         images = self._get_product_images(updated_prod.merchant_id, updated_prod.id)
-        return _to_product_view(updated_prod, images=images)
+        view = _to_product_view(updated_prod, images=images)
+        self._audit(
+            action="product.update",
+            actor=actor,
+            merchant_id=updated_prod.merchant_id,
+            target_id=updated_prod.id,
+            causation=command.idempotency_key,
+            before=product_snapshot(_to_product_view(prod)),
+            after=product_snapshot(view),
+            version_before=prod.version,
+            version_after=updated_prod.version,
+        )
+        return view
 
     def publish_product(
         self, command: SetProductPublicationCommand, actor: ActorContext
@@ -276,6 +341,9 @@ class ApplicationMerchantCatalogService:
                 ErrorCode.VALIDATION_ERROR, "Version mismatch (stale write)", status_code=409
             )
 
+        before_snapshot = product_snapshot(_to_product_view(prod))
+        before_version = prod.version
+
         prod = replace(
             prod,
             status=ProductStatus.PUBLISHED,
@@ -285,7 +353,19 @@ class ApplicationMerchantCatalogService:
 
         updated_prod = self._product_repo.update(prod)
         images = self._get_product_images(updated_prod.merchant_id, updated_prod.id)
-        return _to_product_view(updated_prod, images=images)
+        view = _to_product_view(updated_prod, images=images)
+        self._audit(
+            action="product.publish",
+            actor=actor,
+            merchant_id=updated_prod.merchant_id,
+            target_id=updated_prod.id,
+            causation=command.idempotency_key,
+            before=before_snapshot,
+            after=product_snapshot(view),
+            version_before=before_version,
+            version_after=updated_prod.version,
+        )
+        return view
 
     def unpublish_product(
         self, command: SetProductPublicationCommand, actor: ActorContext
@@ -305,6 +385,9 @@ class ApplicationMerchantCatalogService:
                 ErrorCode.VALIDATION_ERROR, "Version mismatch (stale write)", status_code=409
             )
 
+        before_snapshot = product_snapshot(_to_product_view(prod))
+        before_version = prod.version
+
         prod = replace(
             prod,
             status=ProductStatus.UNPUBLISHED,
@@ -314,7 +397,19 @@ class ApplicationMerchantCatalogService:
 
         updated_prod = self._product_repo.update(prod)
         images = self._get_product_images(updated_prod.merchant_id, updated_prod.id)
-        return _to_product_view(updated_prod, images=images)
+        view = _to_product_view(updated_prod, images=images)
+        self._audit(
+            action="product.unpublish",
+            actor=actor,
+            merchant_id=updated_prod.merchant_id,
+            target_id=updated_prod.id,
+            causation=command.idempotency_key,
+            before=before_snapshot,
+            after=product_snapshot(view),
+            version_before=before_version,
+            version_after=updated_prod.version,
+        )
+        return view
 
     def add_product_image(
         self, command: AddProductImageCommand, actor: ActorContext

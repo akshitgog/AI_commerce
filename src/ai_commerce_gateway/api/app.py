@@ -4,9 +4,15 @@ from fastapi import FastAPI, Request
 from sqlalchemy import text
 
 from ai_commerce_gateway.api.merchant import merchant_router
+from ai_commerce_gateway.application.publication_confirmation_service import (
+    InMemoryUsedConfirmationStore,
+)
 from ai_commerce_gateway.core.config import get_settings
 from ai_commerce_gateway.core.errors import AppError, ErrorCode, install_error_handlers
-from ai_commerce_gateway.infrastructure.database.session import create_engine
+from ai_commerce_gateway.infrastructure.database.session import (
+    create_engine,
+    create_session_factory,
+)
 
 
 def create_app() -> FastAPI:
@@ -14,6 +20,13 @@ def create_app() -> FastAPI:
     app = FastAPI(title=settings.app_name, version="0.1.0")
     install_error_handlers(app)
     app.include_router(merchant_router)
+
+    # App-scoped stores: sessions and consumed confirmation JTIs live for the
+    # process lifetime (per-request deps would lose them).
+    engine = create_engine(settings)
+    app.state.session_factory = create_session_factory(engine)
+    app.state.merchant_session_store = {}
+    app.state.confirmation_store = InMemoryUsedConfirmationStore()
 
     @app.middleware("http")
     async def correlation_id(request: Request, call_next):  # type: ignore[no-untyped-def]

@@ -613,3 +613,25 @@ Status:          IMPLEMENTED — READY FOR REVIEW
 - uv run ruff check . -> PASS
 - uv run mypy -> PASS (33 source files)
 - uv run pytest -rs -> PASS (182 passed, 27 skipped, 0 failed)
+
+
+---
+
+## Entry - A6/A7 Consolidated Merchant Lane (P0 Mission)
+
+Date/time:       2026-09-04
+Git branch:      phase/a6-merchant-dashboard
+Author/Agent:    Agent A (Merchant/Catalog Lane)
+Status:          IMPLEMENTED - READY FOR REVIEW
+
+**P0-1 Consolidation:** A7 merged into A6 branch; litellm replaces hand-rolled HTTP for LLM extraction; one coherent lane state.
+**P0-3 Money:** Money DTO hardened (strict=True): rejects bool/float/NaN/Infinity/numeric strings/negative/implicit currency; 31 adversarial tests.
+**P0-2 Auth boundary:** InMemoryMerchantSessionService; identity/roles resolved server-side from MerchantUserRepository; opaque bearer tokens; routes never read identity from request input; demotion takes effect mid-session.
+**P0-5 Publication boundary:** HS256 tokens with iss/aud/jti/sub/merchant/product/expected_version/action/iat/exp; verification of all claims; JTI one-time replay protection; version drift invalidates tokens; dashboard-only issuance (401 without session); token never enters SetProductPublicationCommand.
+**P0-4 Idempotency:** A7 wrapper wired into create/update/publish/unpublish routes; replay same fingerprint, 409 different fingerprint; concurrent/restart proven.
+**P0-6 Merchant APIs:** sessions issue/revoke, products CRUD/list/get, extract-draft (propose-only), publication-confirmations, publish/unpublish, policy get/update, reviews list; transaction/audit reads = 501 seams until integration (07).
+**P0-7 Audit:** structured catalog events (actor/action/tenant/target/correlation/causation/before-after/version) via allowlisted fields; secrets never logged; fixed Alembic fileConfig disabling existing loggers (test_migrations.py restores logger state).
+
+**Validation:**
+- ruff: PASS; mypy: PASS (40 files); alembic upgrade head --sql: PASS (no schema change)
+- pytest: 277 passed, 27 skipped (PostgreSQL integration, TEST_DATABASE_URL unset), 0 failed

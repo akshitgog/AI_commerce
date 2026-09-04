@@ -14,7 +14,7 @@ Exit evidence for A7:
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 
 import pytest
 from sqlalchemy import create_engine
@@ -22,9 +22,6 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from ai_commerce_gateway.application.catalog_idempotency import IdempotentCatalogService
 from ai_commerce_gateway.application.catalog_service import ApplicationMerchantCatalogService
-from ai_commerce_gateway.application.publication_confirmation_service import (
-    PublicationConfirmationService,
-)
 from ai_commerce_gateway.contracts.models import (
     ActorContext,
     CreateProductCommand,
@@ -39,10 +36,6 @@ from ai_commerce_gateway.domain.idempotency import (
     CATALOG_UPDATE_PRODUCT,
     CatalogIdempotencyRecord,
     catalog_request_fingerprint,
-)
-from ai_commerce_gateway.domain.publication_confirmation import (
-    issue_publication_confirmation,
-    verify_publication_confirmation,
 )
 from ai_commerce_gateway.infrastructure.database.merchant_idempotency import (
     SqlAlchemyMerchantIdempotencyRepository,
@@ -477,184 +470,3 @@ class TestRestartPersistence:
         second = svc2.create_product(cmd, actor)
         assert first.id == second.id
 
-
-# ---------------------------------------------------------------------------
-# Publication confirmation — domain tests
-# ---------------------------------------------------------------------------
-
-class TestPublicationConfirmationDomain:
-    SECRET = "test-secret-key-for-hmac-signing"
-
-    def test_issue_and_verify(self):
-        token, expires_at = issue_publication_confirmation(
-            actor_id="u1",
-            merchant_id="m1",
-            product_id="p1",
-            version=1,
-            action="publish",
-            secret=self.SECRET,
-        )
-        claim = verify_publication_confirmation(token, self.SECRET)
-        assert claim.actor_id == "u1"
-        assert claim.merchant_id == "m1"
-        assert claim.product_id == "p1"
-        assert claim.version == 1
-        assert claim.action == "publish"
-        assert claim.expires_at == expires_at
-
-    def test_expired_token_rejected(self):
-        now = datetime(2025, 1, 1, tzinfo=UTC)
-        token, _ = issue_publication_confirmation(
-            actor_id="u1",
-            merchant_id="m1",
-            product_id="p1",
-            version=1,
-            action="publish",
-            secret=self.SECRET,
-            now=now,
-            lifetime=timedelta(minutes=5),
-        )
-        later = now + timedelta(minutes=10)
-        with pytest.raises(AppError) as exc_info:
-            verify_publication_confirmation(token, self.SECRET, now=later)
-        assert "expired" in exc_info.value.message.lower()
-
-    def test_tampered_token_rejected(self):
-        token, _ = issue_publication_confirmation(
-            actor_id="u1",
-            merchant_id="m1",
-            product_id="p1",
-            version=1,
-            action="publish",
-            secret=self.SECRET,
-        )
-        parts = token.split(".")
-        tampered = parts[0] + ".AAAA"
-        with pytest.raises(AppError) as exc_info:
-            verify_publication_confirmation(tampered, self.SECRET)
-        assert "invalid" in exc_info.value.message.lower()
-
-    def test_wrong_secret_rejected(self):
-        token, _ = issue_publication_confirmation(
-            actor_id="u1",
-            merchant_id="m1",
-            product_id="p1",
-            version=1,
-            action="publish",
-            secret=self.SECRET,
-        )
-        with pytest.raises(AppError) as exc_info:
-            verify_publication_confirmation(token, "wrong-secret")
-        assert "invalid" in exc_info.value.message.lower()
-
-    def test_wrong_actor_rejected(self):
-        token, _ = issue_publication_confirmation(
-            actor_id="u1",
-            merchant_id="m1",
-            product_id="p1",
-            version=1,
-            action="publish",
-            secret=self.SECRET,
-        )
-        claim = verify_publication_confirmation(token, self.SECRET)
-        assert claim.actor_id != "u_other"
-
-    def test_wrong_action_rejected(self):
-        token, _ = issue_publication_confirmation(
-            actor_id="u1",
-            merchant_id="m1",
-            product_id="p1",
-            version=1,
-            action="publish",
-            secret=self.SECRET,
-        )
-        claim = verify_publication_confirmation(token, self.SECRET)
-        assert claim.action == "publish"
-        assert claim.action != "unpublish"
-
-    def test_wrong_version_rejected(self):
-        token, _ = issue_publication_confirmation(
-            actor_id="u1",
-            merchant_id="m1",
-            product_id="p1",
-            version=3,
-            action="publish",
-            secret=self.SECRET,
-        )
-        claim = verify_publication_confirmation(token, self.SECRET)
-        assert claim.version == 3
-        assert claim.version != 1
-
-    def test_invalid_action_format_rejected(self):
-        with pytest.raises(ValueError):
-            issue_publication_confirmation(
-                actor_id="u1",
-                merchant_id="m1",
-                product_id="p1",
-                version=1,
-                action="delete",
-                secret=self.SECRET,
-            )
-
-    def test_empty_actor_rejected(self):
-        with pytest.raises(ValueError):
-            issue_publication_confirmation(
-                actor_id="",
-                merchant_id="m1",
-                product_id="p1",
-                version=1,
-                action="publish",
-                secret=self.SECRET,
-            )
-
-
-# ---------------------------------------------------------------------------
-# Publication confirmation — service wrapper
-# ---------------------------------------------------------------------------
-
-class TestPublicationConfirmationService:
-    SECRET = "svc-test-secret"
-
-    def test_issue_and_verify(self):
-        svc = PublicationConfirmationService(self.SECRET)
-        token, expires = svc.issue(
-            actor_id="u1",
-            merchant_id="m1",
-            product_id="p1",
-            version=1,
-            action="publish",
-        )
-        claim = svc.verify(token)
-        assert claim.actor_id == "u1"
-        assert claim.merchant_id == "m1"
-        assert claim.product_id == "p1"
-        assert claim.version == 1
-        assert claim.expires_at == expires
-
-    def test_custom_lifetime(self):
-        svc = PublicationConfirmationService(self.SECRET, lifetime=timedelta(seconds=30))
-        token, expires = svc.issue(
-            actor_id="u1",
-            merchant_id="m1",
-            product_id="p1",
-            version=1,
-            action="unpublish",
-        )
-        now = datetime.now(tz=UTC)
-        claim = svc.verify(token, now=now)
-        assert claim.action == "unpublish"
-
-    def test_expired_rejected(self):
-        now = datetime(2025, 6, 1, tzinfo=UTC)
-        svc = PublicationConfirmationService(self.SECRET)
-        token, _ = svc.issue(
-            actor_id="u1",
-            merchant_id="m1",
-            product_id="p1",
-            version=1,
-            action="publish",
-            now=now,
-        )
-        later = now + timedelta(minutes=6)
-        with pytest.raises(AppError):
-            svc.verify(token, now=later)
