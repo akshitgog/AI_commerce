@@ -18,7 +18,11 @@ Frozen means another branch may implement against the contract. It does not mean
 
 ## Provisional
 
-The provider port, provider commands and provider observations are provisional until the Razorpay Test Mode truth spike. They are owned by Workstream 04 and consumed only by Workstream 03. Provider observations never decide platform `SUCCEEDED`.
+The `provider.create_order` signature and observation mapping are resolved by B4 without changing
+their DTO shapes: one non-retried create call returns order evidence only, and a `created` order can
+advance the platform no further than `PAYMENT_PENDING`. Checkout verification, webhook and lookup
+semantics remain provisional until B5. They are owned by Workstream 04 and consumed only by
+Workstream 03. Provider observations never decide platform `SUCCEEDED`.
 
 The product-image URL policy remains provisional: `StoredImage.public_url` is optional until public versus signed delivery is selected.
 

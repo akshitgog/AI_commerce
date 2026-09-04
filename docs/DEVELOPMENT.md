@@ -13,7 +13,7 @@ src/ai_commerce_gateway/
 ├── domain/            # provider-independent enums/domain vocabulary
 ├── infrastructure/
 │   └── database/      # SQLAlchemy metadata and session factory
-├── providers/         # future Razorpay adapter
+├── providers/         # Razorpay Test Mode adapter; B4 order/checkout initiation implemented
 └── storage/           # future object-storage adapter
 
 migrations/            # Alembic environment and versioned schema
@@ -47,6 +47,25 @@ uv run alembic upgrade head --sql
 ```
 
 Database access and service ports are synchronous throughout. The PostgreSQL connection integration test runs locally only when `TEST_DATABASE_URL` is configured and is mandatory in CI. Migration round-trip and PostgreSQL SQL compilation are also tested without external services.
+
+## Razorpay Test Mode order check
+
+Configure only Test Mode credentials in the ignored `.env` file:
+
+```text
+RAZORPAY_KEY_ID=rzp_test_...
+RAZORPAY_KEY_SECRET=...
+```
+
+Then run:
+
+```powershell
+uv run pytest tests/integration/test_razorpay_test_mode.py -m provider -s
+```
+
+The adapter rejects `rzp_live_*` keys and non-approved API hosts. The test creates a Test Mode order
+but performs no payment. Its console evidence redacts the provider ID. Never paste or commit the
+secret or the full order identifier.
 
 ## Contract-change rule
 

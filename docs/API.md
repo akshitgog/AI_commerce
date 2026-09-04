@@ -109,6 +109,22 @@ The authenticated buyer is derived from actor context. The response contains the
 
 Exact required fields are finalized from the Razorpay Test Mode spike and isolated inside the adapter contract.
 
+### Razorpay order and checkout initiation
+
+B4 maps `provider.create_order` to exactly one authenticated `POST /v1/orders` call. The adapter
+sends the server-derived amount in currency subunits, currency, a receipt no longer than 40
+characters, `partial_payment: false`, and correlation notes for the logical transaction, attempt
+and provider-request fingerprint. Automatic provider retries are disabled.
+
+A valid initial response must be an `order` entity with matching amount, currency and receipt,
+`status: created`, zero amount paid, the full amount due and zero attempts. The normalized result
+contains an order ID/state but no payment ID/state or capture state. It therefore maps only to
+platform `PAYMENT_PENDING`, never `SUCCEEDED`.
+
+Standard Checkout receives only the Test Mode key ID, amount, currency, provider order ID, display
+name and description. The key secret remains server-side. Checkout response verification, webhook
+processing and provider lookup remain B5 behavior.
+
 ## MCP tools
 
 | Tool | Maps to | Financial effect |

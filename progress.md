@@ -470,3 +470,69 @@ requires a configured test database. None was classified as a B3 defect.
 
 Submit B3 for independent audit and human review. Do not commit/merge it or begin provider phase B4
 until the phase gate is accepted.
+
+---
+
+## Entry 008 — Razorpay order and checkout-initiation adapter implemented
+
+Date/time:       2026-09-04 16:13 IST
+Git branch:      phase/b4-razorpay-adapter
+Commit:          uncommitted working tree; based on approved B3 merge 1a17c78
+Author/Agent:    Codex Agent B
+Workstream:      provider
+Change:          Implemented one-shot Test Mode order creation and secret-free checkout options
+Files/modules:   providers/razorpay.py, provider config, B4 tests and Razorpay documentation
+
+### What Changed
+
+Added a synchronous Razorpay Test Mode adapter using direct HTTP Basic authentication. It sends one
+Orders API request with trusted minor-unit money, receipt, disabled partial payment and correlation
+notes. It performs no automatic retry and strictly validates the returned order identity, money,
+receipt, initial `created` state, zero paid amount and zero attempts before normalizing evidence.
+
+Added safe Standard Checkout options containing the public Test Mode key ID, trusted amount/currency,
+provider order ID and display text. The key secret never enters checkout output. Live keys and
+non-approved API hosts fail closed. B5 verification/webhook/lookup methods remain explicit
+`NotImplementedError` boundaries.
+
+### Reason
+
+Complete B4's concrete order/checkout boundary without treating order creation as payment, enabling
+blind transport retries or pulling B5/B6 behavior into this phase.
+
+### Technical Impact
+
+`TransactionExecutionApplicationService` can now use the concrete Razorpay adapter through the
+existing provider Protocol. A valid created order persists provider order evidence and reaches only
+`PAYMENT_PENDING`; it carries no payment/capture truth. Provider exceptions continue through B3's
+durable `UNKNOWN` path. The provider method signatures, frozen application DTOs/enums, ORM schema
+and migration remain unchanged. `httpx` moved from development-only to runtime dependencies.
+
+### Validation
+
+`uv run ruff check .` passed. `uv run mypy` passed with no issues in 29 source files. The
+credentialed `uv run pytest --cov=ai_commerce_gateway --cov-report=term-missing` passed 373 tests,
+skipped four PostgreSQL checks and reported 97% total coverage; `providers/razorpay.py` reported 98%.
+`uv run alembic upgrade head --sql` passed. The dedicated real-provider command passed.
+
+### Evidence
+
+Thirty adapter tests and one concrete-adapter/B3 database seam test cover exact request mapping,
+Basic auth, Test Mode-only configuration, no retry after API/transport failure, malformed and
+mismatched responses, secret-free checkout options, explicit B5 boundaries, attempt persistence and
+order-not-success behavior. Real Test Mode run `B4-RZP-20260904-01` created a redacted order ending
+`...JzsC44` in `created` state with no payment/capture truth. See `docs/RAZORPAY_TEST_MODE.md`.
+
+### Result
+
+SUCCESS — B4 READY_FOR_REVIEW
+
+### Problems / Limitations
+
+PostgreSQL-specific tests skipped because `TEST_DATABASE_URL` is unset. Checkout signature
+verification, webhooks and lookup are intentionally B5; reconciliation remains B6. J05 remains
+`NOT RUN` because B4 proves order creation, not completed payment verification.
+
+### Next Step
+
+Commit B4, perform independent audit and request human approval. Do not begin B5.

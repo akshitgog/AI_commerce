@@ -9,26 +9,35 @@ Do not invent answers.
 ## Q: What exact Razorpay Test Mode condition should map to platform `SUCCEEDED`?
 
 Status: OPEN
-Branch-raised: <fill when investigated>
-Last-updated-by: <developer/agent>
+Branch-raised: phase/b4-razorpay-adapter
+Last-updated-by: Codex Agent B
 
 Context:
 Creating a Razorpay order is not equivalent to a successful payment. The implementation must identify the provider truth required before setting the platform transaction to `SUCCEEDED`.
 
 Current Answer:
-Not yet verified against an implementation/provider spike.
+Official Razorpay documentation identifies `captured` as the successful payment status and requires
+server-side verification of the Checkout signature. The current candidate platform gate is thus a
+payment tied to the stored server-side order whose Checkout signature is valid and whose provider
+lookup/webhook evidence confirms `captured`. A created order, attempted order or merely authorized
+payment is insufficient. B4 exercised real order creation, but the candidate success gate still
+requires the B5 payment/signature flow.
 
 Evidence:
-None yet.
+Razorpay Standard Checkout integration and Test/Live Mode documentation reviewed on 2026-09-04;
+B4 adapter tests prove that `created` yields only `PAYMENT_PENDING`. Real Test Mode run
+`B4-RZP-20260904-01` passed with redacted order suffix `...JzsC44` and no payment/capture truth. See
+`docs/RAZORPAY_TEST_MODE.md`.
 
 Decision:
-Do not mark platform transactions `SUCCEEDED` until the provider spike establishes and tests the required condition.
+B4 cannot mark success. Keep this question OPEN until B5 validates signature plus captured-provider
+truth against Test Mode and records redacted evidence.
 
 Confidence:
-LOW
+MEDIUM
 
 Last updated:
-<date>
+2026-09-04
 
 Related modules:
 Razorpay adapter, transaction authority, webhook verification, reconciliation.
