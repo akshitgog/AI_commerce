@@ -382,3 +382,9 @@ All frozen shared contracts remain completely untouched. Phase A1 is now fully c
 - mypy passed (0 issues).
 - pytest passed (136 passed, coverage up to 95%).
 - All M0 contracts adhered to.
+
+**Correction Pass (Phase A2):**
+1. **Removed get_by_id_unscoped:** Removed the unscoped lookup from ProductRepository to restore strictly tenant-scoped SQL queries.
+2. **Fixed ID Enumeration Oracle:** Modified get_product to loop over actor.merchant_ids, performing a tenant-scoped query for each. If not found, it returns a safe 404 Not Found, preventing cross-tenant existence leaks (which previously returned 403 Forbidden).
+3. **Fixed Linters:** Addressed all ruff violations (unused imports, long lines) in the test suite.
+4. **Updated Adversarial Tests:** Validated that cross-tenant product probing yields a 404 Not Found.

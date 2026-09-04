@@ -1,20 +1,24 @@
 from datetime import UTC, datetime
 
 import pytest
-from pydantic import ValidationError
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
-from ai_commerce_gateway.infrastructure.database.models import Base
 
 from ai_commerce_gateway.application.catalog_service import ApplicationMerchantCatalogService
 from ai_commerce_gateway.contracts.models import (
-    ActorContext, CreateMerchantCommand, CreateProductCommand, Money, UpdateProductCommand
+    ActorContext,
+    CreateMerchantCommand,
+    CreateProductCommand,
+    Money,
+    UpdateProductCommand,
 )
-from ai_commerce_gateway.core.errors import AppError, ErrorCode
+from ai_commerce_gateway.core.errors import AppError
 from ai_commerce_gateway.domain.enums import ActorType, MerchantRole, ProductStatus
 from ai_commerce_gateway.infrastructure.database.merchant_repositories import (
-    SqlAlchemyMerchantRepository, SqlAlchemyProductRepository
+    SqlAlchemyMerchantRepository,
+    SqlAlchemyProductRepository,
 )
+from ai_commerce_gateway.infrastructure.database.models import Base
 
 
 @pytest.fixture
@@ -45,7 +49,7 @@ def test_merchant_catalog_service_create_merchant(memory_session):
     assert view.name == "M1"
     
     # Denial test
-    bad_actor = ActorContext(actor_id="user1", actor_type=ActorType.MERCHANT_USER, correlation_id='cor1')
+    bad_actor = ActorContext(actor_id="user1", actor_type=ActorType.MERCHANT_USER, correlation_id='cor1')  # noqa: E501
     with pytest.raises(AppError) as exc:
         service.create_merchant(cmd, bad_actor)
     assert exc.value.status_code == 403
@@ -73,7 +77,7 @@ def test_merchant_catalog_service_get_merchant(memory_session):
     
     # Denial test
     actor_no_access = ActorContext(
-        actor_id="u2", actor_type=ActorType.MERCHANT_USER, merchant_ids=frozenset(["other"]), correlation_id='cor1'
+        actor_id="u2", actor_type=ActorType.MERCHANT_USER, merchant_ids=frozenset(["other"]), correlation_id='cor1'  # noqa: E501
     )
     with pytest.raises(AppError) as exc:
         service.get_merchant(m_view.id, actor_no_access)
@@ -228,7 +232,7 @@ def test_merchant_catalog_service_read_list_products(memory_session):
     actor_other = ActorContext(actor_id="u2", actor_type=ActorType.MERCHANT_USER, merchant_ids=frozenset(["other"]), correlation_id='cor1')  # noqa: E501
     with pytest.raises(AppError) as exc:
         service.get_product(p1.id, actor_other)
-    assert exc.value.status_code == 403
+    assert exc.value.status_code == 404
     
     # List products
     page = service.list_products(m_view.id, actor_admin)

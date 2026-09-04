@@ -272,9 +272,6 @@ class SqlAlchemyProductRepository:
         row = self._session.scalars(stmt).first()
         return _orm_product_to_entity(row) if row is not None else None
 
-    def get_by_id_unscoped(self, product_id: str) -> ProductEntity | None:
-        row = self._session.get(orm.Product, product_id)
-        return _orm_product_to_entity(row) if row is not None else None
 
 
     def get_by_sku(self, merchant_id: str, sku: str) -> ProductEntity | None:

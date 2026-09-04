@@ -66,12 +66,25 @@ class ApplicationMerchantCatalogService:
         return MerchantView(id=mer.id, name=mer.name, status=mer.status.value)
 
     def get_product(self, product_id: str, actor: ActorContext) -> ProductView:
-        prod = self._product_repo.get_by_id_unscoped(product_id)
-        if not prod:
-            raise AppError(ErrorCode.NOT_FOUND, "Product not found", status_code=404)
-        
-        _require_merchant_access(actor, prod.merchant_id)
-        
+        if actor.actor_type == ActorType.SYSTEM:
+            raise NotImplementedError("System actor lookup without merchant_id not implemented")
+        elif actor.actor_type == ActorType.MERCHANT_USER:
+            if not actor.merchant_ids:
+                raise AppError(ErrorCode.FORBIDDEN, "Access denied to this merchant.", status_code=403)
+            
+            prod = None
+            for m_id in actor.merchant_ids:
+                prod = self._product_repo.get_by_id(m_id, product_id)
+                if prod is not None:
+                    break
+            
+            if prod is None:
+                raise AppError(ErrorCode.NOT_FOUND, "Product not found", status_code=404)
+            
+            _require_merchant_access(actor, prod.merchant_id)
+        else:
+            raise AppError(ErrorCode.FORBIDDEN, "Only merchant users can access this resource.", status_code=403)
+
         return ProductView(
             id=prod.id,
             merchant_id=prod.merchant_id,
@@ -85,6 +98,7 @@ class ApplicationMerchantCatalogService:
             version=prod.version,
             images=()
         )
+
 
     def list_products(self, merchant_id: str, actor: ActorContext, cursor: str | None = None) -> ProductPage:  # noqa: E501
         _require_merchant_access(actor, merchant_id)
