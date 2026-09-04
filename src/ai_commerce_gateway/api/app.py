@@ -1,3 +1,5 @@
+import contextlib
+from collections.abc import AsyncIterator
 from uuid import uuid4
 
 from fastapi import FastAPI, Request
@@ -5,16 +7,59 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from ai_commerce_gateway.api.buyer_chat.router import router as buyer_chat_router
+from ai_commerce_gateway.api.buyer_chat.stubs import (
+    get_auth_service,
+    get_catalog_service,
+    get_proposal_service,
+    get_transaction_service,
+)
+from ai_commerce_gateway.api.mcp.buyer_server import create_buyer_mcp_server
+from ai_commerce_gateway.application.buyer_adapter.adapter import BuyerAdapter
 from ai_commerce_gateway.core.config import get_settings
 from ai_commerce_gateway.core.errors import AppError, ErrorCode, install_error_handlers
 from ai_commerce_gateway.infrastructure.database.session import create_engine
 
 
+def _build_buyer_adapter() -> BuyerAdapter:
+    """Build a BuyerAdapter wired to the current stub services."""
+    return BuyerAdapter(
+        catalog=get_catalog_service(),
+        proposal=get_proposal_service(),
+        auth=get_auth_service(),
+        transaction=get_transaction_service(),
+    )
+
+
 def create_app() -> FastAPI:
     settings = get_settings()
-    app = FastAPI(title=settings.app_name, version="0.1.0")
+
+    # Create the MCP server and its Streamable HTTP ASGI app.
+    # streamable_http_path="/" so the mount path IS the endpoint
+    # (avoids /mcp/buyer/mcp doubling).
+    buyer_adapter = _build_buyer_adapter()
+    buyer_mcp = create_buyer_mcp_server(buyer_adapter)
+    mcp_asgi_app = buyer_mcp.streamable_http_app(
+        streamable_http_path="/",
+    )
+
+    @contextlib.asynccontextmanager
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        # The parent lifespan must enter the MCP session manager
+        # because Starlette does not run mounted sub-app lifespans.
+        async with buyer_mcp.session_manager.run():
+            yield
+
+    app = FastAPI(
+        title=settings.app_name,
+        version="0.1.0",
+        lifespan=lifespan,
+    )
     install_error_handlers(app)
     app.include_router(buyer_chat_router, prefix="/v1")
+
+    # Mount MCP Streamable HTTP at /mcp/buyer.
+    # The official SDK owns HTTP method/session/protocol behavior.
+    app.mount("/mcp/buyer", mcp_asgi_app)
 
     @app.exception_handler(ValueError)
     async def handle_value_error(request: Request, exc: ValueError) -> JSONResponse:

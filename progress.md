@@ -369,3 +369,54 @@ SUCCESS
 ### Next Step
 
 Merge Phase C3 and await next instructions.
+
+---
+
+## Entry 008 — Phase C4 MCP Buyer Adapter Implemented (and Fixed)
+
+Date/time:       2026-09-04 (Asia/Calcutta)
+Git branch:      phase/c4-mcp-adapter
+Commit:          c5177c0
+Author/Agent:    Antigravity
+Workstream:      05-buyer-ai-mcp
+Change:          Implemented MCP buyer adapter using official SDK v2.1.1 Streamable HTTP and fixed IMPORTANT #1.
+Files/modules:   src/ai_commerce_gateway/api/mcp/, tests/unit/api/mcp/
+
+### What Changed
+
+- Added `mcp>=2.0,<3` to pyproject.toml (installed mcp 2.1.1).
+- Created `buyer_server.py` registering 7 buyer tools via `MCPServer.tool()` decorators.
+- Mounted Streamable HTTP ASGI app at `/mcp/buyer` with `streamable_http_path="/"`.
+- Parent FastAPI lifespan enters `session_manager.run()` per SDK requirements.
+- Fixed C3 I-1: Added 4 deterministic tests for OpenAILLMClient (mocked httpx).
+- Fixed C3 I-2: MCP SDK derives tool schemas directly from function signatures.
+- Fixed C4 IMPORTANT #1: derived deterministic idempotency keys for mutations using a fingerprint hash (`_derive_idempotency_key`) of `actor_id`, `tool_name` and tool arguments. Added `test_execute_transaction_is_idempotent` replay test to prove mutations will not duplicate state on retry.
+- X-Buyer-ID documented as DEMO IDENTITY PLUMBING, not production auth.
+
+### Reason
+
+Satisfy Phase C4: prove external MCP client interoperability over the same commerce backend and ensure deterministic mutation replays.
+
+### Technical Impact
+
+Adds MCP SDK dependency. No changes to frozen contracts or database schemas. MCP adapter is thin: all business logic stays in Application Services. Deterministic idempotency protects against network retries causing double-purchases or duplicate authorizations.
+
+### Validation
+
+- ruff: PASS
+- mypy: PASS (33 files, 0 errors)
+- pytest: 66 passed, 1 skipped, 95% coverage
+- Interop test: Official MCP Client over real HTTP transport proved search_catalog and create_purchase_proposal reach Application Services.
+- Replay test: Verified duplicate tool calls pass the identical idempotency key to the Adapter.
+
+### Evidence
+
+In-memory contract tests (12) + HTTP interop test (1) + LLM client tests (4) + all existing tests (49).
+
+### Result
+
+SUCCESS
+
+### Next Step
+
+Await human gate review to begin Phase C5.
