@@ -16,6 +16,8 @@ llm:
   api_key: null
   base_url: null
   temperature: 0.2
+  # Hard bound on the buyer AI tool-result loop turns per chat request.
+  max_tool_steps: 8
 
 storage:
   provider: unconfigured

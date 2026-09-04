@@ -1,8 +1,14 @@
-"""LLM Client Abstraction for Chat Orchestration (C3).
+"""LLM client abstraction for chat orchestration (P0-2).
 
-This module defines the abstract LLM client and provides a deterministic stub
-for testing the intent-to-tool mapping, prompt-injection isolation, and
-no-self-approval guarantees.
+The production client is selected from YAML configuration:
+
+* ``llm.api_key`` configured -> litellm-backed provider client
+  (``OpenAILLMClient``).
+* not configured -> deterministic local fallback (``StubLLMClient``) so the
+  chat surface stays exercisable in development and tests without a provider.
+
+Both clients implement the same ``LLMClient`` protocol and receive only the
+bounded tool surface from the orchestrator.
 """
 
 import json
@@ -10,7 +16,7 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Protocol
 
-from ai_commerce_gateway.core.config import get_settings
+from ai_commerce_gateway.core.config import Settings, get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +27,7 @@ class ToolCall:
 
     name: str
     arguments: dict[str, Any]
+    id: str | None = None
 
 
 @dataclass
@@ -42,18 +49,36 @@ class LLMClient(Protocol):
 class StubLLMClient:
     """Deterministic stub for simulating LLM responses without network calls.
 
-    Matches intent based on keywords in the last user message.
+    Matches intent based on keywords in the last USER message. Tool-result
+    messages terminate the turn with a plain answer so the bounded loop ends
+    after one tool round; this client is for development and tests only.
     """
 
     def generate(self, messages: list[dict[str, Any]], tools: list[dict[str, Any]]) -> LLMResponse:
         if not messages:
             return LLMResponse(text="Hello, how can I help you today?")
 
-        last_message = messages[-1].get("content", "").lower()
+        last_message = messages[-1]
+
+        # A tool result ends the loop: answer from the results.
+        if last_message.get("role") == "tool":
+            return LLMResponse(
+                text="Here are the results. Please review them and tell me how to proceed."
+            )
+
+        last_user_message = ""
+        for message in reversed(messages):
+            if message.get("role") == "user":
+                last_user_message = str(message.get("content", "")).lower()
+                break
 
         # Simulated Prompt-Injection defense
         # If the user tries to force an approval or bypass policy
-        if "approve" in last_message or "bypass" in last_message or "ignore" in last_message:
+        if (
+            "approve" in last_user_message
+            or "bypass" in last_user_message
+            or "ignore" in last_user_message
+        ):
             return LLMResponse(
                 text=(
                     "I cannot approve transactions or bypass policies on your behalf. "
@@ -62,17 +87,25 @@ class StubLLMClient:
             )
 
         # Intent mapping
-        if "search" in last_message or "find" in last_message or "catalog" in last_message:
+        if (
+            "search" in last_user_message
+            or "find" in last_user_message
+            or "catalog" in last_user_message
+        ):
             return LLMResponse(
                 tool_calls=[
                     ToolCall(
                         name="search_catalog",
-                        arguments={"merchant_id": "mer_demo_001", "query": last_message},
+                        arguments={"merchant_id": "mer_demo_001", "query": last_user_message},
                     )
                 ]
             )
 
-        if "buy" in last_message or "purchase" in last_message or "proposal" in last_message:
+        if (
+            "buy" in last_user_message
+            or "purchase" in last_user_message
+            or "proposal" in last_user_message
+        ):
             return LLMResponse(
                 tool_calls=[
                     ToolCall(
@@ -86,7 +119,7 @@ class StubLLMClient:
                 ]
             )
 
-        if "authorize" in last_message or "request" in last_message:
+        if "authorize" in last_user_message or "request" in last_user_message:
             return LLMResponse(
                 tool_calls=[
                     ToolCall(
@@ -95,14 +128,14 @@ class StubLLMClient:
                 ]
             )
 
-        if "execute" in last_message or "pay" in last_message:
+        if "execute" in last_user_message or "pay" in last_user_message:
             return LLMResponse(
                 tool_calls=[
                     ToolCall(name="execute_transaction", arguments={"proposal_id": "prop_demo_001"})
                 ]
             )
 
-        if "status" in last_message:
+        if "status" in last_user_message:
             return LLMResponse(
                 tool_calls=[
                     ToolCall(
@@ -120,13 +153,17 @@ class StubLLMClient:
 
 
 class OpenAILLMClient:
-    """Real LLM client calling via litellm."""
+    """litellm-backed provider client wired from YAML configuration.
 
-    def __init__(self) -> None:
-        self.settings = get_settings()
+    Settings are injected explicitly (DI); ``create_llm_client`` is the only
+    caller that resolves them from configuration.
+    """
+
+    def __init__(self, settings: Settings) -> None:
+        self.settings = settings
 
     def _format_tools(self, tools: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        # Convert our simple tool schemas into OpenAI format
+        # Convert the bounded tool schemas into OpenAI function format
         return [
             {
                 "type": "function",
@@ -164,6 +201,7 @@ class OpenAILLMClient:
                 "messages": [system_prompt] + messages,
                 "tools": self._format_tools(tools),
                 "tool_choice": "auto",
+                "temperature": self.settings.llm_temperature,
                 "api_key": self.settings.llm_api_key.get_secret_value(),
             }
             if self.settings.llm_base_url:
@@ -184,12 +222,34 @@ class OpenAILLMClient:
                         )
                     except json.JSONDecodeError:
                         args = {}
-                    tool_calls.append(ToolCall(name=tc.function.name, arguments=args))
+                    tool_calls.append(
+                        ToolCall(
+                            name=tc.function.name,
+                            arguments=args,
+                            id=getattr(tc, "id", None),
+                        )
+                    )
 
             return LLMResponse(text=message.content, tool_calls=tool_calls)
 
         except Exception as e:
-            logger.error(f"LLM API error: {e}")
+            logger.error("LLM provider call failed: %s", type(e).__name__)
             return LLMResponse(
                 text="I'm sorry, I'm having trouble connecting to my brain right now."
             )
+
+
+def create_llm_client(settings: Settings | None = None) -> LLMClient:
+    """Select the LLM client from configuration.
+
+    Never silently downgrades in production: the fallback is logged and the
+    deterministic client is only intended for development and tests.
+    """
+    config = settings or get_settings()
+    if config.llm_api_key:
+        return OpenAILLMClient(config)
+    logger.warning(
+        "llm.api_key is not configured; using the deterministic local LLM "
+        "fallback. Configure an API key for real buyer AI behavior."
+    )
+    return StubLLMClient()

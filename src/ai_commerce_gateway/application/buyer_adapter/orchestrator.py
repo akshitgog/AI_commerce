@@ -1,14 +1,41 @@
-"""Tool Orchestration layer for the Reference Buyer Chat (C3).
+"""Bounded Buyer AI orchestration (P0-2).
 
-This module connects a conversational AI (LLMClient) with the BuyerAdapter.
-It restricts the AI to the 7 canonical tools, prevents self-approval,
-and safely formats results (like images) for the chat UI.
+Connects the configured LLM client to the BuyerAdapter inside a bounded
+tool-result loop:
+
+    intent → search → inspect/compare → proposal → HUMAN authorization
+    handoff → transaction status
+
+Hard guarantees enforced here:
+
+* The model only ever sees the 7 canonical tools with their COMPLETE JSON
+  schemas (``tools.ALL_TOOLS``). There is no tool to set price, approve an
+  authorization, set transaction state, call the provider, or bypass policy.
+* A handoff tool result (proposal / authorization / execute) stops the loop
+  immediately; any further tool calls from the same model response are
+  dropped so the AI can never chain past the human authorization gate.
+* The loop is hard-bounded by ``max_tool_steps`` from configuration.
+* Every tool step records a non-sensitive orchestration audit event
+  (request/correlation ID, tool requested, result reference, outcome).
+  Raw prompts and free-text arguments are never stored.
 """
 
-from typing import Any
+from typing import Any, Final
 
 from ai_commerce_gateway.application.buyer_adapter.adapter import BuyerAdapter
-from ai_commerce_gateway.application.buyer_adapter.llm_client import LLMClient
+from ai_commerce_gateway.application.buyer_adapter.audit import (
+    OUTCOME_COMPLETED,
+    OUTCOME_FAILED,
+    OUTCOME_REJECTED,
+    OUTCOME_REQUESTED,
+    AiOrchestrationAuditEvent,
+    AiOrchestrationAuditRecorder,
+    LoggingAiOrchestrationAuditRecorder,
+    event_to_dict,
+    extract_result_reference,
+    make_event,
+)
+from ai_commerce_gateway.application.buyer_adapter.llm_client import LLMClient, ToolCall
 from ai_commerce_gateway.application.buyer_adapter.schemas import (
     CreatePurchaseProposalRequest,
     ExecuteTransactionRequest,
@@ -19,31 +46,61 @@ from ai_commerce_gateway.application.buyer_adapter.schemas import (
     RequestAuthorizationRequest,
     SearchCatalogRequest,
 )
+from ai_commerce_gateway.application.buyer_adapter.tools import ALL_TOOLS
 from ai_commerce_gateway.contracts.models import ActorContext
 
 # The 7 canonical tools exposed to the AI
-ALLOWED_TOOLS = {
-    "search_catalog",
-    "get_product",
-    "create_purchase_proposal",
-    "request_authorization",
-    "execute_transaction",
-    "get_transaction_status",
-    "get_transaction_audit",
-}
+ALLOWED_TOOLS: Final[frozenset[str]] = frozenset(
+    {
+        "search_catalog",
+        "get_product",
+        "create_purchase_proposal",
+        "request_authorization",
+        "execute_transaction",
+        "get_transaction_status",
+        "get_transaction_audit",
+    }
+)
+
+#: Tools whose successful result hands the conversation to the human buyer.
+HANDOFF_TOOLS: Final[frozenset[str]] = frozenset(
+    {
+        "create_purchase_proposal",
+        "request_authorization",
+        "execute_transaction",
+    }
+)
+
+_STEP_LIMIT_MESSAGE: Final[str] = (
+    "I reached the maximum number of steps for this request. "
+    "Please review the results above and tell me how to proceed."
+)
 
 
 class ToolOrchestrator:
     """Orchestrates conversations, mapping AI intents to safe BuyerAdapter tool calls."""
 
-    def __init__(self, llm_client: LLMClient, adapter: BuyerAdapter) -> None:
+    def __init__(
+        self,
+        llm_client: LLMClient,
+        adapter: BuyerAdapter,
+        *,
+        auditor: AiOrchestrationAuditRecorder | None = None,
+        max_tool_steps: int = 8,
+    ) -> None:
+        if max_tool_steps < 1:
+            raise ValueError("max_tool_steps must be >= 1")
         self.llm_client = llm_client
         self.adapter = adapter
+        self.auditor = auditor or LoggingAiOrchestrationAuditRecorder()
+        self.max_tool_steps = max_tool_steps
 
     def _get_tool_schemas(self) -> list[dict[str, Any]]:
-        """Return the JSON schemas for the 7 allowed tools (stubbed for demo)."""
-        # In a real implementation, we would derive these from the Pydantic models.
-        return [{"name": name, "description": f"Tool for {name}"} for name in ALLOWED_TOOLS]
+        """Return the complete JSON schemas for the bounded tool surface."""
+        return [dict(tool) for tool in ALL_TOOLS]
+
+    def _record(self, event: AiOrchestrationAuditEvent) -> None:
+        self.auditor.record(event)
 
     def chat(
         self,
@@ -51,61 +108,158 @@ class ToolOrchestrator:
         invocation: InvocationContext,
         messages: list[dict[str, Any]],
     ) -> dict[str, Any]:
+        """Process a chat interaction inside a bounded tool-result loop.
+
+        1. Calls the LLM with the conversation so far and the bounded tools.
+        2. Executes requested tool calls against the BuyerAdapter.
+        3. Feeds results back to the model until it replies with text,
+           a handoff is reached, or the step bound is hit.
         """
-        Process a chat interaction.
-        1. Calls the LLM to get text or tool calls.
-        2. Routes tool calls to the BuyerAdapter.
-        3. Returns the assistant's reply and any structured tool execution results.
-        """
-        response = self.llm_client.generate(messages, tools=self._get_tool_schemas())
+
+        conversation = list(messages)
+        audit_events: list[AiOrchestrationAuditEvent] = []
+        request_id = invocation.request_id or "unknown"
+        correlation_id = invocation.correlation_id
 
         result: dict[str, Any] = {
-            "text": response.text,
+            "text": None,
             "tool_calls": [],
             "tool_results": [],
             "handoff_required": False,
+            "trace": [],
         }
 
-        if response.tool_calls:
-            for tc in response.tool_calls:
-                # Security: Restrict AI to ONLY the explicitly allowed tools.
-                # No self-approval, no Razorpay, no internal admin functions.
-                if tc.name not in ALLOWED_TOOLS:
+        def record(
+            *,
+            turn: int,
+            tool: str,
+            outcome: str,
+            result_reference: str | None = None,
+        ) -> None:
+            event = make_event(
+                request_id=request_id,
+                correlation_id=correlation_id,
+                actor_id=actor.actor_id,
+                turn=turn,
+                tool=tool,
+                outcome=outcome,
+                result_reference=result_reference,
+            )
+            self._record(event)
+            audit_events.append(event)
+
+        for turn in range(self.max_tool_steps):
+            response = self.llm_client.generate(
+                conversation, tools=self._get_tool_schemas()
+            )
+            if response.text:
+                result["text"] = response.text
+
+            if not response.tool_calls:
+                break
+
+            conversation.append(
+                _assistant_tool_call_message(response.tool_calls, response.text)
+            )
+
+            hit_handoff = False
+            for index, tool_call in enumerate(response.tool_calls):
+                if hit_handoff:
+                    # Hard gate: a successful handoff result ends AI action for
+                    # this turn. Any further calls the model requested are
+                    # dropped so the AI can never chain past human review.
+                    record(
+                        turn=turn,
+                        tool=tool_call.name,
+                        outcome=OUTCOME_REJECTED,
+                        result_reference="dropped-after-handoff",
+                    )
                     result["tool_results"].append(
                         {
-                            "tool": tc.name,
-                            "error": "Tool not allowed. AI cannot perform this action.",
+                            "tool": tool_call.name,
+                            "error": (
+                                "Pending human authorization handoff; this step "
+                                "was not executed."
+                            ),
                         }
                     )
                     continue
 
-                result["tool_calls"].append(tc.name)
+                record(
+                    turn=turn,
+                    tool=tool_call.name,
+                    outcome=OUTCOME_REQUESTED,
+                )
+
+                if tool_call.name not in ALLOWED_TOOLS:
+                    record(
+                        turn=turn,
+                        tool=tool_call.name,
+                        outcome=OUTCOME_REJECTED,
+                        result_reference="tool-not-allowed",
+                    )
+                    error = "Tool not allowed. AI cannot perform this action."
+                    result["tool_results"].append(
+                        {"tool": tool_call.name, "error": error}
+                    )
+                    conversation.append(_tool_result_message(tool_call, index, {"error": error}))
+                    continue
+
+                result["tool_calls"].append(tool_call.name)
 
                 try:
-                    tool_result = self._execute_tool(actor, invocation, tc.name, tc.arguments)
-                    result["tool_results"].append({"tool": tc.name, "result": tool_result})
+                    tool_result = self._execute_tool(
+                        actor, invocation, tool_call.name, tool_call.arguments
+                    )
+                except ValueError as exc:
+                    record(
+                        turn=turn,
+                        tool=tool_call.name,
+                        outcome=OUTCOME_FAILED,
+                        result_reference=str(exc)[:200],
+                    )
+                    result["tool_results"].append(
+                        {"tool": tool_call.name, "error": str(exc)}
+                    )
+                    conversation.append(
+                        _tool_result_message(tool_call, index, {"error": str(exc)})
+                    )
+                    continue
 
-                    # Explicit Handoff Logic:
-                    # If the AI proposes a purchase or requests authorization, it MUST stop
-                    # and hand off to the human buyer for review and consent via the UI.
-                    if tc.name in (
-                        "create_purchase_proposal",
-                        "request_authorization",
-                        "execute_transaction",
-                    ):
-                        result["handoff_required"] = True
-                        if not result["text"]:
-                            if tc.name == "execute_transaction":
-                                result["text"] = (
-                                    "Payment handoff initiated. "
-                                    "Please complete the payment process."
-                                )
-                            else:
-                                result["text"] = "Please review and authorize the transaction."
+                record(
+                    turn=turn,
+                    tool=tool_call.name,
+                    outcome=OUTCOME_COMPLETED,
+                    result_reference=extract_result_reference(
+                        tool_call.name, tool_result
+                    ),
+                )
+                result["tool_results"].append(
+                    {"tool": tool_call.name, "result": tool_result}
+                )
+                conversation.append(_tool_result_message(tool_call, index, tool_result))
 
-                except ValueError as e:
-                    result["tool_results"].append({"tool": tc.name, "error": str(e)})
+                if tool_call.name in HANDOFF_TOOLS:
+                    hit_handoff = True
+                    result["handoff_required"] = True
+                    if not result["text"]:
+                        if tool_call.name == "execute_transaction":
+                            result["text"] = (
+                                "Payment handoff initiated. "
+                                "Please complete the payment process."
+                            )
+                        else:
+                            result["text"] = (
+                                "Please review and authorize the transaction."
+                            )
 
+            if hit_handoff:
+                break
+        else:
+            if not result["text"]:
+                result["text"] = _STEP_LIMIT_MESSAGE
+
+        result["trace"] = [event_to_dict(event) for event in audit_events]
         return result
 
     def _execute_tool(
@@ -192,3 +346,39 @@ class ToolOrchestrator:
             return {"items": audit_items, "next_cursor": res_audit.next_cursor}
 
         raise ValueError(f"Unknown tool {tool_name}")
+
+
+def _assistant_tool_call_message(
+    tool_calls: list[ToolCall], text: str | None
+) -> dict[str, Any]:
+    """Build the assistant message that precedes tool results in the loop."""
+    return {
+        "role": "assistant",
+        "content": text,
+        "tool_calls": [
+            {
+                "id": tool_call.id or f"call_{index}",
+                "type": "function",
+                "function": {"name": tool_call.name, "arguments": tool_call.arguments},
+            }
+            for index, tool_call in enumerate(tool_calls)
+        ],
+    }
+
+
+def _tool_result_message(
+    tool_call: ToolCall, index: int, payload: dict[str, Any]
+) -> dict[str, Any]:
+    """Build the tool-result message fed back to the model.
+
+    Only the tool result itself is included; the conversation loop never
+    stores raw user prompts in the audit trail (see audit.py).
+    """
+    import json
+
+    return {
+        "role": "tool",
+        "tool_call_id": tool_call.id or f"call_{index}",
+        "name": tool_call.name,
+        "content": json.dumps(payload, default=str),
+    }

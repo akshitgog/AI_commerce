@@ -25,7 +25,7 @@ from ai_commerce_gateway.api.buyer_chat.dependencies import (
 )
 from ai_commerce_gateway.api.composition import BuyerServiceBundle
 from ai_commerce_gateway.application.buyer_adapter.adapter import BuyerAdapter
-from ai_commerce_gateway.application.buyer_adapter.llm_client import StubLLMClient
+from ai_commerce_gateway.application.buyer_adapter.llm_client import create_llm_client
 from ai_commerce_gateway.application.buyer_adapter.orchestrator import ToolOrchestrator
 from ai_commerce_gateway.application.buyer_adapter.schemas import (
     CreatePurchaseProposalRequest,
@@ -79,8 +79,20 @@ def get_buyer_adapter(
 def get_tool_orchestrator(
     adapter: Annotated[BuyerAdapter, Depends(get_buyer_adapter)],
 ) -> ToolOrchestrator:
-    # Use StubLLMClient for the C3 demo / testing
-    return ToolOrchestrator(llm_client=StubLLMClient(), adapter=adapter)
+    """Build the bounded orchestrator with the configured LLM client.
+
+    The client comes from YAML configuration (``llm.*``); the step bound comes
+    from ``llm.max_tool_steps``. The deterministic fallback is used only when
+    no API key is configured and is logged loudly.
+    """
+    from ai_commerce_gateway.core.config import get_settings
+
+    settings = get_settings()
+    return ToolOrchestrator(
+        llm_client=create_llm_client(settings),
+        adapter=adapter,
+        max_tool_steps=settings.llm_max_tool_steps,
+    )
 
 
 # ---------------------------------------------------------------------------

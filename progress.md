@@ -583,3 +583,59 @@ SUCCESS (in-process composition runtime validation deferred to integration by de
 ### Next Step
 
 P0-2: bounded Buyer AI (config-driven LLM client, complete JSON tool schemas from tools.py, bounded tool-result loop with audit events, no self-approval tools).
+
+---
+
+## Entry 012 — P0-2 Bounded Buyer AI: config LLM client, full tool schemas, bounded loop, orchestration audit
+
+Date/time:       2026-09-04 (Asia/Calcutta)
+Git branch:      feature/buyer-ai-lane
+Commit:          <this commit>
+Author/Agent:    opencode buyer-lane agent (GLM)
+Workstream:      05-buyer-ai-mcp
+Change:          Wired the chat route to a YAML-configured LLM client, served complete JSON tool schemas, implemented the bounded tool-result loop with human-handoff cutoff, and added non-sensitive orchestration audit events
+Files/modules:   src/ai_commerce_gateway/application/buyer_adapter/audit.py (new), src/ai_commerce_gateway/application/buyer_adapter/orchestrator.py, src/ai_commerce_gateway/application/buyer_adapter/llm_client.py, src/ai_commerce_gateway/api/buyer_chat/router.py, src/ai_commerce_gateway/core/config.py, config/default.yaml, config/local.example.yaml, tests/unit/application/buyer_adapter/test_orchestrator.py, tests/unit/application/buyer_adapter/test_llm_client.py
+
+### What Changed
+
+- LLM selection is config-driven: `create_llm_client(settings)` returns the litellm-backed provider client when `llm.api_key` is configured, else the deterministic local fallback with a loud warning. `OpenAILLMClient` now receives injected Settings (no global lookup inside the client) and forwards `llm.temperature`; the buyer chat route builds the orchestrator from `create_llm_client()` — the hardcoded StubLLMClient is gone from production wiring.
+- Tool schemas sent to the model are the complete JSON schemas from `tools.ALL_TOOLS` (typed properties, required lists, no price/total/approve/provider surface anywhere).
+- `ToolOrchestrator.chat` now runs a bounded tool-result loop (default bound 8, configurable via new `llm.max_tool_steps`): the model's tool calls execute against the BuyerAdapter and results are fed back as tool messages until the model answers with text, a handoff is reached, or the bound is hit (explicit step-limit message).
+- Security fix: when a handoff tool (create_purchase_proposal / request_authorization / execute_transaction) succeeds, any further tool calls from the SAME model response are dropped and recorded as rejected — the AI can never chain proposal -> execute past the human gate inside one turn.
+- New `buyer_adapter/audit.py`: `AiOrchestrationAuditEvent` (request_id, correlation_id, actor_id, turn, tool, outcome, result_reference — never raw prompts or free-text argument values), `AiOrchestrationAuditRecorder` port, `LoggingAiOrchestrationAuditRecorder` default, and non-sensitive result-reference extraction (resource ids / coarse counts only). The chat response exposes the same events as `trace` for the buyer UI "AI works" surface.
+- StubLLMClient now terminates the loop after tool results (role == "tool" -> plain answer) and keyword-matches only the last USER message, keeping the loop deterministic for tests/E2E.
+- Provider error logging no longer logs exception payloads (type name only) to avoid leaking request content into logs.
+
+### Reason
+
+P0-2 of the buyer-lane brief: a genuine bounded Buyer AI over configured LLM, complete JSON tool schemas, the canonical bounded loop with human authorization handoff, and non-sensitive orchestration auditing.
+
+### Technical Impact
+
+- The buyer chat endpoint now exercises a real multi-turn loop; search -> answer and buy -> proposal -> handoff both verified end to end.
+- No new tools were added; the frozen tool surface is unchanged.
+- The chat response gains a non-sensitive `trace` array; response shape is otherwise unchanged.
+
+### Validation
+
+- `uv run ruff check .` — PASS
+- `uv run mypy` — PASS (36 files, 0 errors)
+- `uv run pytest` — 100 passed, 1 skipped (PostgreSQL-only test; no TEST_DATABASE_URL locally)
+- Manual trace: POST /v1/buyer/chat with test buyer token returns trace with requested+completed events, non-sensitive references only.
+
+### Evidence
+
+Test run above; new tests cover complete-schema delivery, tool-result feedback into the loop, the hard step bound, the same-response handoff cutoff, audit-event non-sensitivity, and result-reference extraction.
+
+### Result
+
+SUCCESS
+
+### Problems / Limitations
+
+- Real provider behavior (litellm against a live key) is not exercised locally; deterministic fallback covers CI. Provider smoke test belongs to a configured environment.
+- Orchestration audit defaults to structured logging; a durable recorder can be injected via the orchestrator constructor when the audit store is provisioned.
+
+### Next Step
+
+P0-3: buyer identity/security — replace the test-token middleware with server-trusted session authentication and verify buyer ownership enforcement end to end (including the human approve path).

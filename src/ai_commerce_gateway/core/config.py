@@ -34,6 +34,7 @@ _CONFIG_SCHEMA: dict[str, dict[str, str]] = {
         "api_key": "llm_api_key",
         "base_url": "llm_base_url",
         "temperature": "llm_temperature",
+        "max_tool_steps": "llm_max_tool_steps",
     },
     "storage": {
         "provider": "storage_provider",
@@ -85,6 +86,7 @@ class Settings(BaseSettings):
     llm_api_key: SecretStr | None = None
     llm_base_url: str | None = None
     llm_temperature: float = Field(default=0.2, ge=0, le=2)
+    llm_max_tool_steps: int = Field(default=8, ge=1, le=32)
 
     storage_provider: str = "unconfigured"
     storage_bucket: str = "product-images"

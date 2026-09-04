@@ -13,6 +13,7 @@ import pytest
 from ai_commerce_gateway.application.buyer_adapter.llm_client import (
     OpenAILLMClient,
 )
+from ai_commerce_gateway.core.config import get_settings
 
 _TEST_ENV = {
     "LLM_API_KEY": "test-key-123",
@@ -24,8 +25,6 @@ _TEST_ENV = {
 @pytest.fixture(autouse=True)
 def _clear_settings_cache() -> None:
     """Clear the lru_cache on get_settings so env changes take effect."""
-    from ai_commerce_gateway.core.config import get_settings
-
     get_settings.cache_clear()
 
 
@@ -54,7 +53,7 @@ class TestOpenAILLMClientMissingKey:
 
     @patch.dict("os.environ", {"LLM_API_KEY": ""}, clear=False)
     def test_missing_key_returns_simulation_message(self) -> None:
-        client = OpenAILLMClient()
+        client = OpenAILLMClient(get_settings())
         result = client.generate(
             [{"role": "user", "content": "hello"}],
             tools=[],
@@ -75,7 +74,7 @@ class TestOpenAILLMClientToolParsing:
                 _mock_tool_call("search_catalog", {"merchant_id": "mer_123"}),
             ]
         )
-        client = OpenAILLMClient()
+        client = OpenAILLMClient(get_settings())
         result = client.generate(
             [{"role": "user", "content": "find phones"}],
             tools=[
@@ -99,7 +98,7 @@ class TestOpenAILLMClientToolParsing:
     @patch("litellm.completion")
     def test_text_only_response(self, mock_completion: MagicMock) -> None:
         mock_completion.return_value = _mock_litellm_response(content="Hello!")
-        client = OpenAILLMClient()
+        client = OpenAILLMClient(get_settings())
         result = client.generate(
             [{"role": "user", "content": "hi"}],
             tools=[],
@@ -115,7 +114,7 @@ class TestOpenAILLMClientErrors:
     @patch("litellm.completion")
     def test_http_error_returns_graceful_message(self, mock_completion: MagicMock) -> None:
         mock_completion.side_effect = Exception("503 Service Unavailable")
-        client = OpenAILLMClient()
+        client = OpenAILLMClient(get_settings())
         result = client.generate(
             [{"role": "user", "content": "test"}],
             tools=[],

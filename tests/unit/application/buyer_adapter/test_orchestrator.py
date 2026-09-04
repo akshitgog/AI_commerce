@@ -1,10 +1,14 @@
 """Unit tests for the C3 ToolOrchestrator and StubLLMClient."""
 
+import json
 from typing import Any
 
 import pytest
 
 from ai_commerce_gateway.application.buyer_adapter.adapter import BuyerAdapter
+from ai_commerce_gateway.application.buyer_adapter.audit import (
+    AiOrchestrationAuditEvent,
+)
 from ai_commerce_gateway.application.buyer_adapter.llm_client import (
     LLMResponse,
     StubLLMClient,
@@ -266,3 +270,228 @@ def test_transaction_audit_presentation_passthrough(
         assert len(res["items"]) == 1
         item = res["items"][0]
         assert item["metadata"] == {"attempt_id": "att_1", "provider": "razorpay"}
+
+
+# ---------------------------------------------------------------------------
+# P0-2: bounded tool-result loop, complete schemas, orchestration audit
+# ---------------------------------------------------------------------------
+
+
+class ScriptedLLMClient:
+    """Returns a scripted sequence of responses regardless of input."""
+
+    def __init__(self, responses: list[LLMResponse]) -> None:
+        self.responses = responses
+        self.calls: list[tuple[list[dict[str, Any]], list[dict[str, Any]]]] = []
+
+    def generate(
+        self, messages: list[dict[str, Any]], tools: list[dict[str, Any]]
+    ) -> LLMResponse:
+        self.calls.append((list(messages), list(tools)))
+        if not self.responses:
+            return LLMResponse(text="done")
+        return self.responses.pop(0)
+
+
+class RecordingAuditor:
+    def __init__(self) -> None:
+        self.events: list[AiOrchestrationAuditEvent] = []
+
+    def record(self, event: AiOrchestrationAuditEvent) -> None:
+        self.events.append(event)
+
+
+def test_complete_json_schemas_are_sent_to_the_model(
+    actor: ActorContext, invocation: InvocationContext, mock_adapter: BuyerAdapter
+) -> None:
+    """The model must receive complete JSON schemas (not stub descriptions)."""
+    llm = ScriptedLLMClient([LLMResponse(text="hello")])
+    orchestrator = ToolOrchestrator(llm, mock_adapter)
+
+    orchestrator.chat(actor, invocation, [{"role": "user", "content": "hi"}])
+
+    assert len(llm.calls) == 1
+    tools = llm.calls[0][1]
+    assert {t["name"] for t in tools} == {
+        "search_catalog",
+        "get_product",
+        "create_purchase_proposal",
+        "request_authorization",
+        "execute_transaction",
+        "get_transaction_status",
+        "get_transaction_audit",
+    }
+    for tool in tools:
+        schema = tool["inputSchema"]
+        assert schema["type"] == "object"
+        assert "properties" in schema and schema["properties"]
+        assert "required" in schema
+    # No price/approve/provider surface exists for the model at all
+    names = {t["name"] for t in tools}
+    assert not (names & {"approve_authorization", "set_price", "razorpay_checkout"})
+    proposal_schema = next(t for t in tools if t["name"] == "create_purchase_proposal")
+    assert "price" not in proposal_schema["inputSchema"]["properties"]
+    assert "total" not in proposal_schema["inputSchema"]["properties"]
+
+
+def test_bounded_loop_feeds_tool_results_back(
+    actor: ActorContext, invocation: InvocationContext, mock_adapter: BuyerAdapter
+) -> None:
+    """intent -> tool call -> tool result fed back -> model answers with text."""
+    llm = ScriptedLLMClient(
+        [
+            LLMResponse(
+                tool_calls=[
+                    ToolCall(
+                        name="search_catalog",
+                        arguments={"merchant_id": "mer_123"},
+                        id="call_1",
+                    )
+                ]
+            ),
+            LLMResponse(text="I found 0 products."),
+        ]
+    )
+    orchestrator = ToolOrchestrator(llm, mock_adapter)
+
+    result = orchestrator.chat(
+        actor, invocation, [{"role": "user", "content": "find phones"}]
+    )
+
+    assert result["text"] == "I found 0 products."
+    assert result["tool_calls"] == ["search_catalog"]
+    assert len(llm.calls) == 2
+    # The second model call must see the tool result message from turn 1
+    second_messages = llm.calls[1][0]
+    roles = [m["role"] for m in second_messages]
+    assert "assistant" in roles
+    tool_messages = [m for m in second_messages if m["role"] == "tool"]
+    assert len(tool_messages) == 1
+    assert tool_messages[0]["tool_call_id"] == "call_1"
+    assert json.loads(tool_messages[0]["content"])["items"] == []
+
+
+def test_loop_is_hard_bounded(
+    actor: ActorContext, invocation: InvocationContext, mock_adapter: BuyerAdapter
+) -> None:
+    """A model that keeps requesting tools is stopped at max_tool_steps."""
+    llm = ScriptedLLMClient(
+        [
+            LLMResponse(
+                tool_calls=[
+                    ToolCall(name="search_catalog", arguments={"merchant_id": "mer_123"})
+                ]
+            )
+        ]
+        * 10
+    )
+    auditor = RecordingAuditor()
+    orchestrator = ToolOrchestrator(llm, mock_adapter, auditor=auditor, max_tool_steps=3)
+
+    result = orchestrator.chat(
+        actor, invocation, [{"role": "user", "content": "loop forever"}]
+    )
+
+    assert len(llm.calls) == 3
+    assert "maximum number of steps" in result["text"]
+    assert result["handoff_required"] is False
+    # 3 requested + 3 completed events, none missing
+    outcomes = [e.outcome for e in auditor.events]
+    assert outcomes == ["requested", "completed"] * 3
+    assert all(e.turn in (0, 1, 2) for e in auditor.events)
+
+
+def test_handoff_stops_further_tool_calls_in_same_response(
+    actor: ActorContext, invocation: InvocationContext, mock_adapter: BuyerAdapter
+) -> None:
+    """A response chaining proposal -> execute must not execute past the gate."""
+    llm = ScriptedLLMClient(
+        [
+            LLMResponse(
+                tool_calls=[
+                    ToolCall(
+                        name="create_purchase_proposal",
+                        arguments={
+                            "merchant_id": "mer_123",
+                            "product_id": "prod_123",
+                            "quantity": 1,
+                        },
+                    ),
+                    ToolCall(
+                        name="execute_transaction",
+                        arguments={"proposal_id": "prop_123"},
+                    ),
+                ]
+            )
+        ]
+    )
+    auditor = RecordingAuditor()
+    orchestrator = ToolOrchestrator(llm, mock_adapter, auditor=auditor)
+
+    result = orchestrator.chat(actor, invocation, [{"role": "user", "content": "buy it now"}])
+
+    assert result["handoff_required"] is True
+    assert result["tool_calls"] == ["create_purchase_proposal"]
+    assert "execute_transaction" not in result["tool_calls"]
+    # The dropped call is recorded as rejected with a non-sensitive reference
+    rejected = [e for e in auditor.events if e.outcome == "rejected"]
+    assert any(e.tool == "execute_transaction" for e in rejected)
+    assert any(
+        r.get("tool") == "execute_transaction" and "not executed" in r.get("error", "")
+        for r in result["tool_results"]
+    )
+
+
+def test_audit_events_are_non_sensitive(
+    actor: ActorContext, invocation: InvocationContext, mock_adapter: BuyerAdapter
+) -> None:
+    """Audit events contain IDs, tool names, references, outcomes — never prompts."""
+    llm = ScriptedLLMClient(
+        [
+            LLMResponse(
+                tool_calls=[
+                    ToolCall(
+                        name="search_catalog",
+                        arguments={
+                            "merchant_id": "mer_123",
+                            "query": "my secret embarrassing search text",
+                        },
+                    )
+                ]
+            ),
+            LLMResponse(text="done"),
+        ]
+    )
+    auditor = RecordingAuditor()
+    orchestrator = ToolOrchestrator(llm, mock_adapter, auditor=auditor)
+
+    orchestrator.chat(
+        actor, invocation, [{"role": "user", "content": "my secret embarrassing search text"}]
+    )
+
+    assert auditor.events, "expected audit events"
+    for event in auditor.events:
+        assert event.request_id == "req_001"
+        assert event.correlation_id == "corr_001"
+        assert event.actor_id == "buyer_001"
+        assert isinstance(event.tool, str)
+        assert event.outcome in {"requested", "completed", "rejected", "failed"}
+        # never raw prompt / argument content
+        assert "embarrassing" not in (event.result_reference or "")
+
+
+def test_result_reference_prefers_resource_ids() -> None:
+    from ai_commerce_gateway.application.buyer_adapter.audit import (
+        extract_result_reference,
+    )
+
+    assert extract_result_reference("get_product", {"id": "prod_9"}) == "prod_9"
+    assert (
+        extract_result_reference("get_transaction_status", {"transaction_id": "txn_7"})
+        == "txn_7"
+    )
+    assert (
+        extract_result_reference("search_catalog", {"items": [{}, {}], "next_cursor": None})
+        == "search_catalog_items:2"
+    )
+    assert extract_result_reference("get_product", None) is None
