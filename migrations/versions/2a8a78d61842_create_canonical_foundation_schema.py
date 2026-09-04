@@ -403,9 +403,7 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.CheckConstraint("amount_minor >= 0", name=op.f("ck_transactions_amount_nonnegative")),
-        sa.CheckConstraint(
-            "length(currency) = 3", name=op.f("ck_transactions_currency_length")
-        ),
+        sa.CheckConstraint("length(currency) = 3", name=op.f("ck_transactions_currency_length")),
         sa.ForeignKeyConstraint(
             ["buyer_authorization_id"],
             ["buyer_authorizations.id"],

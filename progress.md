@@ -237,3 +237,47 @@ each lane.
 
 Choose the first active phase per lane and create only those three child branches from their current
 lane heads.
+
+---
+
+## Entry 005 — Phase C1 Buyer Application Adapter Implemented
+
+Date/time:       2026-09-04 (Asia/Calcutta)
+Git branch:      feature/buyer-agent
+Commit:          PENDING
+Author/Agent:    Antigravity
+Workstream:      05-buyer-ai-mcp
+Change:          Implemented BuyerAdapter over M0 application-service contracts
+Files/modules:   src/ai_commerce_gateway/application/buyer_adapter/
+
+### What Changed
+
+Implemented the thin buyer-side application/tool adapter foundation. Created narrow typed buyer-facing request/response schemas, safe error mapping, tools schemas, and contract tests using fakes.
+
+### Reason
+
+Satisfy Phase C1 requirements to prepare for C2 Reference Buyer Chat.
+
+### Technical Impact
+
+No direct provider calls or financial logic. Idempotency key and correlation ID propagation is supported via an InvocationContext.
+
+### Validation
+
+Passed ruff, mypy, and pytest with 94% coverage.
+
+### Evidence
+
+Repository files.
+
+### Result
+
+SUCCESS
+
+### Problems / Limitations
+
+None.
+
+### Next Step
+
+Phase C2.

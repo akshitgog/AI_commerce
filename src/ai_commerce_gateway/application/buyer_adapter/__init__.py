@@ -1,0 +1,1 @@
+"""Buyer AI/MCP adapter."""
