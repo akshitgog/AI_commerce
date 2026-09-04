@@ -263,3 +263,50 @@ Phase A3 escalation during implementation of buyer-safe reads. Gate approved by 
 ### Supersedes
 
 None.
+
+---
+
+## D-009 — Execute A7 before A6 in the merchant lane
+
+Status: ACTIVE
+Date: 2026-09-04
+Branch: phase/a7-merchant-mcp-readiness
+Owner: Human direction, recorded by Agent A
+
+### Decision
+
+Execute Phase A7 (`phase/a7-merchant-mcp-readiness`) immediately after A5 and before A6
+(`phase/a6-merchant-dashboard`), producing the ordering A5 → A7 → A6. All backend domain logic
+(catalog idempotency, publication-confirmation issuer/verifier) is completed before the merchant
+dashboard UI is built, so A6 consumes finalized, idempotent APIs.
+
+### Why
+
+A7 is pure backend domain logic: wrapping `create_product`, `update_product`, `publish_product`
+and `unpublish_product` with durable fingerprinted idempotency on the existing
+`idempotency_records` table, plus the 5-minute signed publication-confirmation token issuer and
+verification seam. A6 is the frontend dashboard. Building the UI against already-frozen idempotent
+services avoids rework when the confirmation handoff and idempotent semantics land.
+
+### Alternatives Considered
+
+- Follow the default WORKSTREAM 02 ordering (A6 then A7): rejected because the confirmation
+  claims' interactive dashboard button is an A7 integration contribution that does not depend on
+  A6 being built first, while A6 benefits from building against final A7 seams.
+
+### Consequences
+
+WORKSTREAM 02 line 80 ("A7 begins after the A6 dashboard and approved auth seam are available")
+is deliberately deviated from. A6 still owns the dashboard UI for the confirmation handoff; A7
+provides only the backend issuer/verifier services. MCP transport remains Workstream 05 (C7).
+No frozen contracts, DTOs, enums or DB schema change.
+
+### Evidence / Trigger
+
+Human direction during Phase A5 review (2026-09-04): "architecturally it is actually much better
+to do A7 before A6 … we can record this deliberate ordering in decisions.md and execute:
+A5 → A7 → A6."
+
+### Supersedes
+
+Refines D-006 and D-007; does not change their ownership boundaries.
