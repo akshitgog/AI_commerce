@@ -1,4 +1,5 @@
 from functools import lru_cache
+from secrets import token_urlsafe
 from typing import Literal
 
 from pydantic import Field
@@ -22,6 +23,7 @@ class Settings(BaseSettings):
     llm_provider_url: str = "https://api.openai.com/v1/chat/completions"
     llm_api_key: str | None = Field(default=None, repr=False)
     llm_model: str = "gpt-4o-mini"
+    publication_confirmation_secret: str = Field(default_factory=lambda: token_urlsafe(32))
 
 
 @lru_cache
