@@ -436,4 +436,29 @@ ext_cursor logic with 55 created products.
 **A7 Obstruction Check:**
 A3 neither adds nor removes `idempotency_key` semantics and leaves `MerchantCatalogService`, enums, `contracts/models.py` DTOs, and the database schema completely untouched. Future Phase A7 durable fingerprinted idempotency and publication confirmation can wrap canonical operations seamlessly. The only carried-forward note is that `CatalogService.get_product` (buyer path) now requires `merchant_id`, which is relevant to Workstream C integration.
 
+## [2026-09-04] Phase A4 Merchant Policy
+
+**Role:** Agent A (Merchant/Catalog Lane)
+**Status:** READY FOR REVIEW
+**Branch:** phase/a4-merchant-policy
+
+**Implemented:**
+1. **Policy Application Service:** Implemented `ApplicationMerchantPolicyService` in `src/ai_commerce_gateway/application/policy_service.py` satisfying `MerchantPolicyService`.
+2. **Policy Configuration & Versioning:**
+   - `get_policy`: Strictly tenant-scoped policy retrieval (returns 403 for unauthorized actors, 404 if no policy exists).
+   - `update_policy`: Gated to `ADMIN` role. Validates policy modes (`MANUAL_ALL`, `AUTO_BELOW_LIMIT`, `DENY_ALL`) and enforces `auto_accept_max` constraints with strict minor unit typing. Handles version incrementing and rejects stale writes with 409 VALIDATION_ERROR.
+3. **Manual Review Queue Operations:**
+   - `list_reviews`: Tenant-scoped review queue retrieval supporting cursor pagination over pending `REVIEW_REQUIRED` merchant decision items.
+4. **Clean Domain Seams:**
+   - `evaluate` and `record_manual_decision`: Correctly deferred to Transaction Core (B2) with `NotImplementedError` per architectural boundaries.
+5. **Comprehensive Testing:**
+   - Created `tests/unit/test_merchant_policy_service.py` with 100% statement coverage on `policy_service.py` and `contracts/models.py`. Validates all modes, initial creation, updates, role rejections (non-ADMIN denied update with 403), cross-tenant rejections (403), review queue pagination, and command validations.
+
+**Validation:**
+- `uv run ruff check .` -> PASS (0 errors)
+- `uv run mypy` -> PASS (0 issues across 28 source files)
+- `uv run pytest --cov=ai_commerce_gateway --cov-report=term-missing` -> PASS (149 passed, 27 skipped, 0 failed, 97% overall coverage, 100% on policy_service.py)
+- `uv run alembic upgrade head --sql` -> PASS (clean schema build)
+
+
 
