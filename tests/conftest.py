@@ -1,7 +1,11 @@
-from collections.abc import Iterator
+from collections.abc import AsyncIterator, Iterator
+from contextlib import asynccontextmanager
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
+from mcp.client import Client
+from mcp.client.streamable_http import streamable_http_client
 from pydantic import SecretStr
 
 from ai_commerce_gateway.api.app import create_app
@@ -29,7 +33,7 @@ def clear_settings_cache() -> Iterator[None]:
     get_settings.cache_clear()
 
 
-def test_settings() -> Settings:
+def make_test_settings() -> Settings:
     """Settings for the buyer app under test, with session auth enabled."""
     return Settings(
         buyer_sessions_secret=SecretStr(TEST_SESSION_SECRET),
@@ -56,6 +60,25 @@ def buyer_headers(
     return headers
 
 
+@asynccontextmanager
+async def mcp_buyer_client(
+    mcp_url: str, buyer_id: str | None
+) -> AsyncIterator[Client]:
+    """Open an MCP client over Streamable HTTP with a real buyer session.
+
+    ``buyer_id=None`` connects WITHOUT a session (for negative auth tests).
+    """
+    headers: dict[str, str] = {}
+    if buyer_id is not None:
+        headers["Authorization"] = f"Bearer {issue_buyer_token(buyer_id)}"
+    http_client = httpx.AsyncClient(headers=headers)
+    transport = streamable_http_client(mcp_url, http_client=http_client)
+    client = Client(transport)
+    async with client:
+        yield client
+    await http_client.aclose()
+
+
 def fake_service_bundle() -> BuyerServiceBundle:
     """Test-only service bundle (fakes are permitted exclusively in tests)."""
     return BuyerServiceBundle(
@@ -71,6 +94,6 @@ def client() -> TestClient:
     """App client wired to test fakes through the real composition seam."""
     app = create_app(
         services_factory=static_bundle_factory(fake_service_bundle()),
-        settings=test_settings(),
+        settings=make_test_settings(),
     )
     return TestClient(app, raise_server_exceptions=True)

@@ -695,3 +695,56 @@ SUCCESS
 ### Next Step
 
 P0-4: finish buyer MCP — authenticated actor from the session layer inside MCP tools, buyer-only isolation checks, and real HTTP interop tests.
+
+---
+
+## Entry 014 — P0-4 Buyer MCP: session-authenticated tools, buyer-only surface, HTTP interop tests
+
+Date/time:       2026-09-04 (Asia/Calcutta)
+Git branch:      feature/buyer-ai-lane
+Commit:          <this commit>
+Author/Agent:    opencode buyer-lane agent (GLM)
+Workstream:      05-buyer-ai-mcp
+Change:          Replaced the hardcoded buyer_demo_001 MCP actor with verified session identity, kept /mcp/buyer strictly buyer-only, and moved all MCP tests to real HTTP with real session tokens
+Files/modules:   src/ai_commerce_gateway/api/mcp/buyer_server.py, src/ai_commerce_gateway/api/app.py, tests/conftest.py, tests/unit/api/mcp/test_buyer_mcp.py, tests/unit/api/mcp/test_buyer_mcp_interop.py, tests/integration/test_buyer_harness.py
+
+### What Changed
+
+- Buyer MCP tools now resolve the acting buyer exclusively from the authenticated session: the SDK injects the request into the tool `Context`; the raw `Authorization` header is treated as an untrusted credential and verified server-side via `BuyerSessionService`. No valid session -> `ToolError` ("A valid buyer session is required"). The `_make_actor`/`buyer_demo_001` demo actor is deleted.
+- The Authorization header is never trusted as identity — only the verified HMAC session is (mirrors the SDK's own warning that headers are not identity assertions).
+- MCP tool schemas carry no identity or approval fields; the buyer surface remains exactly the 7 canonical tools. `test_no_merchant_or_privileged_tools` asserts merchant/provider/admin/approve tool names never appear.
+- `create_app` passes the same `BuyerSessionService` to the MCP server, so MCP authenticates with the same tokens as the HTTP API.
+- Tests: `mcp_buyer_client` helper builds an MCP client over Streamable HTTP with a real signed session token (`streamable_http_client(url, http_client=httpx.AsyncClient(headers=...))`). All MCP contract and interop tests now run over real HTTP with real sessions; negative tests cover unauthenticated rejection and per-session identity isolation (buyer_anna vs buyer_omar on one server).
+
+### Reason
+
+P0-4 of the buyer-lane brief: buyer MCP must use the authenticated actor context, stay buyer-only, call the same real application services as chat/UI, and prove it over real HTTP.
+
+### Technical Impact
+
+- The MCP adapter is now a true thin adapter over the same composition seam and the same identity layer as the buyer chat/UI; an external MCP client gets exactly the same restrictions as the reference buyer.
+- Identity can no longer be claimed via tool arguments (no buyer_id in any schema) or faked via headers (header value is verified, never trusted).
+
+### Validation
+
+- `uv run ruff check .` — PASS
+- `uv run mypy` — PASS (37 files, 0 errors)
+- `uv run pytest` — 118 passed, 1 skipped (PostgreSQL-only test)
+- MCP HTTP tests exercise tools/list, all 7 tools over real HTTP, unauthenticated rejection, per-session isolation, and deterministic idempotency replay.
+
+### Evidence
+
+Test run above; tests/unit/api/mcp/test_buyer_mcp.py and test_buyer_mcp_interop.py now run the official MCP client over real HTTP against the real app (fake services via the seam).
+
+### Result
+
+SUCCESS
+
+### Problems / Limitations
+
+- Real-composition interop (MCP against the integrated in-process services) is deferred to the integration milestone; the seam and wire behavior are identical.
+- The in-memory MCP transport cannot authenticate (no headers); tests therefore use real HTTP only.
+
+### Next Step
+
+P0-5: merchant MCP C7 — disjoint tool registry, role-gated mutations, transport Idempotency-Key, publication token stripped at the adapter boundary, over Agent A's real merchant HTTP API.

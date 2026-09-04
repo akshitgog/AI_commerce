@@ -8,7 +8,6 @@ from collections.abc import AsyncIterator
 import httpx
 import pytest
 import uvicorn
-from mcp.client import Client
 from mcp.types import TextContent
 
 from ai_commerce_gateway.api.app import create_app
@@ -17,7 +16,7 @@ from ai_commerce_gateway.api.composition import (
     BuyerServicesFactory,
     static_bundle_factory,
 )
-from tests.conftest import buyer_headers, test_settings
+from tests.conftest import buyer_headers, make_test_settings, mcp_buyer_client
 from tests.unit.application.buyer_adapter.fakes import (
     FakeAuthorizationService,
     FakeCatalogService,
@@ -56,7 +55,7 @@ async def running_server(harness_factory: BuyerServicesFactory) -> AsyncIterator
 
     port = _find_free_port()
     # Inject our harness factory into the app
-    app = create_app(services_factory=harness_factory, settings=test_settings())
+    app = create_app(services_factory=harness_factory, settings=make_test_settings())
 
     config = uvicorn.Config(app, host="127.0.0.1", port=port, log_level="error")
     server = uvicorn.Server(config)
@@ -147,11 +146,12 @@ async def test_buyer_harness_chat_parity(running_server: tuple[str, str]) -> Non
 async def test_buyer_harness_mcp_parity(running_server: tuple[str, str]) -> None:
     """Simulate the identical buyer sequence via the MCP Streamable HTTP transport.
 
-    Proves that the remote MCP tools map to the exact same capabilities and traces.
+    Proves that the remote MCP tools map to the exact same capabilities and
+    traces, with identity resolved from the authenticated buyer session.
     """
     _, mcp_url = running_server
 
-    async with Client(mcp_url) as client:
+    async with mcp_buyer_client(mcp_url, "buyer_harness_001") as client:
         # 1. Search Catalog
         search_res = await client.call_tool("search_catalog", {"merchant_id": "mer_demo_1"})
         text_content = search_res.content[0]
@@ -159,12 +159,13 @@ async def test_buyer_harness_mcp_parity(running_server: tuple[str, str]) -> None
         search_data = json.loads(text_content.text)
         product_id = search_data["items"][0]["id"]
 
-        # 2. Create Proposal
+        # 2. Create Proposal (buyer_id comes from the session)
         prop_res = await client.call_tool(
             "create_purchase_proposal",
             {"merchant_id": "mer_demo_1", "product_id": product_id, "quantity": 1},
         )
         prop_data = json.loads(prop_res.content[0].text)  # type: ignore
+        assert prop_data["buyer_id"] == "buyer_harness_001"
         proposal_id = prop_data["id"]
 
         # 3. Request Authorization

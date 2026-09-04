@@ -4,9 +4,12 @@ Exposes the 7 canonical buyer tools over Streamable HTTP. Each tool maps
 one-to-one to BuyerAdapter methods over the same real application services
 used by buyer chat and the buyer UI API. No business logic lives here.
 
-Identity note: the current demo actor is temporary plumbing, not trusted
-production authentication; P0 hardening replaces it with the authenticated
-actor context from the server-side session layer.
+Identity (P0-4): the acting buyer comes ONLY from the authenticated session.
+The SDK injects the HTTP request into the tool ``Context``; the
+``Authorization`` header is extracted and verified server-side against the
+HMAC buyer session service. The header value is never trusted as identity —
+it is treated as an untrusted credential and verified before use. Without a
+valid session the tool call is rejected. There is no demo buyer fallback.
 """
 
 import hashlib
@@ -15,8 +18,11 @@ import logging
 from uuid import uuid4
 
 from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver.context import Context
+from mcp.server.mcpserver.exceptions import ToolError
 
 from ai_commerce_gateway.api.composition import BuyerServiceBundle, BuyerServicesFactory
+from ai_commerce_gateway.api.session_auth import BuyerSessionService
 from ai_commerce_gateway.application.buyer_adapter.adapter import BuyerAdapter
 from ai_commerce_gateway.application.buyer_adapter.schemas import (
     CreatePurchaseProposalRequest,
@@ -29,30 +35,55 @@ from ai_commerce_gateway.application.buyer_adapter.schemas import (
     SearchCatalogRequest,
 )
 from ai_commerce_gateway.contracts.models import ActorContext
-from ai_commerce_gateway.domain.enums import ActorType
 
 logger = logging.getLogger(__name__)
 
-# Default demo buyer ID when none is provided via transport context
-_DEFAULT_DEMO_BUYER = "buyer_demo_001"
+_AUTH_REQUIRED = "A valid buyer session is required (Authorization: Bearer <session token>)."
 
 
-def _make_actor(buyer_id: str | None = None) -> ActorContext:
-    """Build a demo ActorContext. Temporary plumbing only."""
-    bid = buyer_id or _DEFAULT_DEMO_BUYER
-    return ActorContext(
-        actor_id=bid,
-        actor_type=ActorType.BUYER,
-        correlation_id=f"corr_{uuid4().hex[:12]}",
+def _actor_from_context(
+    ctx: Context, session_service: BuyerSessionService | None
+) -> ActorContext:
+    """Resolve the authenticated buyer actor from the MCP request context.
+
+    ``ctx.headers`` is the raw client-supplied header map; the session token
+    it carries is verified server-side and never treated as identity by
+    itself. A non-HTTP transport (no headers) cannot carry a session and is
+    rejected.
+    """
+    if session_service is None:
+        raise ToolError(_AUTH_REQUIRED)
+    headers = ctx.headers
+    if headers is None:
+        raise ToolError(_AUTH_REQUIRED)
+    authorization = headers.get("authorization") or headers.get("Authorization")
+    if not authorization:
+        raise ToolError(_AUTH_REQUIRED)
+    scheme, _, token = authorization.partition(" ")
+    if scheme.lower() != "bearer" or not token.strip():
+        raise ToolError(_AUTH_REQUIRED)
+    correlation_id = (
+        headers.get("x-correlation-id")
+        or headers.get("X-Correlation-ID")
+        or f"corr_{uuid4().hex[:12]}"
     )
+    actor = session_service.actor_context(token.strip(), correlation_id=correlation_id)
+    if actor is None:
+        raise ToolError(_AUTH_REQUIRED)
+    return actor
 
 
-def _make_invocation(
-    idempotency_key: str | None = None,
+def _invocation_from_context(
+    ctx: Context, idempotency_key: str | None = None
 ) -> InvocationContext:
-    """Build an InvocationContext for the MCP call."""
+    headers = ctx.headers or {}
+    correlation_id = (
+        headers.get("x-correlation-id")
+        or headers.get("X-Correlation-ID")
+        or f"corr_{uuid4().hex[:12]}"
+    )
     return InvocationContext(
-        correlation_id=f"corr_{uuid4().hex[:12]}",
+        correlation_id=correlation_id,
         idempotency_key=idempotency_key or f"idem_{uuid4().hex}",
         request_id=f"req_{uuid4().hex[:12]}",
     )
@@ -74,8 +105,16 @@ def _result_to_text(data: object) -> str:
     return json.dumps(data, default=str)
 
 
-def create_buyer_mcp_server(services_factory: BuyerServicesFactory) -> MCPServer:
-    """Create the Buyer MCP server with 7 tools over the composition seam."""
+def create_buyer_mcp_server(
+    services_factory: BuyerServicesFactory,
+    session_service: BuyerSessionService | None = None,
+) -> MCPServer:
+    """Create the Buyer MCP server with 7 tools over the composition seam.
+
+    All tools resolve the acting buyer from the authenticated session, never
+    from arguments. There are no merchant, provider, approval or admin tools
+    on this server.
+    """
 
     mcp = MCPServer("ai-commerce-buyer")
 
@@ -89,6 +128,7 @@ def create_buyer_mcp_server(services_factory: BuyerServicesFactory) -> MCPServer
 
     @mcp.tool()
     def search_catalog(
+        ctx: Context,
         merchant_id: str,
         query: str | None = None,
         category: str | None = None,
@@ -97,8 +137,8 @@ def create_buyer_mcp_server(services_factory: BuyerServicesFactory) -> MCPServer
         currency: str | None = None,
     ) -> str:
         """Search for published products available from the merchant."""
-        actor = _make_actor()
-        invocation = _make_invocation()
+        actor = _actor_from_context(ctx, session_service)
+        invocation = _invocation_from_context(ctx)
         req = SearchCatalogRequest(
             merchant_id=merchant_id,
             query=query,
@@ -117,10 +157,10 @@ def create_buyer_mcp_server(services_factory: BuyerServicesFactory) -> MCPServer
         )
 
     @mcp.tool()
-    def get_product(product_id: str) -> str:
+    def get_product(ctx: Context, product_id: str) -> str:
         """Retrieve full details of a specific published product."""
-        actor = _make_actor()
-        invocation = _make_invocation()
+        actor = _actor_from_context(ctx, session_service)
+        invocation = _invocation_from_context(ctx)
         req = GetProductRequest(product_id=product_id)
         with services_factory() as services:
             adapter = _adapter_from(services)
@@ -129,12 +169,13 @@ def create_buyer_mcp_server(services_factory: BuyerServicesFactory) -> MCPServer
 
     @mcp.tool()
     def create_purchase_proposal(
+        ctx: Context,
         merchant_id: str,
         product_id: str,
         quantity: int = 1,
     ) -> str:
         """Create an immutable purchase proposal. AI cannot derive price."""
-        actor = _make_actor()
+        actor = _actor_from_context(ctx, session_service)
         idem_key = _derive_idempotency_key(
             actor.actor_id,
             "create_purchase_proposal",
@@ -142,7 +183,7 @@ def create_buyer_mcp_server(services_factory: BuyerServicesFactory) -> MCPServer
             product_id=product_id,
             quantity=quantity,
         )
-        invocation = _make_invocation(idempotency_key=idem_key)
+        invocation = _invocation_from_context(ctx, idempotency_key=idem_key)
         req = CreatePurchaseProposalRequest(
             merchant_id=merchant_id,
             product_id=product_id,
@@ -154,15 +195,15 @@ def create_buyer_mcp_server(services_factory: BuyerServicesFactory) -> MCPServer
         return _result_to_text(result)
 
     @mcp.tool()
-    def request_authorization(proposal_id: str) -> str:
+    def request_authorization(ctx: Context, proposal_id: str) -> str:
         """Request human buyer authorization for a proposal. Cannot approve."""
-        actor = _make_actor()
+        actor = _actor_from_context(ctx, session_service)
         idem_key = _derive_idempotency_key(
             actor.actor_id,
             "request_authorization",
             proposal_id=proposal_id,
         )
-        invocation = _make_invocation(idempotency_key=idem_key)
+        invocation = _invocation_from_context(ctx, idempotency_key=idem_key)
         req = RequestAuthorizationRequest(proposal_id=proposal_id)
         with services_factory() as services:
             adapter = _adapter_from(services)
@@ -170,15 +211,15 @@ def create_buyer_mcp_server(services_factory: BuyerServicesFactory) -> MCPServer
         return _result_to_text(result)
 
     @mcp.tool()
-    def execute_transaction(proposal_id: str) -> str:
+    def execute_transaction(ctx: Context, proposal_id: str) -> str:
         """Execute a transaction for an authorized proposal."""
-        actor = _make_actor()
+        actor = _actor_from_context(ctx, session_service)
         idem_key = _derive_idempotency_key(
             actor.actor_id,
             "execute_transaction",
             proposal_id=proposal_id,
         )
-        invocation = _make_invocation(idempotency_key=idem_key)
+        invocation = _invocation_from_context(ctx, idempotency_key=idem_key)
         req = ExecuteTransactionRequest(proposal_id=proposal_id)
         with services_factory() as services:
             adapter = _adapter_from(services)
@@ -186,10 +227,10 @@ def create_buyer_mcp_server(services_factory: BuyerServicesFactory) -> MCPServer
         return _result_to_text(result)
 
     @mcp.tool()
-    def get_transaction_status(transaction_id: str) -> str:
+    def get_transaction_status(ctx: Context, transaction_id: str) -> str:
         """Check the status of a transaction."""
-        actor = _make_actor()
-        invocation = _make_invocation()
+        actor = _actor_from_context(ctx, session_service)
+        invocation = _invocation_from_context(ctx)
         req = GetTransactionStatusRequest(transaction_id=transaction_id)
         with services_factory() as services:
             adapter = _adapter_from(services)
@@ -198,12 +239,13 @@ def create_buyer_mcp_server(services_factory: BuyerServicesFactory) -> MCPServer
 
     @mcp.tool()
     def get_transaction_audit(
+        ctx: Context,
         transaction_id: str,
         cursor: str | None = None,
     ) -> str:
         """Retrieve audit log events for a transaction."""
-        actor = _make_actor()
-        invocation = _make_invocation()
+        actor = _actor_from_context(ctx, session_service)
+        invocation = _invocation_from_context(ctx)
         req = GetTransactionAuditRequest(
             transaction_id=transaction_id,
             cursor=cursor,

@@ -19,14 +19,14 @@ from fastapi.testclient import TestClient
 
 from ai_commerce_gateway.api.app import create_app
 from ai_commerce_gateway.api.composition import static_bundle_factory
-from tests.conftest import buyer_headers, fake_service_bundle, test_settings
+from tests.conftest import buyer_headers, fake_service_bundle, make_test_settings
 
 
 @pytest.fixture
 def client() -> TestClient:
     app = create_app(
         services_factory=static_bundle_factory(fake_service_bundle()),
-        settings=test_settings(),
+        settings=make_test_settings(),
     )
     return TestClient(app, raise_server_exceptions=True)
 

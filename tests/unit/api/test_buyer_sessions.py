@@ -27,7 +27,7 @@ from tests.conftest import (
     TEST_SESSION_SECRET,
     fake_service_bundle,
     issue_buyer_token,
-    test_settings,
+    make_test_settings,
 )
 from tests.unit.application.buyer_adapter.fakes import FakeAuthorizationService
 
@@ -36,7 +36,7 @@ from tests.unit.application.buyer_adapter.fakes import FakeAuthorizationService
 def app_client() -> TestClient:
     app = create_app(
         services_factory=static_bundle_factory(fake_service_bundle()),
-        settings=test_settings(),
+        settings=make_test_settings(),
     )
     return TestClient(app, raise_server_exceptions=True)
 
@@ -265,7 +265,7 @@ def test_approve_endpoint_is_human_only_and_session_bound(
     )
     app = create_app(
         services_factory=static_bundle_factory(bundle),
-        settings=test_settings(),
+        settings=make_test_settings(),
     )
     expires = (datetime.now(UTC) + timedelta(minutes=15)).isoformat()
 

@@ -42,8 +42,9 @@ def create_app(
 
     # Create the MCP server and its Streamable HTTP ASGI app.
     # streamable_http_path="/" so the mount path IS the endpoint
-    # (avoids /mcp/buyer/mcp doubling).
-    buyer_mcp = create_buyer_mcp_server(factory)
+    # (avoids /mcp/buyer/mcp doubling). The buyer session service authenticates
+    # MCP tool calls with the same signed tokens as the HTTP API.
+    buyer_mcp = create_buyer_mcp_server(factory, session_service)
     mcp_asgi_app = buyer_mcp.streamable_http_app(
         streamable_http_path="/",
     )
