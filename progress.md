@@ -439,7 +439,7 @@ A3 neither adds nor removes `idempotency_key` semantics and leaves `MerchantCata
 ## [2026-09-04] Phase A4 Merchant Policy
 
 **Role:** Agent A (Merchant/Catalog Lane)
-**Status:** READY FOR REVIEW
+**Status:** REVIEWED AND APPROVED
 **Branch:** phase/a4-merchant-policy
 
 **Implemented:**
@@ -459,6 +459,16 @@ A3 neither adds nor removes `idempotency_key` semantics and leaves `MerchantCata
 - `uv run mypy` -> PASS (0 issues across 28 source files)
 - `uv run pytest --cov=ai_commerce_gateway --cov-report=term-missing` -> PASS (149 passed, 27 skipped, 0 failed, 97% overall coverage, 100% on policy_service.py)
 - `uv run alembic upgrade head --sql` -> PASS (clean schema build)
+
+**Minor / Optional Review Notes Recorded:**
+1. `list_reviews` direct ORM join bypasses the repository layer (couples application layer to DB schema; recommend introducing `MerchantPolicyRepository.list_pending_reviews()` in future refactor).
+2. `session=None` returns an empty review queue silently; consider raising an explicit configuration error in production hardening.
+3. Inlined `datetime.now(tz=UTC)` at `policy_service.py:89` noted for consistency with shared `_now()` helpers.
+4. Coordination with B2: Ensure B2's review-required decision flow populates `MerchantDecision.reason_code` and `decision` columns consistently with `list_reviews`.
+
+**A7 Obstruction Check:**
+A4 neither changes frozen contracts/DTOs/enums/schema nor introduces any idempotency or publication-confirmation behavior that would obstruct A7. A7 wraps only canonical product CRUD/publication operations, none of which A4 touches. No obstruction.
+
 
 
 
