@@ -1,14 +1,14 @@
-import os
-
 import pytest
 from sqlalchemy import create_engine, text
+
+from ai_commerce_gateway.core.config import get_settings
 
 
 @pytest.mark.integration
 def test_postgresql_connection_when_configured() -> None:
-    database_url = os.getenv("TEST_DATABASE_URL")
+    database_url = get_settings().test_database_url
     if not database_url:
-        pytest.skip("TEST_DATABASE_URL is not configured")
+        pytest.skip("database.test_url is not configured")
     engine = create_engine(database_url, pool_pre_ping=True)
     try:
         with engine.connect() as connection:

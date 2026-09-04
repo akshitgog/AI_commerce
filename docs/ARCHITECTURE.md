@@ -197,6 +197,8 @@ Every consequential event records actor, action, reason code, merchant, buyer, p
 
 - Backend: FastAPI or equivalent modular monolith.
 - Data: PostgreSQL or equivalent transactional relational database.
+- Configuration: typed YAML under `config/`, with ignored local overrides and deployment
+  environment variables reserved for overlay selection and secret-manager compatibility.
 - Dashboard: thin React/Next.js or equivalent client.
 - Buyer access: reference chat connected to the same backend application services.
 - External agent interoperability: one remote MCP server connected to those same application services.

@@ -272,3 +272,47 @@ invariant, B4 mock-transport/transaction-seam tests and real Test Mode run
 ### Supersedes
 
 None.
+
+---
+
+## D-009 — Centralize typed developer configuration in YAML
+
+Status: ACTIVE
+Date: 2026-09-04
+Branch: feature/transaction-core
+Owner: Project team / Workstream 06
+
+### Decision
+
+Use `config/default.yaml` for the safe complete configuration shape and ignored
+`config/local.yaml` for developer overrides. Allow `APP_CONFIG_FILE` to select a deployment YAML
+overlay. Validate YAML through typed `Settings`, reject unknown fields and wrap secrets in
+`SecretStr`. Existing flat environment variables remain higher-priority deployment and
+secret-manager overrides; feature code must not read them directly.
+
+### Why
+
+Database connections, LLM selections, provider credentials and other inputs need one discoverable,
+validated location without scattering developer setup through source code and shell state.
+
+### Alternatives Considered
+
+- Retain `.env` as the primary developer interface.
+- Permit arbitrary untyped YAML values.
+- Commit environment-specific files containing credentials.
+
+### Consequences
+
+New runtime inputs require a typed setting, YAML mapping, safe default/example and tests. B5 adds
+the distinct Razorpay webhook secret through this path. Existing B1–B4 consumers and CI environment
+overrides remain compatible.
+
+### Evidence / Trigger
+
+User-approved configuration requirement and automated overlay, validation, redaction and B4
+compatibility tests.
+
+### Supersedes
+
+Refines the environment-template portion of D-005; no frozen commerce or persistence contract is
+changed.

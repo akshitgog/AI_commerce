@@ -592,3 +592,58 @@ PostgreSQL-specific tests remain skipped locally because `TEST_DATABASE_URL` is 
 
 Merge B4 into `feature/transaction-core`, create `phase/b5-provider-verification` from that lane and
 implement only B5.
+
+---
+
+## Entry 011 — YAML configuration integrated into transaction lane
+
+Date/time:       2026-09-04 16:48 IST
+Git branch:      feature/transaction-core
+Commit:          commit containing this entry
+Author/Agent:    Codex
+Workstream:      infra / provider
+Change:          Adopted typed YAML inputs before B5 adds webhook configuration
+Files/modules:   config/, core/config.py, config tests, setup/dependency documentation
+
+### What Changed
+
+Centralized application, database, LLM, storage, Razorpay and merchant-MCP inputs in typed YAML.
+Added committed safe defaults, an ignored local overlay, explicit deployment overlays, strict
+unknown-field/type validation, deep merge and secret redaction. Included Razorpay's distinct
+webhook secret so B5 does not introduce an ad hoc environment-only input.
+
+### Reason
+
+Apply the approved repository-wide configuration requirement to the transaction lane before
+starting provider verification.
+
+### Technical Impact
+
+Existing flat `Settings` properties and environment overrides remain compatible. Frozen DTOs,
+service interfaces, state enums, ORM tables and migrations are unchanged.
+
+### Validation
+
+`uv run ruff check .` passed. `uv run mypy` passed. The full suite passed 382 tests with five
+credential/PostgreSQL-gated skips and 96% total coverage; `core/config.py` reported 97%. Offline
+Alembic upgrade SQL and `git diff --check` passed. `git check-ignore` confirmed both local YAML
+patterns are ignored.
+
+### Evidence
+
+Configuration tests cover local/default/deployment overlays, source precedence, secret redaction,
+invalid types, unknown fields and missing files. B4 adapter tests consume the YAML-backed settings.
+
+### Result
+
+SUCCESS — INTEGRATION PREREQUISITE FOR B5
+
+### Problems / Limitations
+
+Real secrets are intentionally absent. Developers use ignored `config/local.yaml`; deployments use
+their secret manager/environment override.
+
+### Next Step
+
+Commit the configuration integration, advance `phase/b5-provider-verification` to that lane head
+and implement only B5.

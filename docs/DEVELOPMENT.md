@@ -28,7 +28,8 @@ Reference Buyer Chat and Remote MCP will remain separate adapters. Neither packa
 ## Local setup
 
 ```powershell
-Copy-Item .env.example .env
+Copy-Item config/local.example.yaml config/local.yaml
+# Edit config/local.yaml with the local database, LLM and required credentials.
 uv sync --all-groups
 docker compose up -d postgres
 uv run alembic upgrade head
@@ -36,6 +37,14 @@ uv run uvicorn ai_commerce_gateway.api.app:app --reload
 ```
 
 Liveness is `GET /health/live`; readiness is `GET /health/ready` and checks the configured database.
+
+## Configuration
+
+Safe defaults and the complete typed shape live in `config/default.yaml`. Developers place local
+overrides in the Git-ignored `config/local.yaml`. CI/deployment can select another YAML overlay with
+the process environment variable `APP_CONFIG_FILE`; existing flat environment variables remain
+higher-priority compatibility/secret-manager overrides. Unknown YAML fields and invalid values stop
+startup. See `../config/README.md`.
 
 ## Validation
 
@@ -46,15 +55,20 @@ uv run pytest --cov=ai_commerce_gateway
 uv run alembic upgrade head --sql
 ```
 
-Database access and service ports are synchronous throughout. The PostgreSQL connection integration test runs locally only when `TEST_DATABASE_URL` is configured and is mandatory in CI. Migration round-trip and PostgreSQL SQL compilation are also tested without external services.
+Database access and service ports are synchronous throughout. The PostgreSQL connection integration
+test runs locally only when `database.test_url` (or `TEST_DATABASE_URL`) is configured and is
+mandatory in CI. Migration round-trip and PostgreSQL SQL compilation are also tested without
+external services.
 
 ## Razorpay Test Mode order check
 
-Configure only Test Mode credentials in the ignored `.env` file:
+Configure only Test Mode credentials in ignored `config/local.yaml`:
 
-```text
-RAZORPAY_KEY_ID=rzp_test_...
-RAZORPAY_KEY_SECRET=...
+```yaml
+razorpay:
+  key_id: rzp_test_...
+  key_secret: ...
+  webhook_secret: ... # distinct secret configured for the webhook endpoint
 ```
 
 Then run:

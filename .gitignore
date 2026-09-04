@@ -1,4 +1,6 @@
 .env
+config/local.yaml
+config/*.local.yaml
 .venv/
 __pycache__/
 *.py[cod]

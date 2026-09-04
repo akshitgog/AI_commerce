@@ -1,0 +1,36 @@
+app:
+  environment: development
+  name: AI Commerce Gateway
+  log_level: INFO
+
+database:
+  url: postgresql+psycopg://postgres:postgres@localhost:5432/ai_commerce_gateway
+  test_url: null
+  pool_size: 5
+  max_overflow: 10
+  pool_timeout_seconds: 30
+
+llm:
+  provider: openai
+  model: gpt-5.4-mini
+  api_key: null
+  base_url: null
+  temperature: 0.2
+
+storage:
+  provider: unconfigured
+  bucket: product-images
+  public_base_url: null
+
+razorpay:
+  key_id: null
+  key_secret: null
+  webhook_secret: null
+  api_base_url: https://api.razorpay.com
+  timeout_seconds: 10.0
+  checkout_name: AI Commerce Gateway
+
+merchant_mcp:
+  publication_secret: null
+  publication_audience: merchant-mcp-publication
+  confirmation_ttl_seconds: 300

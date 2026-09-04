@@ -28,6 +28,14 @@ The real provider test `tests/integration/test_razorpay_test_mode.py` passed and
 `created` order ending `...JzsC44`, with no payment or capture truth. No J05 or other project
 scenario status changes: an order-only Test Mode call is not verified payment-completion evidence.
 
+## YAML configuration validation
+
+On 2026-09-04, the transaction lane passed 382 tests with 96% coverage after adopting typed YAML;
+five live credential/PostgreSQL tests skipped. Ten configuration tests executed default/local and
+explicit deployment loading, deep merge, precedence, secret redaction, invalid types, unknown
+fields/shapes and missing-file failure. Ruff, mypy and offline Alembic validation passed. This does
+not change any J01–J16 status.
+
 ## Allowed statuses
 
 - `PASS`: executed, matched expected behavior and evidence is linked.
