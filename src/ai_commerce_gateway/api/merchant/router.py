@@ -178,16 +178,8 @@ PolicySvc = Annotated[ApplicationMerchantPolicyService, Depends(get_policy_servi
 
 
 def get_confirmation_service(db: DbSession) -> PublicationConfirmationService:
-    secret = get_settings().merchant_mcp_publication_secret
-    if secret is None:
-        raise AppError(
-            ErrorCode.INTERNAL_ERROR,
-            "Publication confirmation is not configured "
-            "(merchant_mcp.publication_secret).",
-            status_code=503,
-        )
     return PublicationConfirmationService(
-        secret.get_secret_value(),
+        get_settings().publication_secret_value,
         used_store=SqlAlchemyUsedConfirmationStore(db),
     )
 

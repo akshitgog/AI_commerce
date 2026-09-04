@@ -4,10 +4,11 @@ import os
 from collections.abc import Mapping
 from functools import lru_cache
 from pathlib import Path
+from secrets import token_urlsafe
 from typing import Any, Literal
 
 import yaml
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import (
     BaseSettings,
     InitSettingsSource,
@@ -91,9 +92,24 @@ class Settings(BaseSettings):
     razorpay_timeout_seconds: float = Field(default=10.0, gt=0)
     razorpay_checkout_name: str = "AI Commerce Gateway"
 
+    # When unset, an ephemeral per-process secret is generated: confirmation
+    # tokens remain unforgeable but stop working at restart (dev semantics).
     merchant_mcp_publication_secret: SecretStr | None = None
     merchant_mcp_publication_audience: str = "merchant-mcp-publication"
     merchant_mcp_confirmation_ttl_seconds: int = Field(default=300, ge=1, le=300)
+
+    @model_validator(mode="after")
+    def _fill_ephemeral_publication_secret(self) -> Settings:
+        """Dev semantics: one ephemeral secret per process when unconfigured."""
+        if self.merchant_mcp_publication_secret is None:
+            self.merchant_mcp_publication_secret = SecretStr(token_urlsafe(32))
+        return self
+
+    @property
+    def publication_secret_value(self) -> str:
+        """The publication-confirmation signing secret (always resolved)."""
+        assert self.merchant_mcp_publication_secret is not None
+        return self.merchant_mcp_publication_secret.get_secret_value()
 
     @classmethod
     def settings_customise_sources(
