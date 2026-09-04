@@ -387,7 +387,15 @@ class SqlAlchemyProductRepository:
             .limit(limit)
         )
         if cursor is not None:
-            stmt = stmt.where(orm.Product.id > cursor)
+            cursor_row = self._session.get(orm.Product, cursor)
+            if cursor_row:
+                stmt = stmt.where(
+                    (orm.Product.created_at > cursor_row.created_at)
+                    | (
+                        (orm.Product.created_at == cursor_row.created_at)
+                        & (orm.Product.id > cursor)
+                    )
+                )
         return [_orm_product_to_entity(r) for r in self._session.scalars(stmt)]
 
     def sku_exists_for_merchant(self, merchant_id: str, sku: str) -> bool:
