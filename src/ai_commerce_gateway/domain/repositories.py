@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
+from ai_commerce_gateway.domain.idempotency import CatalogIdempotencyRecord
 from ai_commerce_gateway.domain.merchant import (
     AddMerchantUserDomain,
     CreateMerchantDomain,
@@ -175,4 +176,42 @@ class MerchantPolicyRepository(Protocol):
 
     def update(self, entity: MerchantPolicyEntity) -> MerchantPolicyEntity:
         """Persist an updated policy; version already incremented by caller."""
+        ...
+
+
+class IdempotencyRepository(Protocol):
+    """Persistence for catalog-mutation idempotency records.
+
+    Uses the shared ``idempotency_records`` table.  The unique constraint
+    on ``(actor_id, operation, idempotency_key)`` ensures at-most-once
+    execution per caller+operation+key triple.
+    """
+
+    def get(
+        self, *, actor_id: str, operation: str, idempotency_key: str
+    ) -> CatalogIdempotencyRecord | None:
+        """Return the existing record or None."""
+        ...
+
+    def claim(
+        self, record: CatalogIdempotencyRecord
+    ) -> tuple[CatalogIdempotencyRecord, bool]:
+        """Attempt to atomically claim the idempotency slot.
+
+        Returns ``(record, True)`` if this call inserted the record, or
+        ``(existing_record, False)`` if a record already existed for the
+        same ``(actor_id, operation, idempotency_key)``.
+        """
+        ...
+
+    def save_result(
+        self,
+        record_id: str,
+        *,
+        resource_type: str,
+        resource_id: str,
+        response_code: int,
+        response_body_hash: str,
+    ) -> None:
+        """Persist the outcome of a successfully executed operation."""
         ...

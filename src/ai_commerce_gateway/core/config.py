@@ -1,4 +1,5 @@
 from functools import lru_cache
+from secrets import token_urlsafe
 from typing import Literal
 
 from pydantic import Field
@@ -19,6 +20,7 @@ class Settings(BaseSettings):
     storage_provider: str = "unconfigured"
     storage_bucket: str = "product-images"
     storage_public_base_url: str | None = None
+    publication_confirmation_secret: str = Field(default_factory=lambda: token_urlsafe(32))
 
 
 @lru_cache
