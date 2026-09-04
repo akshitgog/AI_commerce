@@ -39,11 +39,11 @@ Reads the corresponding catalog, policy, transaction and event tables only throu
 
 ## Relevant API/application services
 
-Merchant product CRUD/publish routes, dashboard-only publication-confirmation route, image upload/delete routes, policy read/update, review list/decision, transaction status and audit reads.
+Merchant product CRUD/publish routes, dashboard-only publication-confirmation route, image upload/delete routes, policy read/update, review list/decision, transaction status and audit reads, and the AI-assisted product-draft extraction route (D-010).
 
 ## Relevant UI surfaces
 
-Merchant sign-in, catalog manager, product editor, image picker/gallery, policy form, review queue, order detail and audit timeline.
+Merchant sign-in, catalog manager, AI-assisted product creation ("Add with AI" — primary), manual product editor (secondary), image picker/gallery, policy form, review queue, order detail and audit timeline.
 
 ## Directory ownership
 
@@ -70,13 +70,19 @@ Never trust route merchant IDs without server enforcement. Never accept/display 
 5. Build orders and audit views using simplified labels without collapsing backend states.
 6. In A7, add the explicit human confirmation/step-up handoff that requests a short-lived
    publication token without exposing that token to logs or persistent client storage.
+7. In A6, build the AI-assisted catalog creation flow (D-010): "Add with AI" as the primary
+   creation experience (conversational extraction → structured draft → merchant review →
+   publish) with the manual form kept as secondary. The LLM proposes a DRAFT only through
+   the frozen catalog services; it never writes to or publishes into the trusted catalog.
 
 ## Lane phase ownership
 
 This workstream is delivered primarily in `phase/a6-merchant-dashboard`, based on
 `feature/merchant-catalog`. UI shells or contract mocks may be prepared earlier only when explicitly
 included in the active phase scope. A6 must integrate the completed A2–A5 seams and must not repair
-missing backend behavior in UI code.
+missing backend behavior in UI code. Per D-010, A6 also delivers the AI-assisted catalog creation
+flow ("Add with AI" primary, manual secondary); its extraction endpoint may be prepared as part of
+A6 and must produce DRAFT-only output through the frozen catalog services.
 
 A6 exits only when component/contract tests, accessibility states, merchant-scope handling and the
 M1 dashboard journey pass review. Stop at `READY_FOR_REVIEW`; do not start buyer or transaction UI
