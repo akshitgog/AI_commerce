@@ -40,6 +40,7 @@ def memory_session() -> Session:
     session = session_factory()
     yield session
     session.close()
+    engine.dispose()
 
 
 def _now() -> datetime:

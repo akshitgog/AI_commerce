@@ -53,7 +53,7 @@ class MerchantUser(Base, TimestampMixin):
     __tablename__ = "merchant_users"
     __table_args__ = (UniqueConstraint("merchant_id", "user_id"),)
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
-    merchant_id: Mapped[str] = mapped_column(ForeignKey("merchants.id"), nullable=False, index=True)
+    merchant_id: Mapped[str] = mapped_column(ForeignKey("merchants.id"), nullable=False, index=True)  # noqa: E501
     user_id: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[str] = mapped_column(String(32), nullable=False)
 
@@ -68,7 +68,7 @@ class Product(Base, UpdatedTimestampMixin):
         CheckConstraint("length(currency) = 3", name="currency_length"),
     )
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
-    merchant_id: Mapped[str] = mapped_column(ForeignKey("merchants.id"), nullable=False, index=True)
+    merchant_id: Mapped[str] = mapped_column(ForeignKey("merchants.id"), nullable=False, index=True)  # noqa: E501
     sku: Mapped[str] = mapped_column(String(128), nullable=False)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
@@ -101,7 +101,7 @@ class ProductImage(Base, TimestampMixin):
         CheckConstraint("sort_order >= 0", name="sort_order_nonnegative"),
     )
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
-    merchant_id: Mapped[str] = mapped_column(ForeignKey("merchants.id"), nullable=False, index=True)
+    merchant_id: Mapped[str] = mapped_column(ForeignKey("merchants.id"), nullable=False, index=True)  # noqa: E501
     product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), nullable=False, index=True)
     storage_path: Mapped[str] = mapped_column(String(1024), nullable=False)
     public_url: Mapped[str | None] = mapped_column(String(2048))
@@ -119,7 +119,7 @@ class MerchantPolicy(Base, UpdatedTimestampMixin):
         ),
     )
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
-    merchant_id: Mapped[str] = mapped_column(ForeignKey("merchants.id"), nullable=False, index=True)
+    merchant_id: Mapped[str] = mapped_column(ForeignKey("merchants.id"), nullable=False, index=True)  # noqa: E501
     mode: Mapped[str] = mapped_column(String(32), nullable=False)
     auto_accept_max_minor: Mapped[int | None] = mapped_column(Integer)
     currency: Mapped[str | None] = mapped_column(String(3))
@@ -144,7 +144,7 @@ class PurchaseProposal(Base, TimestampMixin):
     )
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     buyer_id: Mapped[str] = mapped_column(ForeignKey("buyers.id"), nullable=False, index=True)
-    merchant_id: Mapped[str] = mapped_column(ForeignKey("merchants.id"), nullable=False, index=True)
+    merchant_id: Mapped[str] = mapped_column(ForeignKey("merchants.id"), nullable=False, index=True)  # noqa: E501
     product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), nullable=False)
     product_version: Mapped[int] = mapped_column(Integer, nullable=False)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -184,7 +184,7 @@ class MerchantDecision(Base, TimestampMixin):
     proposal_id: Mapped[str] = mapped_column(
         ForeignKey("purchase_proposals.id"), nullable=False, index=True
     )
-    merchant_id: Mapped[str] = mapped_column(ForeignKey("merchants.id"), nullable=False, index=True)
+    merchant_id: Mapped[str] = mapped_column(ForeignKey("merchants.id"), nullable=False, index=True)  # noqa: E501
     policy_id: Mapped[str] = mapped_column(ForeignKey("merchant_policies.id"), nullable=False)
     policy_version: Mapped[int] = mapped_column(Integer, nullable=False)
     decision: Mapped[str] = mapped_column(String(32), nullable=False)
@@ -206,7 +206,7 @@ class Transaction(Base, UpdatedTimestampMixin):
         ForeignKey("buyer_authorizations.id")
     )
     merchant_decision_id: Mapped[str | None] = mapped_column(ForeignKey("merchant_decisions.id"))
-    merchant_id: Mapped[str] = mapped_column(ForeignKey("merchants.id"), nullable=False, index=True)
+    merchant_id: Mapped[str] = mapped_column(ForeignKey("merchants.id"), nullable=False, index=True)  # noqa: E501
     buyer_id: Mapped[str] = mapped_column(ForeignKey("buyers.id"), nullable=False, index=True)
     amount_minor: Mapped[int] = mapped_column(Integer, nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False)

@@ -362,3 +362,78 @@ A2 — Product CRUD/Application Services (requires human approval before startin
 - pytest passed (131 passed, 27 skipped, coverage increased to 92%).
 
 All frozen shared contracts remain completely untouched. Phase A1 is now fully compliant with constraints and ready for merge.
+
+## [2026-09-04] Phase A2 Product CRUD
+
+**Role:** Agent A (Merchant/Catalog Lane)
+**Status:** REVIEWED AND APPROVED
+**Branch:** phase/a2-product-crud
+
+**Changes Made:**
+1. **Application Service implementation**: Created src/ai_commerce_gateway/application/catalog_service.py with ApplicationMerchantCatalogService implementing MerchantCatalogService.
+2. **Tenant scoping & Roles**: Enforced tenant boundaries and role requirements (e.g. ADMIN or EDITOR required for create/update) using ActorContext via a _require_merchant_access guard.
+3. **Draft Product CRUD**: Implemented create_product, update_product, get_product, and list_products.
+4. **Validation and SKU Uniqueness**: Enforced SKU uniqueness on creation returning 409 Conflict. Implemented optimistic concurrency control using expected_version returning 409 Conflict on stale writes.
+5. **Testing**: Implemented tests/unit/test_catalog_service.py to cover CRUD capabilities, authorization denials, SKU duplicate denials, and version mismatch denials.
+6. **Unscoped product loading**: Added a safe get_by_id_unscoped to ProductRepository that allows fetching a product by ID before validating its merchant_id against the caller's authorized context (required since get_product contract only receives product_id).
+
+**Validation:**
+- ruff check . passed cleanly.
+- mypy passed (0 issues).
+- pytest passed (136 passed, coverage up to 95%).
+- All M0 contracts adhered to.
+
+**Correction Pass (Phase A2):**
+1. **Removed get_by_id_unscoped:** Removed the unscoped lookup from ProductRepository to restore strictly tenant-scoped SQL queries.
+2. **Fixed ID Enumeration Oracle:** Modified get_product to loop over actor.merchant_ids, performing a tenant-scoped query for each. If not found, it returns a safe 404 Not Found, preventing cross-tenant existence leaks (which previously returned 403 Forbidden).
+3. **Fixed Linters:** Addressed all ruff violations (unused imports, long lines) in the test suite.
+4. **Updated Adversarial Tests:** Validated that cross-tenant product probing yields a 404 Not Found.
+
+**Correction Pass 2 (Phase A2):**
+1. **Ruff linting (F1):** Fixed the missing # noqa: E501 on long raise statement lines in catalog_service.py to ensure ruff passes completely clean.
+2. **Cursor pagination test (F2):** Implemented cursor logic fixes for sorting by (created_at, id) properly in SqlAlchemyProductRepository.list_for_merchant and authored 	est_merchant_catalog_service_list_products_pagination to assert 
+ext_cursor logic with 55 created products.
+3. **SYSTEM actor test (F3):** Authored 	est_merchant_catalog_service_system_get_product_not_implemented to cover the explicit NotImplementedError raised for SYSTEM actors querying without a merchant_id context in get_product.
+4. **SQLite Warnings (F5):** Repaired ResourceWarning: unclosed database leaks by calling ngine.dispose() within test fixtures yielding Session objects across all of 	ests/unit/.
+
+**Final IMPORTANT Correction (Phase A2 Review):**
+1. **DB Atomic Concurrency Enforcement:** Refactored SqlAlchemyProductRepository.update to execute an atomic UPDATE ... WHERE id = X AND merchant_id = Y AND version = expected_version instead of a select-and-modify. This enforces optimistic concurrency natively at the SQL level, ensuring a concurrent race maps cleanly to a 409 VALIDATION_ERROR (stale write) rather than causing unexpected overwrite behavior. Added a rigorous 	est_merchant_catalog_service_update_product_db_race unit test verifying that bypassing the application-level pre-checks still hits this SQL-level lock properly.
+2. **Review Status Updated:** Phase A2 is reviewed and approved.
+
+
+## [2026-09-04] Phase A3 Catalog Publication
+
+**Role:** Agent A (Merchant/Catalog Lane)
+**Status:** REVIEWED AND APPROVED
+**Branch:** phase/a3-catalog-publication
+
+**Implemented:**
+1. **Catalog Publication Lifecycle:** Implemented `publish_product` and `unpublish_product` in `ApplicationMerchantCatalogService` enforcing role-based permissions (`ADMIN` or `EDITOR`), `expected_version` concurrency pre-checks, and atomic SQL-level update incrementing version.
+2. **Buyer Catalog Service:** Created `ApplicationCatalogService` in `src/ai_commerce_gateway/application/buyer_catalog_service.py` implementing `CatalogService`. Enforces draft invisibility (`get_product` returns 404 for un-published items) and safe published search.
+3. **Approved Contract Change (D-008):** Formally updated `CatalogService.get_product(merchant_id: str, product_id: str, actor: ActorContext)` to ensure SQL-level tenant isolation (Invariant 19). Reverted `MerchantCatalogService.get_product` to keep its frozen `(product_id, actor)` signature without unnecessary alterations.
+
+**Review Findings Addressed:**
+- **[BLOCKER 1 - Ruff E501]:** Fixed all line length violations in `test_buyer_catalog_service.py` and `buyer_catalog_service.py`. `uv run ruff check .` passes with 0 errors.
+- **[IMPORTANT 2 - Formal Contract Approval]:** Recorded explicit integrator/human approval for D-008 in `docs/decisions.md` and `decisions.md` (Status: APPROVED).
+- **[IMPORTANT 3 - Merchant Protocol Seam]:** Restored `MerchantCatalogService.get_product` signature in `contracts/services.py` back to `(product_id: str, actor: ActorContext)` so it matches implementation and keeps the M0 frozen protocol intact.
+- **[IMPORTANT 4 - Role Denial & Isolation Tests]:** Added exhaustive tests for `publish_product` and `unpublish_product` asserting `VIEWER` (403) and cross-tenant actor (403) rejections. Added tests for multi-merchant search isolation proving products from Merchant A never leak to Merchant B searches.
+- **[IMPORTANT 5 - Search Filtering Architecture]:** Documented architectural rationale for in-memory filtering over frozen `ProductRepository.list_published(merchant_id, cursor, limit)`. Synchronized `list_published` cursor pagination to use tuple-based `(created_at, id)` comparisons matching `list_for_merchant`. Added test coverage for all filter branches (`category`, `min_price_minor`, `max_price_minor`, `currency`, `query` on title & description) and multi-page cursor pagination.
+- **[MINOR 6 - Code Deduplication]:** Deduplicated `_to_product_view` into a single reusable helper imported across services.
+- **[GOVERNANCE 7 - Dedicated Branch]:** Switched active work to dedicated branch `phase/a3-catalog-publication` while preserving `phase/a2-product-crud` at commit `2bf012f`.
+
+**Validation:**
+- `uv run ruff check .` -> PASS (0 errors)
+- `uv run mypy` -> PASS (0 issues across 27 source files)
+- `uv run pytest --cov=ai_commerce_gateway --cov-report=term-missing` -> PASS (144 passed, 27 skipped, 0 failed, 96% coverage)
+- `uv run alembic upgrade head --sql` -> PASS (clean schema build)
+
+**Minor / Optional Review Notes Recorded:**
+1. Search filtering in memory over tenant-scoped `list_published` is documented and appropriate for V1 merchant scale; can revisit if buyer search scale warrants dedicated repository methods.
+2. Search cursor pagination edge case (when in-memory filtering reduces result count) is noted and preserves keyset correctness.
+3. Root `decisions.md` and `docs/decisions.md` duplicate D-008; recommendation noted for canonicalization.
+4. Future roadmap option for SQL-level filtering via `search_published(filters)` deferred until scale requires it.
+
+**A7 Obstruction Check:**
+A3 neither adds nor removes `idempotency_key` semantics and leaves `MerchantCatalogService`, enums, `contracts/models.py` DTOs, and the database schema completely untouched. Future Phase A7 durable fingerprinted idempotency and publication confirmation can wrap canonical operations seamlessly. The only carried-forward note is that `CatalogService.get_product` (buyer path) now requires `merchant_id`, which is relevant to Workstream C integration.
+
+
