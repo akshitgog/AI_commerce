@@ -35,6 +35,7 @@ _CONFIG_SCHEMA: dict[str, dict[str, str]] = {
         "api_key": "llm_api_key",
         "base_url": "llm_base_url",
         "temperature": "llm_temperature",
+        "max_tool_steps": "llm_max_tool_steps",
     },
     "storage": {
         "provider": "storage_provider",
@@ -49,7 +50,20 @@ _CONFIG_SCHEMA: dict[str, dict[str, str]] = {
         "timeout_seconds": "razorpay_timeout_seconds",
         "checkout_name": "razorpay_checkout_name",
     },
+    "buyer_sessions": {
+        "secret": "buyer_sessions_secret",
+        "issuer_key": "buyer_sessions_issuer_key",
+        "ttl_seconds": "buyer_sessions_ttl_seconds",
+    },
+    "buyer_services": {
+        "mode": "buyer_services_mode",
+        "catalog_base_url": "buyer_services_catalog_base_url",
+        "transaction_base_url": "buyer_services_transaction_base_url",
+        "timeout_seconds": "buyer_services_timeout_seconds",
+    },
     "merchant_mcp": {
+        "api_base_url": "merchant_mcp_api_base_url",
+        "timeout_seconds": "merchant_mcp_timeout_seconds",
         "publication_secret": "merchant_mcp_publication_secret",
         "publication_audience": "merchant_mcp_publication_audience",
         "confirmation_ttl_seconds": "merchant_mcp_confirmation_ttl_seconds",
@@ -69,6 +83,7 @@ class Settings(BaseSettings):
     app_env: Literal["development", "test", "production"] = "development"
     app_name: str = "AI Commerce Gateway"
     log_level: str = "INFO"
+
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/ai_commerce_gateway"
     test_database_url: str | None = None
     db_pool_size: int = Field(default=5, ge=1)
@@ -80,6 +95,7 @@ class Settings(BaseSettings):
     llm_api_key: SecretStr | None = None
     llm_base_url: str | None = None
     llm_temperature: float = Field(default=0.2, ge=0, le=2)
+    llm_max_tool_steps: int = Field(default=8, ge=1, le=32)
 
     storage_provider: str = "unconfigured"
     storage_bucket: str = "product-images"
@@ -94,6 +110,17 @@ class Settings(BaseSettings):
 
     # When unset, an ephemeral per-process secret is generated: confirmation
     # tokens remain unforgeable but stop working at restart (dev semantics).
+    buyer_services_mode: Literal["in_process", "remote"] = "in_process"
+    buyer_services_catalog_base_url: str | None = None
+    buyer_services_transaction_base_url: str | None = None
+    buyer_services_timeout_seconds: float = Field(default=10.0, gt=0)
+
+    buyer_sessions_secret: SecretStr | None = None
+    buyer_sessions_issuer_key: SecretStr | None = None
+    buyer_sessions_ttl_seconds: int = Field(default=3600, ge=60, le=86400)
+
+    merchant_mcp_api_base_url: str | None = None
+    merchant_mcp_timeout_seconds: float = Field(default=10.0, gt=0)
     merchant_mcp_publication_secret: SecretStr | None = None
     merchant_mcp_publication_audience: str = "merchant-mcp-publication"
     merchant_mcp_confirmation_ttl_seconds: int = Field(default=300, ge=1, le=300)
@@ -205,8 +232,12 @@ def _flatten_yaml_settings(config: Mapping[str, Any]) -> dict[str, Any]:
         if unknown_fields:
             names = ", ".join(sorted(str(field) for field in unknown_fields))
             raise ValueError(f"Unknown field(s) in configuration section '{section}': {names}")
+
         for yaml_name, value in values.items():
-            flattened[section_schema[str(yaml_name)]] = value
+            if not isinstance(yaml_name, str):
+                raise ValueError(f"Configuration keys in section '{section}' must be strings")
+            flattened[section_schema[yaml_name]] = value
+
     return flattened
 
 

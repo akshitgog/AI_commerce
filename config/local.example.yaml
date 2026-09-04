@@ -22,5 +22,24 @@ razorpay:
   key_secret: replace-locally
   webhook_secret: replace-with-the-dashboard-configured-webhook-secret
 
+buyer_services:
+  # Leave mode as in_process for the integrated single-process deployment.
+  # To point this gateway at separately deployed trusted services instead:
+  # mode: remote
+  # catalog_base_url: https://merchant-service.internal
+  # transaction_base_url: https://transaction-service.internal
+  mode: in_process
+  catalog_base_url: null
+  transaction_base_url: null
+  timeout_seconds: 10.0
+
+buyer_sessions:
+  secret: replace-with-a-dedicated-random-secret
+  issuer_key: replace-with-a-dedicated-random-issuer-key
+  ttl_seconds: 3600
+
 merchant_mcp:
+  # Set to the merchant service base URL when running the merchant MCP
+  # adapter against a separately deployed merchant service.
+  api_base_url: null
   publication_secret: replace-with-a-dedicated-random-secret
