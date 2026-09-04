@@ -22,17 +22,42 @@ from ai_commerce_gateway.contracts.models import (
     ActorContext,
     CatalogSearchQuery,
     CatalogSearchResult,
+    ProductImageView,
     ProductView,
 )
 from ai_commerce_gateway.contracts.services import CatalogService
 from ai_commerce_gateway.core.errors import AppError, ErrorCode
 from ai_commerce_gateway.domain.enums import ProductStatus
-from ai_commerce_gateway.domain.repositories import ProductRepository
+from ai_commerce_gateway.domain.repositories import (
+    ProductImageRepository,
+    ProductRepository,
+)
 
 
 class ApplicationCatalogService(CatalogService):
-    def __init__(self, product_repo: ProductRepository):
+    def __init__(
+        self,
+        product_repo: ProductRepository,
+        image_repo: ProductImageRepository | None = None,
+    ) -> None:
         self._product_repo = product_repo
+        self._image_repo = image_repo
+
+    def _get_product_images(
+        self, merchant_id: str, product_id: str
+    ) -> tuple[ProductImageView, ...]:
+        if self._image_repo is None:
+            return ()
+        entities = self._image_repo.list_for_product(merchant_id, product_id)
+        return tuple(
+            ProductImageView(
+                id=img.id,
+                url=img.public_url or "",
+                alt_text=img.alt_text,
+                sort_order=img.sort_order,
+            )
+            for img in entities
+        )
 
     def search(self, query: CatalogSearchQuery, actor: ActorContext) -> CatalogSearchResult:
         # Fetch with buffer to accommodate filtering while respecting requested page size
@@ -74,7 +99,13 @@ class ApplicationCatalogService(CatalogService):
             if len(filtered) == query.limit:
                 break
 
-        items = tuple(_to_product_view(e) for e in filtered)
+        items = tuple(
+            _to_product_view(
+                e,
+                images=self._get_product_images(query.merchant_id, e.id),
+            )
+            for e in filtered
+        )
 
         next_cursor = None
         if len(filtered) == query.limit:
@@ -84,9 +115,7 @@ class ApplicationCatalogService(CatalogService):
 
         return CatalogSearchResult(items=items, next_cursor=next_cursor)
 
-    def get_product(
-        self, merchant_id: str, product_id: str, actor: ActorContext
-    ) -> ProductView:
+    def get_product(self, merchant_id: str, product_id: str, actor: ActorContext) -> ProductView:
         prod = self._product_repo.get_by_id(merchant_id, product_id)
         if not prod or prod.status != ProductStatus.PUBLISHED:
             raise AppError(
@@ -95,4 +124,5 @@ class ApplicationCatalogService(CatalogService):
                 status_code=404,
             )
 
-        return _to_product_view(prod)
+        images = self._get_product_images(merchant_id, prod.id)
+        return _to_product_view(prod, images=images)

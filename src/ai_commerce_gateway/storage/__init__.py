@@ -1,1 +1,4 @@
-"""Object-storage adapters implement contracts.StorageService."""
+from .local import LocalStorageService
+from .memory import InMemoryStorageService
+
+__all__ = ["InMemoryStorageService", "LocalStorageService"]

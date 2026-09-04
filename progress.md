@@ -469,6 +469,61 @@ A3 neither adds nor removes `idempotency_key` semantics and leaves `MerchantCata
 **A7 Obstruction Check:**
 A4 neither changes frozen contracts/DTOs/enums/schema nor introduces any idempotency or publication-confirmation behavior that would obstruct A7. A7 wraps only canonical product CRUD/publication operations, none of which A4 touches. No obstruction.
 
+## [2026-09-04] Phase A5 Product Storage
+
+**Role:** Agent A (Merchant/Catalog Lane)
+**Status:** READY FOR REVIEW
+**Branch:** phase/a5-product-storage
+
+**Implemented:**
+1. **Storage Adapters:**
+   - `InMemoryStorageService` (`src/ai_commerce_gateway/storage/memory.py`) implementing `StorageService` for unit tests and local development.
+   - `LocalStorageService` (`src/ai_commerce_gateway/storage/local.py`) implementing `StorageService` persisting images to local filesystem directory with URL mapping and cleanup methods.
+   - Exported both adapters in `src/ai_commerce_gateway/storage/__init__.py`.
+2. **Product Image Lifecycle in `ApplicationMerchantCatalogService`:**
+   - Injected optional `image_repo: ProductImageRepository | None = None` and `storage_svc: StorageService | None = None` into `__init__`, maintaining 100% backwards compatibility with existing call sites.
+   - Implemented `add_product_image(command: AddProductImageCommand, actor: ActorContext) -> ProductImageView`:
+     - Role-based authorization (`ADMIN` or `EDITOR` required; `VIEWER` or `APPROVER` rejected with 403).
+     - Product existence and tenant ownership check (404 / 403).
+     - Content-Type validation against allowed set (`image/jpeg`, `image/png`, `image/webp`, `image/gif`), rejecting invalid types with 400.
+     - Size limits: rejects empty content (`b""`) and files > 5MB with 400.
+     - Max 3 images per product limit: strictly rejects attempt to add a 4th image with 400.
+     - Sort order uniqueness: pre-checks sort_order collision (0-2) per product and returns 409 VALIDATION_ERROR.
+     - Uploads binary content to `storage_svc` and stores metadata in `image_repo` (no raw blobs in DB).
+     - Atomicity/cleanup: deletes uploaded storage blob if repository persistence fails.
+   - Implemented `delete_product_image(command: DeleteProductImageCommand, actor: ActorContext) -> None`:
+     - Role-based authorization (`ADMIN` or `EDITOR` required; `VIEWER` rejected with 403).
+     - Scoped deletion in both `image_repo` and `storage_svc`.
+     - Validates product and image existence (404 if not found).
+   - Added helper `_get_product_images` and populated safe `images: tuple[ProductImageView, ...]` in all product read/write views (`get_product`, `list_products`, `update_product`, `publish_product`, `unpublish_product`).
+3. **Buyer Catalog Service Integration:**
+   - Updated `ApplicationCatalogService` in `src/ai_commerce_gateway/application/buyer_catalog_service.py` with optional `image_repo`.
+   - Populates `images: tuple[ProductImageView, ...]` for published products in buyer `get_product` and `search` queries.
+   - Exposes safe `url`, `alt_text`, `sort_order` while strictly withholding internal storage paths from clients.
+4. **Comprehensive Unit Testing:**
+   - Created `tests/unit/test_product_storage_service.py` covering:
+     - `InMemoryStorageService` and `LocalStorageService` upload, delete, exists, public URL resolution.
+     - Happy path multi-image lifecycle (1, 2, 3 images with sort_orders 0, 1, 2).
+     - Max 3 image limit enforcement (400).
+     - Duplicate sort_order conflict rejection (409).
+     - Content-type validation (400 on PDF, plain text, video, BMP).
+     - Empty payload (400) and > 5MB payload (400) rejections.
+     - Role denial (`VIEWER` / `APPROVER` -> 403) and cross-tenant denial (403).
+     - Product not found (404) and image not found (404).
+     - Storage unconfigured handling (500 INTERNAL_ERROR).
+     - Storage file rollback when repo insert raises an exception.
+     - Buyer catalog search and get_product image projection.
+     - Lifecycle preservation across product update, publish, unpublish, and listing.
+
+**Validation:**
+- `uv run ruff check .` -> PASS (0 errors)
+- `uv run ruff format --check .` -> PASS (0 files need formatting)
+- `uv run mypy` -> PASS (0 issues across 30 source files)
+- `uv run pytest --cov=ai_commerce_gateway --cov-report=term-missing` -> PASS (166 passed, 27 skipped, 0 failed, 98% coverage; `storage/local.py` 100%, `storage/memory.py` 100%)
+- `uv run alembic upgrade head --sql` -> PASS (clean schema build, no schema migrations altered)
+
+**A7 Obstruction Check:**
+A5 leaves `idempotency_key` semantics and database models completely untouched, wrapping canonical product image operations without interfering with future Phase A7 durable fingerprinted idempotency or 5-minute publication confirmation tokens.
 
 ---
 
@@ -516,18 +571,14 @@ Status:          IMPLEMENTED — READY FOR REVIEW
 **Tests (24 new, 0 regressions):**
 - `test_a7_idempotency.py`: fingerprint determinism, first execution, same-key replay, different-key rejection, cross-merchant isolation, publish/unpublish/update idempotency, concurrent claim, restart persistence, publication confirmation issue/verify/expiry/tampering/wrong-secret/wrong-actor/wrong-action/wrong-version/invalid-action/empty-actor
 
-**Validation:**
+**Validation (post-A5 integration):**
 - `uv run ruff check .` → PASS (0 errors)
 - `uv run mypy` → PASS (0 issues, 33 source files)
-- `uv run pytest --cov=ai_commerce_gateway --cov-report=term-missing -rs` → PASS (173 passed, 27 skipped, 0 failed, 96% coverage)
-- New files: `publication_confirmation_service.py` 100%, `idempotency.py` 95%, `publication_confirmation.py` 90%, `merchant_idempotency.py` 90%, `catalog_idempotency.py` 85%
+- `uv run pytest --cov=ai_commerce_gateway --cov-report=term-missing -rs` → PASS (190 passed, 27 skipped, 0 failed)
+- Includes A5's 17 storage tests (`test_product_storage_service.py`) after merging Phase A5 base.
 
 **A6 Obstruction Check:**
 A7 wraps the frozen `MerchantCatalogService` without modifying it. A6 (merchant dashboard) will consume the same frozen Protocol. The `PublicationConfirmationService` and `IdempotentCatalogService` are new services that A6 routes can optionally use. No obstruction to A6.
 
 **Deliberate Ordering Note:**
-A7 executed before A6 per D-007 and user direction: "architecturally it is actually much better to do A7 before A6" — all backend domain logic first, then dashboard UI builds against finalized idempotent APIs.
-
-
-
-
+A7 executed before A6 per D-007 and user direction: "architecturally it is actually much better to do A7 before A6" — all backend domain logic first, then dashboard UI builds against finalized idempotent APIs. Recorded as D-009 in decisions.md.
