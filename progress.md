@@ -299,3 +299,76 @@ readiness, idempotency, locking, provider, reconciliation-worker or interface im
 
 Submit B1 for independent audit and human review. Do not begin B2 before approval and merge into
 `feature/transaction-core`.
+
+---
+
+## Entry 006 — Proposal and independent gate application services implemented
+
+Date/time:       2026-09-04 12:12 IST
+Git branch:      phase/b2-proposal-gates
+Commit:          uncommitted working tree; based on approved B1 merge d0a7342
+Author/Agent:    Codex Agent B
+Workstream:      transaction
+Change:          Implemented immutable proposals, bounded buyer authorization, merchant policy/manual decisions and READY transaction creation
+Files/modules:   domain/proposal_gates.py, application/proposal_gates.py, infrastructure/database/proposal_gates.py, proposal/gate tests
+
+### What Changed
+
+Added canonical hashing and immutable commercial snapshots derived only from persisted product
+price, version, currency and stock. Added bounded authorization request/approval logic with a
+required human-approval verifier, exact proposal matching and fail-closed expiry behavior. Added
+deterministic merchant policy evaluation, authenticated manual review and current-policy-version
+checks. Added readiness revalidation and creation/reuse of a `READY` transaction with its causal
+creation event.
+
+B1 was committed as `034fb42`, approved into `feature/transaction-core` as merge `d0a7342`, and B2
+was created from that lane head.
+
+### Reason
+
+Complete the B2 proposal and independent-gates phase while keeping financial authority in the
+domain/application layers and preserving the frozen Milestone 0 contracts.
+
+### Technical Impact
+
+Buyer consent and merchant acceptance are independent. AI-facing callers cannot approve because
+authorization approval requires an injected verifier for a human-controlled surface. Product or
+policy drift prevents readiness. Transaction creation emits an initial structured event but does
+not execute, lock, create an idempotency record or create a provider attempt.
+
+### Validation
+
+`uv run ruff check .` passed. `uv run mypy` passed. `uv run pytest
+--cov=ai_commerce_gateway` passed 327 tests with 97% package coverage; three PostgreSQL-dependent
+tests skipped because `TEST_DATABASE_URL` was not configured. The new proposal/gate domain module
+reported 99% coverage. `uv run alembic upgrade head --sql` passed.
+
+### Evidence
+
+Local command output on `phase/b2-proposal-gates`. Unit tests cover stable hash and scope mismatch
+rules. Database-backed tests cover automatic allow, manual review, AI approval denial, tenant
+isolation, current product/policy drift and causal `READY` transaction creation without a payment
+attempt. A PostgreSQL version of the proposal/gate flow is present and skips when the test URL is
+unavailable.
+
+### Result
+
+SUCCESS
+
+### Problems / Limitations
+
+Durable idempotency-key/fingerprint behavior and execution locking remain B3. The concrete
+human-approval authentication adapter remains owned by the later buyer-facing phase; B2 requires
+that verifier and has no permissive fallback. PostgreSQL-specific B2 evidence was not run locally
+because `TEST_DATABASE_URL` is unset. No HTTP, chat, MCP, provider or UI behavior was added.
+
+Independent review accepted the B2 implementation with minor follow-up notes for B3: the
+authorization-request reuse is soft deduplication rather than durable idempotency; concurrent
+decision ordering and latest-record selection must be rechecked under transaction locks. Optional
+negative tests for approval-before-request and policy change during manual review were noted but
+were not required for the B2 gate.
+
+### Next Step
+
+Submit B2 for independent audit and human review. Do not begin B3 before approval and merge into
+`feature/transaction-core`.
