@@ -33,6 +33,10 @@ class MerchantPolicyEntity:
     updated_at: datetime
 
     def __post_init__(self) -> None:
+        if type(self.version) is not int:  # noqa: E721
+            raise TypeError(
+                f"version must be a plain int, got {type(self.version).__name__!r}"
+            )
         if self.version < 1:
             raise ValueError("policy version must be >= 1")
         if self.mode is PolicyMode.AUTO_BELOW_LIMIT and self.auto_accept_max is None:

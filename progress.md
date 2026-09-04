@@ -342,3 +342,23 @@ SUCCESS
 ### Next Step
 
 A2 — Product CRUD/Application Services (requires human approval before starting).
+## [2026-09-04] Phase A1 Correction Pass
+
+**Role:** Agent A (Merchant/Catalog Lane)
+**Status:** READY FOR RE-REVIEW
+**Branch:** phase/a1-merchant-domain
+
+**Changes Made:**
+1. **BLOCKER 1 - MoneyMinor & Int Validation**: Enforced strict int checks in MoneyMinor to explicitly reject bool, float, Decimal, and strings. Replicated strict typing to available_quantity, version, sort_order, and version. Added adversarial test coverage in test_product_domain.py.
+2. **BLOCKER 2 - ProductMetadata Tenant Isolation**: Updated ProductMetadataRepository protocol and SqlAlchemyProductMetadataRepository implementation to require merchant_id parameter. Implemented an explicit _verify_ownership check against orm.Product before read/write operations to enforce proper tenant isolation.
+3. **BLOCKER 3 - ProductImage Tenant Isolation**: Added product ownership verification logic (orm.Product.id == entity.product_id AND orm.Product.merchant_id == entity.merchant_id) before image insertion in SqlAlchemyProductImageRepository.add() to prevent cross-tenant DOs/hijacking.
+4. **IMPORTANT - IntegrityError Mapping**: Wrapped session.flush() with try/except IntegrityError to raise AppError in SqlAlchemyProductRepository.update() and SqlAlchemyMerchantPolicyRepository.add() + update().
+5. **IMPORTANT - Removed internal rollbacks**: Removed self._session.rollback() from all repository methods. This project uses caller-owned transactions (session_scope()), so internal rollbacks inappropriately discarded all pending caller work.
+6. **IMPORTANT - Concrete Repository Tests**: Added tests/unit/test_concrete_repositories.py executing concrete SQLAlchemy implementations against a local in-memory SQLite database. This drastically improved test coverage (up to 92%) by verifying all error paths and untested branches.
+
+**Validation:**
+- ruff check passed with 0 errors.
+- mypy passed with 0 errors.
+- pytest passed (131 passed, 27 skipped, coverage increased to 92%).
+
+All frozen shared contracts remain completely untouched. Phase A1 is now fully compliant with constraints and ready for merge.

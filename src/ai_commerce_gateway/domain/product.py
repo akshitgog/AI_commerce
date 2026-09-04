@@ -26,6 +26,14 @@ class MoneyMinor:
     currency: str  # 3-character ISO code, e.g. "INR"
 
     def __post_init__(self) -> None:
+        # Strict type check: reject bool (bool is a subclass of int in Python so
+        # isinstance(True, int) == True), float, str, Decimal, or any other non-int value.
+        # Do not coerce — if the caller passes 100.5 or True it is a programming error.
+        if type(self.amount_minor) is not int:  # noqa: E721
+            raise TypeError(
+                f"amount_minor must be a plain int, got "
+                f"{type(self.amount_minor).__name__!r} ({self.amount_minor!r})"
+            )
         if self.amount_minor < 0:
             raise ValueError("amount_minor must be >= 0")
         if len(self.currency) != 3 or not self.currency.isalpha():
@@ -55,6 +63,10 @@ class ProductImageEntity:
     created_at: datetime
 
     def __post_init__(self) -> None:
+        if type(self.sort_order) is not int:  # noqa: E721
+            raise TypeError(
+                f"sort_order must be a plain int, got {type(self.sort_order).__name__!r}"
+            )
         if self.sort_order < 0:
             raise ValueError("sort_order must be >= 0")
 
@@ -115,8 +127,17 @@ class ProductEntity:
     updated_at: datetime
 
     def __post_init__(self) -> None:
+        if type(self.available_quantity) is not int:  # noqa: E721
+            raise TypeError(
+                f"available_quantity must be a plain int, "
+                f"got {type(self.available_quantity).__name__!r}"
+            )
         if self.available_quantity < 0:
             raise ValueError("available_quantity must be >= 0")
+        if type(self.version) is not int:  # noqa: E721
+            raise TypeError(
+                f"version must be a plain int, got {type(self.version).__name__!r}"
+            )
         if self.version < 1:
             raise ValueError("version must be >= 1")
 

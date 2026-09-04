@@ -155,7 +155,6 @@ class SqlAlchemyMerchantRepository:
         try:
             self._session.flush()
         except IntegrityError as exc:
-            self._session.rollback()
             raise AppError(
                 ErrorCode.VALIDATION_ERROR,
                 "Merchant with this ID already exists.",
@@ -195,7 +194,6 @@ class SqlAlchemyMerchantUserRepository:
         try:
             self._session.flush()
         except IntegrityError as exc:
-            self._session.rollback()
             raise AppError(
                 ErrorCode.VALIDATION_ERROR,
                 "User is already a member of this merchant.",
@@ -258,7 +256,6 @@ class SqlAlchemyProductRepository:
         try:
             self._session.flush()
         except IntegrityError as exc:
-            self._session.rollback()
             raise AppError(
                 ErrorCode.VALIDATION_ERROR,
                 f"Product with SKU {entity.sku!r} already exists for this merchant.",
@@ -305,7 +302,15 @@ class SqlAlchemyProductRepository:
         row.status = entity.status.value
         row.version = entity.version
         row.updated_at = entity.updated_at
-        self._session.flush()
+        try:
+            self._session.flush()
+        except IntegrityError as exc:
+            raise AppError(
+                ErrorCode.VALIDATION_ERROR,
+                f"Product with SKU {entity.sku!r} already exists for this merchant.",
+                status_code=409,
+                details={"sku": entity.sku, "merchant_id": entity.merchant_id},
+            ) from exc
         return _orm_product_to_entity(row)
 
     def list_for_merchant(
@@ -360,11 +365,25 @@ class SqlAlchemyProductMetadataRepository:
     def __init__(self, session: Session) -> None:
         self._session = session
 
-    def get(self, product_id: str) -> ProductMetadataEntity | None:
+    def _verify_ownership(self, merchant_id: str, product_id: str) -> None:
+        stmt = select(orm.Product.id).where(
+            orm.Product.id == product_id,
+            orm.Product.merchant_id == merchant_id,
+        )
+        if self._session.scalars(stmt).first() is None:
+            raise AppError(
+                ErrorCode.NOT_FOUND,
+                "Product not found or does not belong to this merchant.",
+                status_code=404,
+            )
+
+    def get(self, merchant_id: str, product_id: str) -> ProductMetadataEntity | None:
+        self._verify_ownership(merchant_id, product_id)
         row = self._session.get(orm.ProductMetadata, product_id)
         return _orm_product_metadata_to_entity(row) if row is not None else None
 
-    def upsert(self, entity: ProductMetadataEntity) -> ProductMetadataEntity:
+    def upsert(self, merchant_id: str, entity: ProductMetadataEntity) -> ProductMetadataEntity:
+        self._verify_ownership(merchant_id, entity.product_id)
         now = _now_utc()
         row = self._session.get(orm.ProductMetadata, entity.product_id)
         if row is None:
@@ -406,6 +425,17 @@ class SqlAlchemyProductImageRepository:
         self._session = session
 
     def add(self, entity: ProductImageEntity) -> ProductImageEntity:
+        stmt = select(orm.Product.id).where(
+            orm.Product.id == entity.product_id,
+            orm.Product.merchant_id == entity.merchant_id,
+        )
+        if self._session.scalars(stmt).first() is None:
+            raise AppError(
+                ErrorCode.NOT_FOUND,
+                "Product not found or does not belong to this merchant.",
+                status_code=404,
+            )
+
         now = _now_utc()
         row = orm.ProductImage(
             id=entity.id,
@@ -421,7 +451,6 @@ class SqlAlchemyProductImageRepository:
         try:
             self._session.flush()
         except IntegrityError as exc:
-            self._session.rollback()
             raise AppError(
                 ErrorCode.VALIDATION_ERROR,
                 "Image at this sort_order already exists for the product.",
@@ -509,7 +538,14 @@ class SqlAlchemyMerchantPolicyRepository:
             updated_at=now,
         )
         self._session.add(row)
-        self._session.flush()
+        try:
+            self._session.flush()
+        except IntegrityError as exc:
+            raise AppError(
+                ErrorCode.VALIDATION_ERROR,
+                "Policy version already exists for this merchant.",
+                status_code=409,
+            ) from exc
         return _orm_policy_to_entity(row)
 
     def update(self, entity: MerchantPolicyEntity) -> MerchantPolicyEntity:
@@ -539,5 +575,12 @@ class SqlAlchemyMerchantPolicyRepository:
         row.version = entity.version
         row.status = entity.status.value
         row.updated_at = now
-        self._session.flush()
+        try:
+            self._session.flush()
+        except IntegrityError as exc:
+            raise AppError(
+                ErrorCode.VALIDATION_ERROR,
+                "Policy version already exists for this merchant.",
+                status_code=409,
+            ) from exc
         return _orm_policy_to_entity(row)

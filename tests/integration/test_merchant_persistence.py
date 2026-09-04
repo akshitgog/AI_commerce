@@ -395,7 +395,7 @@ class TestProductMetadataSeparation:
             review_status=ReviewStatus.PENDING,
             updated_at=_utc_now(),
         )
-        stored_meta = meta_repo.upsert(meta)
+        stored_meta = meta_repo.upsert(merchant_id, meta)
         session.commit()
 
         # ProductMetadata has no price/currency/quantity/status/version
@@ -421,7 +421,7 @@ class TestProductMetadataSeparation:
             review_status=ReviewStatus.PENDING,
             updated_at=_utc_now(),
         )
-        meta_repo.upsert(meta)
+        meta_repo.upsert(merchant_id, meta)
         session.commit()
 
         # The product price must remain unchanged
@@ -445,10 +445,10 @@ class TestProductMetadataSeparation:
             review_status=ReviewStatus.PENDING,
             updated_at=_utc_now(),
         )
-        meta_repo.upsert(meta)
+        meta_repo.upsert(merchant_id, meta)
         session.commit()
 
-        loaded = meta_repo.get(product.id)
+        loaded = meta_repo.get(merchant_id, product.id)
         assert loaded is not None
         assert loaded.review_status is ReviewStatus.PENDING
 

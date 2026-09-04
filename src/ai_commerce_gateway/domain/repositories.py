@@ -117,11 +117,11 @@ class ProductRepository(Protocol):
 class ProductMetadataRepository(Protocol):
     """Persistence for ProductMetadata — always subordinate to the product."""
 
-    def get(self, product_id: str) -> ProductMetadataEntity | None:
+    def get(self, merchant_id: str, product_id: str) -> ProductMetadataEntity | None:
         """Return the metadata for a product, or None if not yet created."""
         ...
 
-    def upsert(self, entity: ProductMetadataEntity) -> ProductMetadataEntity:
+    def upsert(self, merchant_id: str, entity: ProductMetadataEntity) -> ProductMetadataEntity:
         """Create or replace the metadata for the product.
 
         This operation MUST NOT allow changes to price, currency, stock or

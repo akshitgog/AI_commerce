@@ -98,6 +98,20 @@ class TestMoneyMinor:
     def test_zero_amount_is_valid(self) -> None:
         MoneyMinor(amount_minor=0, currency="INR")  # must not raise
 
+    def test_amount_minor_strict_type_check(self) -> None:
+        """MoneyMinor must strictly reject float, bool, str, and other non-ints."""
+        with pytest.raises(TypeError, match="must be a plain int"):
+            MoneyMinor(amount_minor=100.5, currency="INR")  # type: ignore
+
+        with pytest.raises(TypeError, match="must be a plain int"):
+            MoneyMinor(amount_minor=True, currency="INR")  # type: ignore
+
+        with pytest.raises(TypeError, match="must be a plain int"):
+            MoneyMinor(amount_minor=False, currency="INR")  # type: ignore
+
+        with pytest.raises(TypeError, match="must be a plain int"):
+            MoneyMinor(amount_minor="100", currency="INR")  # type: ignore
+
     def test_negative_amount_rejected(self) -> None:
         with pytest.raises(ValueError, match="amount_minor"):
             MoneyMinor(amount_minor=-1, currency="INR")
