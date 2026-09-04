@@ -11,3 +11,8 @@ dist/
 build/
 *.egg-info/
 graphify-out/
+
+# local secrets / tooling
+rzp-key.csv
+opencode.json
+frontend-handoff/  # canonical copy lives in the buyer lane
