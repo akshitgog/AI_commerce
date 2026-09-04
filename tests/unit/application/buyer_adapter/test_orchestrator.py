@@ -214,6 +214,16 @@ def test_status_mapping_and_recovery(
         )
         assert res["state"] == "Processing payment"
 
+    # Test UNKNOWN/RECONCILING
+    with patch.object(
+        mock_adapter, "get_transaction_status", return_value=make_txn(TransactionState.UNKNOWN)
+    ):
+        res = orchestrator._execute_tool(
+            actor, invocation, "get_transaction_status", {"transaction_id": "txn_123"}
+        )
+        assert res["state"] == "Payment status uncertain"
+        assert "no action needed" in res["recovery_instructions"]
+
 
 def test_transaction_audit_redaction(
     actor: ActorContext, invocation: InvocationContext, mock_adapter: BuyerAdapter
