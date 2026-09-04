@@ -310,3 +310,70 @@ A5 → A7 → A6."
 ### Supersedes
 
 Refines D-006 and D-007; does not change their ownership boundaries.
+
+---
+
+## D-010 — Merchant AI-assisted catalog creation (draft-until-confirmed)
+
+Status: ACTIVE
+Date: 2026-09-04
+Branch: phase/a7-merchant-mcp-readiness (recorded); applies to A6
+Owner: Project team
+
+### Decision
+
+Add merchant AI-assisted catalog creation to the product with a symmetric trust model:
+**AI proposes; the responsible principal authorizes.**
+
+- Primary UX: "✨ Add with AI" — a conversational flow where the merchant describes the
+  product in natural language (including price, stock and images) and an LLM extracts a
+  structured product draft.
+- Secondary UX: the manual product form remains fully functional — the LLM is an
+  enhancement, not a dependency of the catalog system.
+- The LLM output is a `CreateProductCommand`-shaped **draft** that must flow through the
+  frozen `MerchantCatalogService.create_product` (status DRAFT) and standard merchant
+  review before `publish_product`. The LLM never writes to the catalog directly and never
+  publishes.
+- AI-initiated publication via external AI/MCP clients additionally requires the A7
+  five-minute human-issued publication-confirmation token (D-007/D-009).
+
+The LLM may extract/propose: title, description, category, attributes, features, tags and
+AI-readable metadata (the latter lands via `ProductMetadata` enrichment only after merchant
+review, per WORKSTREAM 02). Sensitive merchant facts (price, currency, stock) may be
+extracted from what the merchant said, but do not become authoritative until the merchant
+confirms them in the review step.
+
+### Why
+
+A merchant should not have to fill fifteen technical fields to become "AI-readable".
+Conversational extraction with a human confirmation gate gives the strongest
+agent-readable-catalog story while preserving the same philosophy as the buyer side:
+the buyer AI cannot self-authorize money; the merchant AI cannot self-publish facts.
+LLM extraction is input shaping, never a second catalog authority (D-002).
+
+### Alternatives Considered
+
+- Manual form only: rejected as the primary experience; kept as the secondary path.
+- LLM auto-publish to the trusted catalog: rejected — violates D-002 and the WORKSTREAM 02
+  rule that AI enrichment applies only after merchant review.
+
+### Consequences
+
+- A6 scope grows: "Add with AI" as the primary creation flow (conversational screen,
+  structured draft card with Edit/Publish, 1–3 image upload within the conversation), with
+  a backend extraction endpoint (LLM → draft command shape; not persisted, or persisted as
+  DRAFT only). The buyer lane's `llm_client.py` pattern is reused/generalized for extraction.
+- Frozen contracts are unchanged: the extraction endpoint returns standard DTO shapes and
+  the publish path uses the existing frozen services. No database schema change.
+- WORKSTREAM 01 (A6) owns the UX and routes; WORKSTREAM 02 principles govern the trust
+  boundary; WORKSTREAM 05 (C7) is unaffected.
+
+### Evidence / Trigger
+
+Human direction, 2026-09-04, confirming merchant AI-assisted catalog creation as part of
+the project ("merchant AI-assisted catalog creation should be part of the project… its
+output is a draft until merchant confirmation").
+
+### Supersedes
+
+None. Extends D-002; refines the A6 scope within D-006 boundaries.
