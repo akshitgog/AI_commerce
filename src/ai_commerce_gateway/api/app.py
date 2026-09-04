@@ -30,14 +30,14 @@ def _build_buyer_adapter() -> BuyerAdapter:
     )
 
 
-def create_app() -> FastAPI:
+def create_app(buyer_adapter: BuyerAdapter | None = None) -> FastAPI:
     settings = get_settings()
 
     # Create the MCP server and its Streamable HTTP ASGI app.
     # streamable_http_path="/" so the mount path IS the endpoint
     # (avoids /mcp/buyer/mcp doubling).
-    buyer_adapter = _build_buyer_adapter()
-    buyer_mcp = create_buyer_mcp_server(buyer_adapter)
+    adapter = buyer_adapter or _build_buyer_adapter()
+    buyer_mcp = create_buyer_mcp_server(adapter)
     mcp_asgi_app = buyer_mcp.streamable_http_app(
         streamable_http_path="/",
     )
@@ -56,6 +56,12 @@ def create_app() -> FastAPI:
     )
     install_error_handlers(app)
     app.include_router(buyer_chat_router, prefix="/v1")
+
+    # Override the adapter dependency in the router if one was provided
+    if buyer_adapter is not None:
+        from ai_commerce_gateway.api.buyer_chat.router import get_buyer_adapter
+
+        app.dependency_overrides[get_buyer_adapter] = lambda: buyer_adapter
 
     # Mount MCP Streamable HTTP at /mcp/buyer.
     # The official SDK owns HTTP method/session/protocol behavior.

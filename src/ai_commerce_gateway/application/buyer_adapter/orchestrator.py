@@ -166,7 +166,10 @@ class ToolOrchestrator:
                 presentation_status = "Processing payment"
             elif res_status.state.value in ("UNKNOWN", "RECONCILING"):
                 presentation_status = "Payment status uncertain"
-                recovery_instructions = "Payment status is uncertain — we're reconciling automatically; no action needed."
+                recovery_instructions = (
+                    "Payment status is uncertain — we're reconciling automatically; "
+                    "no action needed."
+                )
 
             return {
                 "transaction_id": res_status.id,
