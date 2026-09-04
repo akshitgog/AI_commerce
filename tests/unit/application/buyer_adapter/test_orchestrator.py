@@ -39,6 +39,19 @@ class MockBuyerAdapter:
 
         return FakeResponse()
 
+    def execute_transaction(self, *args: Any, **kwargs: Any) -> Any:
+        class FakeResponse:
+            def model_dump(self):
+                return {"id": "mock_txn_123", "status": "EXECUTING"}
+
+        return FakeResponse()
+
+    def get_transaction_status(self, *args: Any, **kwargs: Any) -> Any:
+        pass
+
+    def get_transaction_audit(self, *args: Any, **kwargs: Any) -> Any:
+        pass
+
 
 @pytest.fixture
 def mock_adapter() -> BuyerAdapter:
@@ -123,3 +136,120 @@ def test_tool_permission_isolation(
 
     # Check that an error is returned in the tool results for the malicious tool
     assert any("not allowed" in res.get("error", "") for res in result["tool_results"])
+
+
+def test_execute_transaction_triggers_handoff(
+    actor: ActorContext, invocation: InvocationContext, mock_adapter: BuyerAdapter
+) -> None:
+    """Calling execute_transaction must trigger an explicit handoff for payment."""
+    orchestrator = ToolOrchestrator(StubLLMClient(), mock_adapter)
+    orchestrator._execute_tool(
+        actor, invocation, "execute_transaction", {"proposal_id": "prop_123"}
+    )
+
+    # The actual handoff logic is in chat(), let's test chat() with a fake LLM
+    class FakeLLM:
+        def generate(self, messages: Any, tools: Any) -> LLMResponse:
+            return LLMResponse(
+                tool_calls=[ToolCall(name="execute_transaction", arguments={"proposal_id": "p1"})]
+            )
+
+    orchestrator = ToolOrchestrator(FakeLLM(), mock_adapter)
+    chat_res = orchestrator.chat(actor, invocation, [{"role": "user", "content": "pay now"}])
+    assert chat_res["handoff_required"] is True
+    assert "Payment handoff initiated" in chat_res["text"]
+
+
+def test_status_mapping_and_recovery(
+    actor: ActorContext, invocation: InvocationContext, mock_adapter: BuyerAdapter
+) -> None:
+    """Verify get_transaction_status maps raw states to safe presentation and provides recovery."""
+    from datetime import UTC, datetime
+    from unittest.mock import patch
+
+    from ai_commerce_gateway.contracts.models import Money, TransactionView
+    from ai_commerce_gateway.domain.enums import TransactionState
+
+    def make_txn(state: TransactionState) -> TransactionView:
+        return TransactionView(
+            id="txn_123",
+            proposal_id="prop_123",
+            merchant_id="mer_1",
+            buyer_id="buy_1",
+            amount=Money(amount_minor=1000, currency="INR"),
+            state=state,
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+        )
+
+    orchestrator = ToolOrchestrator(StubLLMClient(), mock_adapter)
+
+    # Test FAILED
+    with patch.object(
+        mock_adapter, "get_transaction_status", return_value=make_txn(TransactionState.FAILED)
+    ):
+        res = orchestrator._execute_tool(
+            actor, invocation, "get_transaction_status", {"transaction_id": "txn_123"}
+        )
+        assert res["state"] == "Payment failed"
+        assert res["raw_state"] == "FAILED"
+        assert "different payment method" in res["recovery_instructions"]
+
+    # Test SUCCEEDED
+    with patch.object(
+        mock_adapter, "get_transaction_status", return_value=make_txn(TransactionState.SUCCEEDED)
+    ):
+        res = orchestrator._execute_tool(
+            actor, invocation, "get_transaction_status", {"transaction_id": "txn_123"}
+        )
+        assert res["state"] == "Payment successful"
+        assert res["recovery_instructions"] is None
+
+    # Test EXECUTING (No false success)
+    with patch.object(
+        mock_adapter, "get_transaction_status", return_value=make_txn(TransactionState.EXECUTING)
+    ):
+        res = orchestrator._execute_tool(
+            actor, invocation, "get_transaction_status", {"transaction_id": "txn_123"}
+        )
+        assert res["state"] == "Processing payment"
+
+
+def test_transaction_audit_redaction(
+    actor: ActorContext, invocation: InvocationContext, mock_adapter: BuyerAdapter
+) -> None:
+    """Verify get_transaction_audit redacts metadata/provider secrets."""
+    from datetime import UTC, datetime
+    from unittest.mock import patch
+
+    from ai_commerce_gateway.contracts.models import AuditPage, TransactionEventView
+    from ai_commerce_gateway.domain.enums import ActorType, TransactionState
+
+    event = TransactionEventView(
+        id="evt_1",
+        transaction_id="txn_123",
+        event_type="STATE_CHANGED",
+        actor_type=ActorType.SYSTEM,
+        actor_id=None,
+        reason_code="PAYMENT_FAILED",
+        previous_state=TransactionState.EXECUTING,
+        new_state=TransactionState.FAILED,
+        correlation_id="corr_1",
+        provider_reference_redacted="[REDACTED]",
+        metadata={"provider_error": "insufficient_funds", "secret_key": "sk_test_123"},
+        created_at=datetime.now(UTC),
+    )
+    page = AuditPage(items=(event,), next_cursor=None)
+
+    orchestrator = ToolOrchestrator(StubLLMClient(), mock_adapter)
+
+    with patch.object(mock_adapter, "get_transaction_audit", return_value=page):
+        res = orchestrator._execute_tool(
+            actor, invocation, "get_transaction_audit", {"transaction_id": "txn_123"}
+        )
+
+        assert len(res["items"]) == 1
+        item = res["items"][0]
+        assert item["metadata"] == "[REDACTED]"
+        # The secret shouldn't be exposed
+        assert "sk_test_123" not in str(item)

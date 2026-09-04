@@ -88,10 +88,20 @@ class ToolOrchestrator:
                     # Explicit Handoff Logic:
                     # If the AI proposes a purchase or requests authorization, it MUST stop
                     # and hand off to the human buyer for review and consent via the UI.
-                    if tc.name in ("create_purchase_proposal", "request_authorization"):
+                    if tc.name in (
+                        "create_purchase_proposal",
+                        "request_authorization",
+                        "execute_transaction",
+                    ):
                         result["handoff_required"] = True
                         if not result["text"]:
-                            result["text"] = "Please review and authorize the transaction."
+                            if tc.name == "execute_transaction":
+                                result["text"] = (
+                                    "Payment handoff initiated. "
+                                    "Please complete the payment process."
+                                )
+                            else:
+                                result["text"] = "Please review and authorize the transaction."
 
                 except ValueError as e:
                     result["tool_results"].append({"tool": tc.name, "error": str(e)})
@@ -140,12 +150,43 @@ class ToolOrchestrator:
         elif tool_name == "get_transaction_status":
             req_status = GetTransactionStatusRequest(**arguments)
             res_status = self.adapter.get_transaction_status(actor, invocation, req_status)
-            return res_status.model_dump()
+
+            # Map raw status to buyer-safe presentation
+            presentation_status = res_status.state.value
+            recovery_instructions = None
+
+            if res_status.state.value == "FAILED":
+                presentation_status = "Payment failed"
+                recovery_instructions = (
+                    "Please try a different payment method or request a new proposal."
+                )
+            elif res_status.state.value == "SUCCEEDED":
+                presentation_status = "Payment successful"
+            elif res_status.state.value in ("EXECUTING", "PAYMENT_PENDING", "VERIFYING"):
+                presentation_status = "Processing payment"
+
+            return {
+                "transaction_id": res_status.id,
+                "proposal_id": res_status.proposal_id,
+                "amount": res_status.amount.model_dump(),
+                "state": presentation_status,
+                "raw_state": res_status.state.value,
+                "recovery_instructions": recovery_instructions,
+            }
 
         elif tool_name == "get_transaction_audit":
             req_audit = GetTransactionAuditRequest(**arguments)
             res_audit = self.adapter.get_transaction_audit(actor, invocation, req_audit)
-            audit_items = [e.model_dump() for e in res_audit.items]
+
+            # Redact provider details for buyer presentation
+            audit_items = []
+            for e in res_audit.items:
+                item = e.model_dump()
+                # Strip any internal or provider metadata
+                if "metadata" in item:
+                    item["metadata"] = "[REDACTED]" if item["metadata"] else {}
+                audit_items.append(item)
+
             return {"items": audit_items, "next_cursor": res_audit.next_cursor}
 
         raise ValueError(f"Unknown tool {tool_name}")
