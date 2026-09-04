@@ -222,3 +222,53 @@ locking, idempotency, provider verification and reconciliation.
 ### Supersedes
 
 Refines D-004; does not change its ownership boundaries.
+
+---
+
+## D-007 — Require isolated merchant MCP catalog interoperability
+
+Status: ACTIVE
+Date: 2026-09-04
+Branch: codex/merchant-mcp-extension-plan
+Owner: Project team
+
+### Decision
+
+V1 requires a merchant MCP catalog adapter after the buyer C4–C6 phases. Keep C4 buyer-only; add
+A7 for canonical catalog idempotency and human publication-confirmation support, then C7 for the
+thin merchant adapter. Expose `/mcp/buyer` and `/mcp/merchant` with disjoint registries.
+
+Bind a merchant session server-side to one active merchant and derive `ActorContext`; tool inputs
+cannot supply identity, merchant or roles. Require transport-level `Idempotency-Key` metadata for
+mutations. Publishing and unpublishing additionally require a five-minute dashboard-issued HS256
+confirmation bound to actor, tenant, product, version and action. The adapter verifies and strips
+the token before invoking the frozen `MerchantCatalogService` command.
+
+### Why
+
+Two-sided interoperability strengthens the product without creating a second catalog authority or
+allowing an AI credential to publish autonomously. Separating C7 preserves the buyer critical path
+and the transaction/provider lane while still making merchant interoperability a release gate.
+
+### Alternatives Considered
+
+- Keep merchant MCP optional after v1.
+- Expand buyer C4 with merchant mutations.
+- Allow authenticated MCP mutation alone to publish.
+- Put merchant identity or idempotency keys in business tool schemas.
+- Limit merchant MCP to drafts with no publication path.
+
+### Consequences
+
+Workstreams 01, 02 and 06 contribute A7 seams; Workstream 05 owns C7 transport and schema mapping;
+Workstream 07 adds J16 and release evidence. Buyer and merchant discovery remain isolated. The M0
+service interfaces and database schema remain frozen.
+
+### Evidence / Trigger
+
+Human-approved Required Merchant MCP Extension plan dated 2026-09-04. Runtime evidence remains
+`NOT RUN` until A7/C7 and J16 execute.
+
+### Supersedes
+
+Extends D-002 and D-004 without replacing them.

@@ -10,7 +10,7 @@ Price, stock, version and publication are trusted commercial inputs. Centralizin
 
 ## Ownership
 
-`Merchant`, `MerchantUser`, `Product`, `ProductMetadata`, `ProductImage`, `MerchantPolicy`; tenant-scoped CRUD; publication/versioning; stock; CSV import; published search/read; image metadata lifecycle.
+`Merchant`, `MerchantUser`, `Product`, `ProductMetadata`, `ProductImage`, `MerchantPolicy`; tenant-scoped CRUD; publication/versioning; stock; CSV import; published search/read; image metadata lifecycle; durable catalog-mutation idempotency.
 
 ## Explicit non-ownership
 
@@ -63,6 +63,7 @@ Scope every write/read by merchant ownership; expose only `PUBLISHED` products t
 3. Implement tenant-scoped search/read and CSV validation/import.
 4. Integrate storage abstraction and persist ordered `ProductImage` rows.
 5. Implement/version merchant policy persistence.
+6. Make create/update/publish/unpublish durably idempotent before exposing them through merchant MCP.
 
 ## Lane phases
 
@@ -73,13 +74,19 @@ Scope every write/read by merchant ownership; expose only `PUBLISHED` products t
 | A3 `phase/a3-catalog-publication` | Versioning, publish/unpublish and buyer-safe search/read | Draft invisibility, version/stale-write and published-read contract tests |
 | A4 `phase/a4-merchant-policy` | Policy persistence/configuration and review-facing operations | Policy-mode/version and tenant tests; transaction evaluation remains B2 |
 | A5 `phase/a5-product-storage` | Storage integration and ordered image metadata lifecycle | Type/size/count/order/delete and storage-contract tests |
+| A7 `phase/a7-merchant-mcp-readiness` | Durable fingerprinted create/update/publish/unpublish idempotency using the existing `IdempotencyRecord`; publication-confirmation issuer/verifier and dashboard handoff | Fingerprint/replay/concurrency/restart tests and human-confirmation boundary evidence |
 
 Each phase branches from `feature/merchant-catalog`, follows `PHASE_EXECUTION.md`, and stops after
-its own review package. Do not pull A6 dashboard work or transaction behavior into A1–A5.
+its own review package. A7 begins after the A6 dashboard and approved auth seam are available; it
+does not move MCP transport into this workstream or pull transaction behavior into the catalog.
 
 ## Required tests
 
-Unpublished invisible, published visible, tenant denial, trusted integer price, version increments, stock constraints, CSV atomic/partial behavior per frozen contract, image count/order/delete, safe buyer response, policy modes and repository constraints.
+Unpublished invisible, published visible, tenant denial, trusted integer price, version increments,
+stock constraints, CSV atomic/partial behavior per frozen contract, image count/order/delete, safe
+buyer response, policy modes and repository constraints. A7 additionally covers same-fingerprint
+replay, different-fingerprint rejection, concurrent mutation, restart persistence, token tampering,
+expiry, wrong actor/tenant/product/version/action/audience and MCP-credential issuer denial.
 
 ## Evidence required
 

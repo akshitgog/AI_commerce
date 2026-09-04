@@ -154,7 +154,7 @@ Eligible pre-success states may also become `CANCELLED` or `EXPIRED`. These are 
 | 02 | Catalog & Merchant Domain | Merchant, catalog, publication, stock, images metadata, search, tenant-scoped catalog services | Transaction execution or provider logic |
 | 03 | Transaction Core | Proposals, authorization, policy integration, transaction state, idempotency, audit semantics | Razorpay SDK/API calls |
 | 04 | Razorpay & Recovery | Provider adapter, checkout/webhooks/lookups, payment attempts, reconciliation | Buyer chat, MCP or independent platform policy |
-| 05 | Buyer AI + MCP | Reference chat, tool orchestration, buyer adapter, remote MCP adapter and schemas | Trusted money, consent, policy, state, provider calls or reconciliation |
+| 05 | Buyer AI + Two-Sided MCP | Reference chat, tool orchestration, buyer adapter, separate buyer/merchant MCP adapters and schemas | Trusted money, catalog rules, consent, policy, state, provider calls or reconciliation |
 | 06 | Data & Infrastructure | PostgreSQL, migrations, auth infrastructure, object storage, config, deployment, observability foundations | Domain decisions or UI workflows |
 | 07 | Testing, Evidence & Demo | Cross-system/E2E/adversarial/reliability tests, evidence, pitch validation | Replacing feature-owned tests or fabricating evidence |
 
@@ -198,6 +198,7 @@ are satisfied, not all at once.
 | A4 | `phase/a4-merchant-policy` | Policy persistence/configuration and manual-review-facing operations; transaction evaluation remains in B2 |
 | A5 | `phase/a5-product-storage` | Storage adapter integration and ordered 1–3 image lifecycle |
 | A6 | `phase/a6-merchant-dashboard` | Merchant UI integration over completed lane/application seams |
+| A7 | `phase/a7-merchant-mcp-readiness` | Durable fingerprinted catalog-mutation idempotency using `IdempotencyRecord`, plus human publication-confirmation issuance/verification and dashboard handoff |
 
 ### Transaction lane phases
 
@@ -224,6 +225,12 @@ approved until the spike resolves the provider contract and success evidence.
 | C4 | `phase/c4-mcp-adapter` | Separate Remote MCP server/adapter and one-to-one service mappings |
 | C5 | `phase/c5-buyer-transaction-ui` | Payment handoff, status, recovery and audit presentation |
 | C6 | `phase/c6-buyer-harness` | Buyer/chat/MCP contract and integration harness; full-system E2E remains workstream 07 |
+| C7 | `phase/c7-merchant-mcp-catalog` | Required merchant MCP catalog adapter with isolated discovery and human-confirmed publication |
+
+C4 remains buyer-only. C7 begins only after C6 and after the approved A7 catalog/idempotency and
+publication-confirmation seams are available. C7 is required before final release evidence, but it
+does not block the transaction/provider lane or replace the merchant dashboard and reference buyer
+chat as the primary product surfaces.
 
 ## 7. Shared contracts to freeze before feature work
 
@@ -321,7 +328,7 @@ Required checks include:
 - catalog text/prompt injection unable to alter trusted price, permissions or authorization;
 - complete reconstruction from structured audit events.
 
-Scenario IDs remain aligned with `EVALUATION.md`, including the external MCP interoperability scenario. `TESTED.md` changes only after a reproducible run with inspectable evidence.
+Scenario IDs remain aligned with `EVALUATION.md`, including the separate buyer and merchant MCP interoperability scenarios. `TESTED.md` changes only after a reproducible run with inspectable evidence.
 
 ## 11. Integration milestones
 

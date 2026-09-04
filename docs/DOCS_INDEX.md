@@ -31,4 +31,6 @@ This folder is the authoritative specification for the v1 project. If another no
 - Execution authority: trusted backend, never the LLM or MCP adapter.
 - Deployment: modular monolith with durable relational storage.
 
-Reference chat and MCP must converge on the same application services. MCP never contains independent financial logic and external MCP availability never gates the primary demo.
+Reference chat and the isolated buyer/merchant MCP surfaces must converge on the same application
+services. MCP never contains independent business logic and external MCP availability never gates
+the primary demo, although approved C7/J16 evidence is required for release.

@@ -23,16 +23,31 @@ Architecture and expected behavior are claims, not proof. A scenario passes only
 | J13 | Merchant A accesses Merchant B data | Denied for catalog management, transactions and audit |
 | J14 | Audit reconstruction | Timeline explains actor, proposal, both gates, provider action, recovery and outcome |
 | J15 | External MCP interoperability | Compatible external client discovers the catalog and creates a proposal through the same backend semantics; no MCP-local financial logic |
+| J16 | External merchant MCP catalog management | Merchant client sees only role-allowed catalog tools, lists products, creates and updates a draft, uses dashboard-issued human confirmation to publish, and the buyer surface observes the same canonical product |
 
 ## Test layers
 
 - **Unit:** money, proposal hashing, authorization matching, policy decisions and state transitions.
 - **Persistence/concurrency:** uniqueness, locks, atomic event append and restart safety.
-- **Contract:** authentication, schemas, stable errors, idempotency and MCP-to-application mapping.
+- **Contract:** authentication, schemas, stable errors, idempotency, confirmation tokens and MCP-to-application mapping.
 - **Provider integration:** real Razorpay Test Mode initiation and verified payment-state mapping.
 - **Adversarial:** prompt injection, forged webhooks, tenant access, replay and stale proposals.
 - **Judge smoke test:** dashboard plus reference buyer chat through the complete journey.
-- **Interoperability:** a separate MCP client/trace proves discovery and proposal creation over the same services.
+- **Interoperability:** separate buyer and merchant MCP client traces prove disjoint discovery and
+  use the same proposal/catalog services as the primary surfaces.
+
+### J16 required assertions
+
+- Buyer sessions cannot discover or invoke merchant tools; merchant sessions cannot discover or
+  invoke buyer financial tools.
+- Missing/wrong roles, cross-tenant product IDs, injected `merchant_id`, stale versions, malformed
+  money and forbidden extra fields fail closed.
+- Catalog mutations prove same-fingerprint replay, different-fingerprint rejection, concurrent
+  mutation safety and persistence across restart.
+- Confirmation rejects tampering, expiry, wrong actor, tenant, product, version, action or audience,
+  and merchant MCP credentials cannot mint a token.
+- Draft/create and update cannot publish implicitly; every publish/unpublish reaches the canonical
+  `MerchantCatalogService`.
 
 ## Acceptance metrics
 
@@ -44,6 +59,8 @@ Architecture and expected behavior are claims, not proof. A scenario passes only
 | Accepted forged webhooks | 0 |
 | Duplicate webhook double-processing | 0 |
 | Cross-tenant data disclosures or mutations | 0 |
+| Buyer/merchant MCP cross-surface tool disclosures | 0 |
+| Publication without valid human confirmation | 0 |
 | Required deterministic scenarios correct | 100% |
 | Required audit events present | 100% |
 | Ambiguous timeout fixtures reconciled correctly | 100% |
@@ -59,15 +76,17 @@ Architecture and expected behavior are claims, not proof. A scenario passes only
 7. Inject timeout-after-dispatch and show reconciliation.
 8. Open the audit timeline and reconstruct the transaction.
 9. Separately show MCP discovery/proposal interoperability against the same backend.
+10. Separately show merchant MCP draft management and human-confirmed publication, then observe the product through the buyer surface.
 
 ## Required evidence package
 
-- Setup for the reference chat and separate MCP configuration.
+- Setup for the reference chat and separate buyer/merchant MCP configurations.
 - Test command and full summarized output.
 - Commit identifier, environment and timestamp.
 - Redacted Razorpay Test Mode order/payment evidence.
 - Database/provider evidence for duplicate suppression.
 - Timeout/reconciliation trace.
 - Webhook, prompt-injection and tenant-isolation results.
-- Dashboard/reference-chat journey plus separate MCP-flow screenshots or recording.
+- Dashboard/reference-chat journey plus separate buyer and merchant MCP-flow screenshots or recording.
+- Redacted merchant publication-confirmation evidence, database product/version evidence and both tool-discovery registries.
 - Explicit limitations beside affected claims.

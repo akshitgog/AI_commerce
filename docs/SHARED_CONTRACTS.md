@@ -16,6 +16,12 @@ This file records only the cross-workstream contract freeze. Architecture and bu
 
 Frozen means another branch may implement against the contract. It does not mean the behavior is already implemented or proven.
 
+The required merchant MCP extension is additive at the adapter/auth boundary. It reuses the frozen
+`MerchantCatalogService`, command DTOs, `ActorContext` and existing `IdempotencyRecord`. Transport
+metadata supplies the command idempotency key, authenticated server context supplies `merchant_id`,
+and the publication confirmation token is verified and stripped before command construction. No
+frozen DTO, enum, service method or persistence table changes for A7/C7.
+
 ## Provisional
 
 The provider port, provider commands and provider observations are provisional until the Razorpay Test Mode truth spike. They are owned by Workstream 04 and consumed only by Workstream 03. Provider observations never decide platform `SUCCEEDED`.
