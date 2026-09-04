@@ -470,5 +470,64 @@ A3 neither adds nor removes `idempotency_key` semantics and leaves `MerchantCata
 A4 neither changes frozen contracts/DTOs/enums/schema nor introduces any idempotency or publication-confirmation behavior that would obstruct A7. A7 wraps only canonical product CRUD/publication operations, none of which A4 touches. No obstruction.
 
 
+---
+
+## Entry — Phase A7: Merchant MCP Readiness & Idempotency
+
+Date/time:       2026-09-04
+Git branch:      phase/a7-merchant-mcp-readiness
+Commit:          ff64074
+Author/Agent:    Agent A (Merchant/Catalog Lane)
+Workstream:      02 Catalog/Merchant Domain
+Phase:           A7 `phase/a7-merchant-mcp-readiness`
+Status:          IMPLEMENTED — READY FOR REVIEW
+
+**Implemented:**
+1. **Domain: Idempotency** (`domain/idempotency.py`):
+   - `CatalogIdempotencyRecord` frozen dataclass with UTC validation
+   - `catalog_request_fingerprint()` — deterministic SHA-256 hash of actor + operation + merchant + product + idempotency_key + mutation fields
+   - `response_fingerprint()` — SHA-256 of serialised response body
+   - Operation constants: `CATALOG_CREATE_PRODUCT`, `CATALOG_UPDATE_PRODUCT`, `CATALOG_PUBLISH_PRODUCT`, `CATALOG_UNPUBLISH_PRODUCT`
+2. **Domain: Publication Confirmation** (`domain/publication_confirmation.py`):
+   - `PublicationConfirmationClaim` frozen dataclass (actor, merchant, product, version, action, issued_at, expires_at)
+   - `issue_publication_confirmation()` — HMAC-SHA256 signed base64url token with 5-minute default lifetime
+   - `verify_publication_confirmation()` — signature + expiry + payload validation
+   - Input validation on issuer (action format, empty fields, version >= 1)
+3. **Repository: IdempotencyRepository Protocol** (`domain/repositories.py`):
+   - `get()`, `claim()`, `save_result()` — aligned with B3 transaction-lane pattern
+4. **Infrastructure: SqlAlchemyMerchantIdempotencyRepository** (`infrastructure/database/merchant_idempotency.py`):
+   - Uses shared `idempotency_records` table with PostgreSQL/SQLite `INSERT ... ON CONFLICT DO NOTHING`
+   - Atomic claim, result persistence, domain mapping
+5. **Application: IdempotentCatalogService** (`application/catalog_idempotency.py`):
+   - Wraps frozen `MerchantCatalogService` — all four commands (create/update/publish/unpublish) idempotent
+   - Fingerprint-scoped: same key + same fingerprint → replay via `inner.get_product()`; same key + different fingerprint → 409
+   - Passthrough for non-mutation operations (get, list, images, merchants)
+6. **Application: PublicationConfirmationService** (`application/publication_confirmation_service.py`):
+   - `issue()` and `verify()` — thin wrapper over domain functions with configurable lifetime
+7. **Config** (`core/config.py`):
+   - `publication_confirmation_secret: str` — auto-generates random key in dev/test
+
+**Frozen surfaces unchanged:**
+- `MerchantCatalogService` Protocol ✓
+- All DTOs (`CreateProductCommand`, `UpdateProductCommand`, `SetProductPublicationCommand`, etc.) ✓
+- Enums ✓
+- DB schema (no migrations) ✓
+
+**Tests (24 new, 0 regressions):**
+- `test_a7_idempotency.py`: fingerprint determinism, first execution, same-key replay, different-key rejection, cross-merchant isolation, publish/unpublish/update idempotency, concurrent claim, restart persistence, publication confirmation issue/verify/expiry/tampering/wrong-secret/wrong-actor/wrong-action/wrong-version/invalid-action/empty-actor
+
+**Validation:**
+- `uv run ruff check .` → PASS (0 errors)
+- `uv run mypy` → PASS (0 issues, 33 source files)
+- `uv run pytest --cov=ai_commerce_gateway --cov-report=term-missing -rs` → PASS (173 passed, 27 skipped, 0 failed, 96% coverage)
+- New files: `publication_confirmation_service.py` 100%, `idempotency.py` 95%, `publication_confirmation.py` 90%, `merchant_idempotency.py` 90%, `catalog_idempotency.py` 85%
+
+**A6 Obstruction Check:**
+A7 wraps the frozen `MerchantCatalogService` without modifying it. A6 (merchant dashboard) will consume the same frozen Protocol. The `PublicationConfirmationService` and `IdempotentCatalogService` are new services that A6 routes can optionally use. No obstruction to A6.
+
+**Deliberate Ordering Note:**
+A7 executed before A6 per D-007 and user direction: "architecturally it is actually much better to do A7 before A6" — all backend domain logic first, then dashboard UI builds against finalized idempotent APIs.
+
+
 
 
