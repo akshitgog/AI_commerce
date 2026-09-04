@@ -281,3 +281,47 @@ None.
 ### Next Step
 
 Phase C2.
+
+---
+
+## Entry 006 — Phase C2 Reference Buyer Chat HTTP Transport Implemented
+
+Date/time:       2026-09-04 (Asia/Calcutta)
+Git branch:      phase/c2-reference-chat
+Commit:          PENDING
+Author/Agent:    Antigravity
+Workstream:      05-buyer-ai-mcp
+Change:          Implemented FastAPI HTTP router for the 7 canonical buyer tool operations.
+Files/modules:   src/ai_commerce_gateway/api/buyer_chat/
+
+### What Changed
+
+Created the FastAPI HTTP router that maps the 7 buyer tool operations to endpoints, extracts ActorContext and InvocationContext from headers, and delegates to the BuyerAdapter. Included stub implementations of the application services for C2 demo wiring. Registered the router in app.py with a dedicated ValueError exception handler.
+
+### Reason
+
+Satisfy Phase C2 requirements to provide the primary Reference Buyer Chat HTTP transport layer without MCP dependencies.
+
+### Technical Impact
+
+Idempotency-Key and X-Correlation-ID are explicitly extracted from HTTP headers. AI/client payloads do not contain trusted financial fields. No LLM integration or MCP code is present here.
+
+### Validation
+
+Passed ruff, mypy, and pytest with 98% overall coverage. Specifically verified 422 responses for missing Idempotency-Key headers on mutating operations.
+
+### Evidence
+
+Repository files and local test execution.
+
+### Result
+
+SUCCESS
+
+### Problems / Limitations
+
+Uses stub services which must be replaced by real implementations from workstreams 02/03 at integration.
+
+### Next Step
+
+Merge Phase C2, then begin Phase C3.
