@@ -81,6 +81,10 @@ class ProductRepository(Protocol):
         """Return the Product or None; scoped to merchant_id."""
         ...
 
+    def get_by_id_unscoped(self, product_id: str) -> ProductEntity | None:
+        """Return the Product without tenant scoping (use with caution)."""
+        ...
+
     def get_by_sku(self, merchant_id: str, sku: str) -> ProductEntity | None:
         """Return the Product with the given SKU or None; merchant-scoped."""
         ...

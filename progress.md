@@ -362,3 +362,23 @@ A2 — Product CRUD/Application Services (requires human approval before startin
 - pytest passed (131 passed, 27 skipped, coverage increased to 92%).
 
 All frozen shared contracts remain completely untouched. Phase A1 is now fully compliant with constraints and ready for merge.
+
+## [2026-09-04] Phase A2 Product CRUD
+
+**Role:** Agent A (Merchant/Catalog Lane)
+**Status:** READY FOR REVIEW
+**Branch:** phase/a2-product-crud
+
+**Changes Made:**
+1. **Application Service implementation**: Created src/ai_commerce_gateway/application/catalog_service.py with ApplicationMerchantCatalogService implementing MerchantCatalogService.
+2. **Tenant scoping & Roles**: Enforced tenant boundaries and role requirements (e.g. ADMIN or EDITOR required for create/update) using ActorContext via a _require_merchant_access guard.
+3. **Draft Product CRUD**: Implemented create_product, update_product, get_product, and list_products.
+4. **Validation and SKU Uniqueness**: Enforced SKU uniqueness on creation returning 409 Conflict. Implemented optimistic concurrency control using expected_version returning 409 Conflict on stale writes.
+5. **Testing**: Implemented tests/unit/test_catalog_service.py to cover CRUD capabilities, authorization denials, SKU duplicate denials, and version mismatch denials.
+6. **Unscoped product loading**: Added a safe get_by_id_unscoped to ProductRepository that allows fetching a product by ID before validating its merchant_id against the caller's authorized context (required since get_product contract only receives product_id).
+
+**Validation:**
+- ruff check . passed cleanly.
+- mypy passed (0 issues).
+- pytest passed (136 passed, coverage up to 95%).
+- All M0 contracts adhered to.

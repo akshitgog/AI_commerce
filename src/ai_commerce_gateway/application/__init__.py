@@ -1,1 +1,3 @@
-"""Application-service implementations will be added by feature workstreams."""
+from .catalog_service import ApplicationMerchantCatalogService
+
+__all__ = ["ApplicationMerchantCatalogService"]
