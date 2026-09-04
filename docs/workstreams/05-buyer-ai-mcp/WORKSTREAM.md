@@ -64,6 +64,21 @@ Bind actor identity server-side; never accept trusted prices, credentials or for
 4. Implement remote MCP discovery and one-to-one service mappings.
 5. Prove compatible external MCP client interoperability without making it a demo prerequisite.
 
+## Lane phases
+
+| Phase | Scope | Exit evidence |
+|---|---|---|
+| C1 `phase/c1-buyer-adapter` | Buyer-safe application-service adapter and frozen-contract mocks | Identity binding, error mapping and contract-parity tests |
+| C2 `phase/c2-reference-chat` | Primary chat shell, discovery, product and proposal presentation | Reference-chat component/journey tests; no MCP dependency |
+| C3 `phase/c3-tool-orchestration` | Narrow intent-to-tool mapping and explicit authorization handoff | Prompt-injection, tool permission and no-self-approval tests |
+| C4 `phase/c4-mcp-adapter` | Separate Remote MCP server/adapter and one-to-one schema mappings | MCP discovery/call contract tests against the same service semantics |
+| C5 `phase/c5-buyer-transaction-ui` | Payment handoff, status, recovery and audit presentation | Status mapping, recovery, redaction and no-false-success tests |
+| C6 `phase/c6-buyer-harness` | Buyer/chat/MCP integration harness and dependency replacement | Real-seam parity tests and separate chat/MCP traces; not the full project E2E suite |
+
+Each phase branches from `feature/buyer-agent`. C2 is the guaranteed buyer demo and never waits for
+C4. C4 cannot become the normal buyer UI. C6 hands assembled fixtures to workstream 07; it does not
+claim provider or full-system scenario success.
+
 ## Required tests
 
 Tool schemas/contracts, intent-to-tool mapping, explicit consent boundary, prompt-injection isolation, server-derived price display, repeat call idempotency, safe errors/redaction, identical chat/MCP service semantics and external MCP discovery/proposal scenario.
@@ -92,4 +107,5 @@ Make external MCP availability necessary for the primary demo; approve on behalf
 
 Escalate tool semantic/schema changes, identity binding, idempotency-key derivation, approval UX boundaries, image URL safety or any request to make MCP authoritative/primary.
 
-See `../../MASTER_DEVELOPMENT_PLAN.md`, `../../ARCHITECTURE.md`, `../../API.md`, `../../SECURITY.md` and `../../EVALUATION.md`.
+See `../../MASTER_DEVELOPMENT_PLAN.md`, `../../PHASE_EXECUTION.md`, `../../ARCHITECTURE.md`,
+`../../API.md`, `../../SECURITY.md` and `../../EVALUATION.md`.

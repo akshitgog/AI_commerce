@@ -137,3 +137,103 @@ No PostgreSQL service was available for a live connection test. Existing Razorpa
 ### Next Step
 
 Run the provider-truth spike or begin the bounded Milestone 1 merchant/catalog lane using the frozen contracts.
+
+---
+
+## Entry 003 — Milestone 0 frozen and buyer-path documentation normalized
+
+Date/time:       2026-09-04 (Asia/Calcutta)
+Git branch:      main
+Commit:          9c32855
+Author/Agent:    Codex
+Workstream:      docs / foundation review
+Change:          Recorded the successful PostgreSQL gate and removed residual MCP-first ambiguity
+Files/modules:   AGENT.md, flow.md, progress.md, docs/PRD.md, docs/EVALUATION.md, docs/MASTER_DEVELOPMENT_PLAN.md, docs/TESTED.md
+
+### What Changed
+
+Recorded successful GitHub Actions run `33817667540` for M0 commit `1640869` and the resulting
+`m0-foundation` freeze. Clarified that Reference Buyer Chat is the primary buyer journey and that
+Remote MCP is a separate interoperability proof over the same application services.
+
+### Reason
+
+Prevent future development agents from interpreting older combined buyer/MCP wording as an
+MCP-first product or demo architecture.
+
+### Technical Impact
+
+Documentation only. No implementation, contracts, schema or runtime behavior changed.
+
+### Validation
+
+Searched canonical and living documentation for MCP-first buyer/demo language and reviewed the
+resulting documentation diff. Remaining MCP-first phrases are explicit prohibitions or non-goals.
+
+### Evidence
+
+GitHub Actions run `33817667540`; tag `m0-foundation`; repository documentation diff.
+
+### Result
+
+SUCCESS
+
+### Problems / Limitations
+
+Provider behavior and the exact mutating-MCP idempotency strategy remain intentionally provisional.
+
+### Next Step
+
+Start feature work only within the frozen workstream boundaries.
+
+---
+
+## Entry 004 — Gated child-phase execution model documented
+
+Date/time:       2026-09-04 (Asia/Calcutta)
+Git branch:      main
+Commit:          commit containing this entry
+Author/Agent:    Codex
+Workstream:      docs / execution governance
+Change:          Split three long-lived lanes into bounded A/B/C child phases with hard review gates
+Files/modules:   AGENT.md, decisions.md, progress.md, docs/PHASE_EXECUTION.md, docs/DOCS_INDEX.md, docs/MASTER_DEVELOPMENT_PLAN.md, docs/IMPLEMENTATION_PLAN.md, docs/workstreams/*/WORKSTREAM.md
+
+### What Changed
+
+Defined the existing `feature/*` branches as long-lived ownership lanes and added A1–A6, B1–B6 and
+C1–C6 child phases. Added phase statuses, branch direction, required prompt shape, risk-specific
+tests, self-review, independent audit, human approval and a reusable evidence record. Updated every
+workstream with its phase ownership or integration role.
+
+### Reason
+
+Prevent large agent runs from erasing review boundaries and make rollback, debugging and evidence
+attribution practical without giving up three-lane parallelism.
+
+### Technical Impact
+
+Documentation and development process only. No runtime implementation, frozen contract, schema or
+branch reference changed.
+
+### Validation
+
+Cross-checked phase IDs, branch names, workstream ownership, testing responsibility, integration
+direction and Reference Buyer Chat/MCP boundaries across canonical and living documentation.
+
+### Evidence
+
+Repository documentation diff and relationship search.
+
+### Result
+
+SUCCESS
+
+### Problems / Limitations
+
+No phase branches were created. Human approval is still required before starting the first phase in
+each lane.
+
+### Next Step
+
+Choose the first active phase per lane and create only those three child branches from their current
+lane heads.

@@ -36,7 +36,7 @@ Merchant publishes product
     ↓
 Agent-readable catalog
     ↓
-MCP-capable AI buyer
+Reference Buyer Chat
     ↓
 Purchase proposal
     ↓
@@ -55,6 +55,10 @@ Verification / reconciliation
 Final state + structured audit timeline
 ```
 
+Separately, a compatible external AI application may reach the same catalog and proposal services
+through the Remote MCP Server. That interoperability path is not the normal buyer experience and is
+not a prerequisite for the primary demo.
+
 This is a starting architecture, not an excuse to ignore the implemented code.
 
 When code and documentation disagree, inspect the implementation and record the discrepancy.
@@ -63,7 +67,11 @@ When code and documentation disagree, inspect the implementation and record the 
 
 ## 3. Mandatory Startup Procedure
 
-For feature work, first read `docs/MASTER_DEVELOPMENT_PLAN.md`, then read only the assigned `docs/workstreams/<NN-name>/WORKSTREAM.md` plus the canonical contracts it links. This workstream brief defines local ownership; `docs/ARCHITECTURE.md` remains authoritative for buyer-chat, MCP and financial-authority boundaries.
+For feature work, first read `docs/MASTER_DEVELOPMENT_PLAN.md` and
+`docs/PHASE_EXECUTION.md`, then read only the assigned
+`docs/workstreams/<NN-name>/WORKSTREAM.md` plus the canonical contracts it links. This workstream
+brief defines local ownership; `docs/ARCHITECTURE.md` remains authoritative for buyer-chat, MCP and
+financial-authority boundaries.
 
 Before parallel implementation begins, confirm the shared entity, application-service, provider and storage contracts listed in the master plan are frozen. Do not silently change a shared contract from inside a workstream.
 
@@ -564,32 +572,29 @@ Do not simplify the internal state machine merely to match the UI.
 
 ## 9. Branch Rules
 
-Recommended branch prefixes:
+The three long-lived feature branches are ownership lanes:
 
 ```text
-merchant/<feature>
-catalog/<feature>
-auth/<feature>
-transaction/<feature>
-provider/<feature>
-mcp/<feature>
-dashboard/<feature>
-tests/<feature>
-infra/<feature>
-fix/<description>
-docs/<description>
+feature/merchant-catalog
+feature/transaction-core
+feature/buyer-agent
 ```
 
-Examples:
+Do not implement a whole lane directly. Create only the currently authorized child phase from its
+own lane branch:
 
 ```text
-provider/razorpay-spike
-transaction/idempotency
-auth/buyer-approval
-mcp/catalog-tools
-dashboard/audit-timeline
-tests/timeout-reconciliation
+phase/a2-product-crud           -> feature/merchant-catalog
+phase/b3-idempotency-locking    -> feature/transaction-core
+phase/c2-reference-chat         -> feature/buyer-agent
 ```
+
+Phase branches merge into their lane after the mandatory tests, self-review, independent audit and
+human approval in `docs/PHASE_EXECUTION.md`. They never target `main` directly. Lane branches merge
+into `main` only at an integration milestone.
+
+Every phase agent implements only the named phase, reports `READY_FOR_REVIEW`, and stops. It must not
+begin the next phase or silently change frozen contracts.
 
 Every `progress.md` entry must contain the exact active branch.
 
@@ -818,11 +823,15 @@ Before declaring a meaningful task complete:
 [ ] Read technical-questions.md
 [ ] Read decisions.md
 [ ] Inspected relevant canonical specs
+[ ] Read docs/PHASE_EXECUTION.md for feature work
 [ ] Ran git branch --show-current
 [ ] Ran git status --short
 [ ] Inspected existing code/tests
+[ ] Confirmed the named phase, lane base and phase status
+[ ] Listed contracts consumed/exposed
 [ ] Implemented the requested change
 [ ] Ran relevant validation/tests
+[ ] Performed phase self-review and recorded independent audit status
 [ ] Inspected actual output
 [ ] Updated progress.md
 [ ] Updated technical-questions.md if knowledge changed
@@ -831,6 +840,7 @@ Before declaring a meaningful task complete:
 [ ] Updated TESTED.md only with real executed evidence
 [ ] Recorded unresolved issues honestly
 [ ] Did not fabricate Razorpay behavior or test evidence
+[ ] Stopped without beginning the next phase
 ```
 
 ---

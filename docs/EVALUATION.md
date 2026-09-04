@@ -8,7 +8,7 @@ Architecture and expected behavior are claims, not proof. A scenario passes only
 
 | ID | Scenario | Expected result |
 |---|---|---|
-| J01 | Merchant creates and publishes product | Product is visible to reference chat and MCP only after publication |
+| J01 | Merchant creates and publishes product | Product is visible to Reference Buyer Chat after publication; a separate external MCP check sees the same published catalog |
 | J02 | Reference buyer chat discovers product and creates proposal | Proposal contains server-derived money, version, hash and expiry |
 | J03 | Buyer authorization absent | Execution blocked before provider contact |
 | J04 | Merchant policy requires review | Execution blocked until authenticated merchant acceptance |

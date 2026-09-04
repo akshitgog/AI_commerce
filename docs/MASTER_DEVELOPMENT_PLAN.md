@@ -175,17 +175,61 @@ Each feature workstream writes its own unit, module-integration and contract tes
         Images + DB          Recovery +        Harness
 ```
 
-Recommended initial branch groups:
+Long-lived lane branches:
 
-- `merchant/catalog`: workstreams 01 and 02 plus bounded image-storage integration from 06.
-- `transaction/core`: workstreams 03 and 04 plus transaction migrations from 06.
-- `buyer/agent-interface`: workstream 05 plus the cross-system harness from 07; uses frozen contracts/mocks until dependencies exist.
+- `feature/merchant-catalog`: workstreams 01 and 02 plus bounded image-storage integration from 06.
+- `feature/transaction-core`: workstreams 03 and 04 plus transaction migrations from 06.
+- `feature/buyer-agent`: workstream 05 plus its bounded buyer-facing harness; uses frozen contracts/mocks until dependencies exist. Workstream 07 retains ownership of assembled cross-system E2E evidence.
 
 The solo developer remains architecture owner, shared-contract owner, integration/merge reviewer, final evidence reviewer and pitch owner.
 
+These branches are ownership lanes, not single massive implementation tasks. Each lane advances
+through a short-lived `phase/*` child branch and the mandatory gate in `PHASE_EXECUTION.md`. Normally
+only one phase branch per lane is active; future phase branches are created when their prerequisites
+are satisfied, not all at once.
+
+### Merchant/catalog lane phases
+
+| Phase | Child branch | Bounded outcome |
+|---|---|---|
+| A1 | `phase/a1-merchant-domain` | Merchant/membership domain and repository skeleton |
+| A2 | `phase/a2-product-crud` | Tenant-scoped product CRUD without publication behavior |
+| A3 | `phase/a3-catalog-publication` | Versioning, publish/unpublish and buyer-safe published search/read |
+| A4 | `phase/a4-merchant-policy` | Policy persistence/configuration and manual-review-facing operations; transaction evaluation remains in B2 |
+| A5 | `phase/a5-product-storage` | Storage adapter integration and ordered 1–3 image lifecycle |
+| A6 | `phase/a6-merchant-dashboard` | Merchant UI integration over completed lane/application seams |
+
+### Transaction lane phases
+
+| Phase | Child branch | Bounded outcome |
+|---|---|---|
+| B1 | `phase/b1-transaction-domain` | Canonical transition validator and audit-event semantics; no provider calls |
+| B2 | `phase/b2-proposal-gates` | Proposals, buyer authorization and independent merchant-policy/manual gate |
+| B3 | `phase/b3-idempotency-locking` | Durable idempotency, locking and provider-attempt orchestration boundary |
+| B4 | `phase/b4-razorpay-adapter` | Test Mode truth spike, provisional-contract resolution and order/checkout adapter |
+| B5 | `phase/b5-provider-verification` | Checkout verification, webhooks, lookup translation and deduplication |
+| B6 | `phase/b6-reconciliation` | `UNKNOWN`/`RECONCILING`, timeout-after-dispatch and no-blind-retry recovery |
+
+The provider truth spike from `IMPLEMENTATION_PLAN.md` may run as an early evidence-gathering task
+before B4. B1–B3 may proceed against the explicitly provisional provider boundary, but B4 cannot be
+approved until the spike resolves the provider contract and success evidence.
+
+### Buyer lane phases
+
+| Phase | Child branch | Bounded outcome |
+|---|---|---|
+| C1 | `phase/c1-buyer-adapter` | Buyer-safe service adapter and frozen-contract mocks |
+| C2 | `phase/c2-reference-chat` | Primary Reference Buyer Chat journey and product/proposal presentation |
+| C3 | `phase/c3-tool-orchestration` | Narrow intent-to-tool orchestration with explicit consent boundary |
+| C4 | `phase/c4-mcp-adapter` | Separate Remote MCP server/adapter and one-to-one service mappings |
+| C5 | `phase/c5-buyer-transaction-ui` | Payment handoff, status, recovery and audit presentation |
+| C6 | `phase/c6-buyer-harness` | Buyer/chat/MCP contract and integration harness; full-system E2E remains workstream 07 |
+
 ## 7. Shared contracts to freeze before feature work
 
-Milestone 0 freeze status: **CANDIDATE UNDER REVIEW**. Frozen application/storage contracts and provisional provider contracts are listed in `SHARED_CONTRACTS.md`. Future changes follow the approval process below.
+Milestone 0 freeze status: **FROZEN** at tag `m0-foundation`. Frozen application/storage contracts
+and provisional provider contracts are listed in `SHARED_CONTRACTS.md`. Future changes follow the
+approval process below.
 
 ### Entities
 
@@ -260,6 +304,11 @@ V1 excludes background removal, generation, computer vision, complex CDN behavio
 
 Feature workstreams own unit, module-integration and exposed-interface contract tests. Workstream 07 owns cross-workstream integration, E2E, concurrency/restart, adversarial, Razorpay evidence and scenario-ledger execution.
 
+Testing and review happen at every phase, not after a lane is “finished.” No phase may enter its lane
+until its risk-specific tests, contract checks, lint/typecheck, self-review, independent audit and
+human approval are complete. The exact lifecycle and evidence record are defined in
+`PHASE_EXECUTION.md`.
+
 Required checks include:
 
 - catalog publication visibility and cross-tenant denial;
@@ -324,8 +373,14 @@ Every assigned agent must:
 8. update `TESTED.md` only from an actual reproducible run;
 9. never fabricate Razorpay evidence;
 10. submit small, reviewable changes and call out migrations/contracts explicitly.
+11. work on exactly one named phase branch at a time;
+12. report the phase status and evidence using `PHASE_EXECUTION.md`;
+13. stop after `READY_FOR_REVIEW` and never begin the next phase without approval.
 
 Integration order follows the dependency graph, not whichever UI finishes first. The integrator resolves cross-lane conflicts and validates contract compatibility before merge.
+
+Phase PRs merge into their owning lane. Lane branches merge into `main` only at the corresponding
+integration milestone. A phase must not target `main` directly.
 
 ## 14. Scope isolation
 

@@ -1,5 +1,10 @@
 # Implementation plan — one defensible vertical slice
 
+The numbered phases in this file are product-level integration stages, not permission for one giant
+branch or agent run. Feature delivery uses the A/B/C child phases in `MASTER_DEVELOPMENT_PLAN.md`,
+the workstream briefs and `PHASE_EXECUTION.md`. Each child phase is reviewed and approved before the
+next begins; product-level stages close only when the required lane outputs integrate.
+
 ## Phase 0 — provider truth spike
 
 Use Razorpay Test Mode to validate the exact order, checkout, signature/webhook, payment and capture lifecycle. Decide and test the precise provider condition mapped to `SUCCEEDED`. Record redacted evidence before building UI breadth.

@@ -13,10 +13,11 @@ This folder is the authoritative specification for the v1 project. If another no
 7. [API.md](API.md) — HTTP, application-service and MCP contracts.
 8. [SECURITY.md](SECURITY.md) — identity, authorization, policies and payment safety.
 9. [EVALUATION.md](EVALUATION.md) — acceptance scenarios and evidence requirements.
-10. [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) — build sequence and cut order.
-11. [workstreams/](workstreams/) — bounded execution briefs; read only the assigned workstream.
-12. [DEVELOPMENT.md](DEVELOPMENT.md) — implemented repository layout, setup and foundation validation.
-13. [TESTED.md](TESTED.md) — actual execution ledger; planned behavior is never recorded as passed.
+10. [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) — product integration sequence and cut order.
+11. [PHASE_EXECUTION.md](PHASE_EXECUTION.md) — phase branches, status lifecycle, review gate and evidence template.
+12. [workstreams/](workstreams/) — bounded ownership briefs and lane phase maps; read only the assigned workstream.
+13. [DEVELOPMENT.md](DEVELOPMENT.md) — implemented repository layout, setup and foundation validation.
+14. [TESTED.md](TESTED.md) — actual execution ledger; planned behavior is never recorded as passed.
 
 ## Locked v1 decisions
 

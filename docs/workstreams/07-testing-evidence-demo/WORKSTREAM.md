@@ -65,6 +65,22 @@ Redact secrets/PII/payment data; isolate Test Mode; verify tenant denial and pro
 5. Capture redacted evidence and update `TESTED.md` from actual results.
 6. Validate/rehearse the five-minute primary chat demo plus separate MCP proof.
 
+## Phase and integration role
+
+This workstream does not wait until all feature code is complete, but it also does not replace phase
+tests. It audits phase evidence at lane milestones, maintains cross-lane fixtures, and runs assembled
+scenarios only when their real dependencies exist.
+
+- Review A/B/C phase evidence for gaps before lane integration.
+- Run catalog-to-transaction checks after A3 and B2 integrate.
+- Run transaction-to-provider reliability checks after B3–B6 integrate.
+- Run primary Reference Buyer Chat E2E after C2/C3/C5 connect to real services.
+- Run MCP interoperability separately after C4/C6.
+- Record `TESTED.md` results only from reproducible assembled runs.
+
+A second-agent audit may identify findings but must send fixes back to the owning phase/lane. This
+workstream must not patch feature code merely to make an E2E test pass.
+
 ## Required tests
 
 All scenarios in `EVALUATION.md`: publication, buyer chat journey, MCP interoperability, gates, verified payment, drift, retry/concurrency/restart, unknown recovery, failed checkout, webhook verification/deduplication, prompt injection, tenant isolation and audit reconstruction.
@@ -93,4 +109,5 @@ Mark visual inspection or mocks as provider proof, fabricate Razorpay evidence, 
 
 Escalate ambiguous acceptance criteria, environment/provider blockers, non-reproducible results, scenario-contract contradictions or evidence that challenges a canonical invariant.
 
-See `../../MASTER_DEVELOPMENT_PLAN.md`, `../../EVALUATION.md`, `../../TESTED.md`, `../../ARCHITECTURE.md` and `../../SECURITY.md`.
+See `../../MASTER_DEVELOPMENT_PLAN.md`, `../../PHASE_EXECUTION.md`, `../../EVALUATION.md`,
+`../../TESTED.md`, `../../ARCHITECTURE.md` and `../../SECURITY.md`.

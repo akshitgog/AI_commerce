@@ -65,6 +65,18 @@ Derive money server-side; bind human authorization to exact scope; keep merchant
 5. Implement DB locking/idempotency and provider-attempt orchestration through the abstraction.
 6. Emit append-only causal events atomically with state changes.
 
+## Lane phases
+
+| Phase | Scope | Exit evidence |
+|---|---|---|
+| B1 `phase/b1-transaction-domain` | Canonical transition validator and atomic audit-event semantics | State-table, invalid-transition and event-atomicity tests; no Razorpay |
+| B2 `phase/b2-proposal-gates` | Proposal snapshots, buyer authorization and independent merchant gate | Trusted-total, stale proposal, consent, policy and manual-review tests |
+| B3 `phase/b3-idempotency-locking` | Durable idempotency, locking and provider-attempt orchestration boundary | Fingerprint, repeat/concurrent/restart and one-live-attempt tests using a provider fake |
+
+Each phase branches from `feature/transaction-core`. B1 must not implement proposals or provider
+calls; B2 must not implement provider dispatch; B3 stops at the provider abstraction. Provider
+implementation begins only in B4 under workstream 04.
+
 ## Required tests
 
 Trusted totals, proposal immutability/staleness, no/wrong consent blocked, policy modes, approval expiry, invalid transitions, price/version/stock drift, same/different idempotency fingerprint, concurrent/restart behavior, one live attempt, unknown no-retry rule, tenant isolation and audit reconstruction.
@@ -93,4 +105,5 @@ Call Razorpay directly, treat order creation as success, put idempotency only in
 
 Escalate canonical state/transition changes, authorization scope changes, audit atomicity issues, retry semantics, policy conflicts or any provider behavior that cannot fit the frozen abstraction.
 
-See `../../MASTER_DEVELOPMENT_PLAN.md`, `../../ARCHITECTURE.md`, `../../API.md`, `../../DATA_MODEL.md` and `../../SECURITY.md`.
+See `../../MASTER_DEVELOPMENT_PLAN.md`, `../../PHASE_EXECUTION.md`, `../../ARCHITECTURE.md`,
+`../../API.md`, `../../DATA_MODEL.md` and `../../SECURITY.md`.

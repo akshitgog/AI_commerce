@@ -2,7 +2,7 @@
 
 ## Status
 
-Implementation status: MILESTONE 0 FOUNDATION IMPLEMENTED
+Implementation status: MILESTONE 0 FOUNDATION FROZEN
 
 This file must describe only the accepted implemented system.
 
@@ -90,5 +90,5 @@ Local setup uses `uv`, FastAPI/Uvicorn, Alembic and optional Docker Compose Post
 ## Current Known Limitations
 
 - Only Milestone 0 foundation is implemented; no commerce feature journey exists.
-- Live PostgreSQL connectivity was not exercised during foundation validation because `TEST_DATABASE_URL` was not configured.
+- The PostgreSQL-backed M0 workflow passed before the foundation was frozen at tag `m0-foundation`.
 - Object storage, Razorpay, authentication, buyer chat, MCP and domain services are interfaces/placeholders only.

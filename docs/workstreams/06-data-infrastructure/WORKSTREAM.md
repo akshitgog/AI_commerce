@@ -64,6 +64,18 @@ Keep secrets out of source/logs; least-privilege storage and DB access; validate
 4. Implement Supabase Storage or equivalent behind the storage abstraction.
 5. Provide environment template, local/deployed setup, health checks and correlation-ready logging.
 
+## Phase participation
+
+M0 infrastructure is frozen. Subsequent infrastructure work is a bounded contribution to the active
+owning phase, not an independent catch-all lane: A1–A5 may request reviewed catalog migrations,
+identity or storage work; B1–B6 may request reviewed transaction/provider migrations, locking,
+worker or configuration work. Infrastructure changes use the requesting phase branch and are
+co-reviewed by this workstream and the logical domain owner.
+
+Do not create a parallel infrastructure phase that changes shared schema underneath active lanes.
+Every migration must be called out in the phase evidence record and validated through real
+PostgreSQL where correctness depends on PostgreSQL behavior.
+
 ## Required tests
 
 Migration up/down or forward verification, constraints, transaction/locking behavior, auth context, cross-tenant denial support, storage upload/delete/URL behavior, restart persistence, config failure and secret redaction.
@@ -92,4 +104,5 @@ Choose domain semantics unilaterally, weaken constraints to satisfy tests, store
 
 Escalate schema/constraint conflicts, auth identity-model changes, public-vs-signed URL choice, migration ownership collisions or infrastructure requiring domain/API changes.
 
-See `../../MASTER_DEVELOPMENT_PLAN.md`, `../../DATA_MODEL.md`, `../../API.md` and `../../SECURITY.md`.
+See `../../MASTER_DEVELOPMENT_PLAN.md`, `../../PHASE_EXECUTION.md`, `../../DATA_MODEL.md`,
+`../../API.md` and `../../SECURITY.md`.

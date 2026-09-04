@@ -12,8 +12,9 @@ On 2026-09-04, `uv run ruff check .`, `uv run mypy`,
 `uv run pytest --cov=ai_commerce_gateway` and
 `uv run alembic upgrade head --sql` passed locally. The test run passed 20 tests, skipped the
 PostgreSQL connection test because `TEST_DATABASE_URL` was not configured, and reported 98% line
-coverage. Real PostgreSQL migration and connection validation is configured in
-`.github/workflows/m0.yml` but is not recorded as passed until that workflow runs successfully.
+coverage. GitHub Actions run `33817667540` then passed the PostgreSQL-backed M0 gate at commit
+`1640869`, including dependency sync, Ruff, mypy, migration upgrade, tests with the 90% coverage
+gate, migration downgrade and a second upgrade.
 
 ## Allowed statuses
 

@@ -30,11 +30,13 @@ Configures the Razorpay Test Mode integration, observes technical failures and g
 2. Merchant creates a product manually or imports validated CSV.
 3. Optional AI enrichment suggests non-financial metadata.
 4. Merchant reviews commercial fields and publishes the product.
-5. Only the published version becomes visible through the buyer API/MCP.
+5. Only the published version becomes visible in Reference Buyer Chat through the buyer API.
+6. Separately, the same published version may be discovered by a compatible external AI application
+   through the Remote MCP Server.
 
 ### AI-buyer purchase
 
-1. Human asks the configured AI client for a product.
+1. Human asks Reference Buyer Chat for a product.
 2. AI searches the demonstrated merchant catalog.
 3. Backend returns structured current results.
 4. AI asks the backend to create a proposal for product and quantity.
@@ -46,6 +48,13 @@ Configures the Razorpay Test Mode integration, observes technical failures and g
 10. Backend creates or reuses the single provider attempt and returns checkout initiation data.
 11. Human completes Razorpay Test Mode checkout.
 12. Backend verifies provider truth and records the final state.
+
+### External MCP interoperability
+
+1. A compatible external AI application connects to the Remote MCP Server.
+2. It discovers the same published catalog and may create a proposal through the same application
+   services and trust boundaries.
+3. This separate interoperability proof does not replace or gate the Reference Buyer Chat journey.
 
 ### Failure recovery
 
@@ -99,7 +108,8 @@ Configures the Razorpay Test Mode integration, observes technical failures and g
 - Durable relational storage for correctness-critical state.
 - Secrets excluded from client responses, audit metadata and application logs.
 - Deterministic API errors and correlation identifiers.
-- Local one-command startup plus documented MCP client configuration.
+- Local one-command startup for the core product plus separately documented MCP client configuration
+  for interoperability evidence.
 
 ## Acceptance criteria
 

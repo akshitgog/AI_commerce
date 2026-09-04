@@ -68,6 +68,17 @@ Never trust route merchant IDs without server enforcement. Never accept/display 
 4. Build policy configuration and manual-review decision screens.
 5. Build orders and audit views using simplified labels without collapsing backend states.
 
+## Lane phase ownership
+
+This workstream is delivered primarily in `phase/a6-merchant-dashboard`, based on
+`feature/merchant-catalog`. UI shells or contract mocks may be prepared earlier only when explicitly
+included in the active phase scope. A6 must integrate the completed A2–A5 seams and must not repair
+missing backend behavior in UI code.
+
+A6 exits only when component/contract tests, accessibility states, merchant-scope handling and the
+M1 dashboard journey pass review. Stop at `READY_FOR_REVIEW`; do not start buyer or transaction UI
+work outside the approved phase.
+
 ## Required tests
 
 Component tests for validation/status/error states; integration tests against mocked frozen contracts; role/tenant denial presentation; upload limits; publish/unpublish; policy modes; manual review; canonical-to-display status mapping.
@@ -96,4 +107,5 @@ Call Razorpay, compute authoritative totals, approve for the buyer, bypass polic
 
 Escalate API/schema changes, new status mappings, auth-role changes, storage URL semantics or any UI need that appears to require financial logic.
 
-See `../../MASTER_DEVELOPMENT_PLAN.md`, `../../API.md`, `../../DATA_MODEL.md` and `../../SECURITY.md`.
+See `../../MASTER_DEVELOPMENT_PLAN.md`, `../../PHASE_EXECUTION.md`, `../../API.md`,
+`../../DATA_MODEL.md` and `../../SECURITY.md`.

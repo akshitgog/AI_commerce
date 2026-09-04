@@ -64,6 +64,19 @@ Scope every write/read by merchant ownership; expose only `PUBLISHED` products t
 4. Integrate storage abstraction and persist ordered `ProductImage` rows.
 5. Implement/version merchant policy persistence.
 
+## Lane phases
+
+| Phase | Scope | Exit evidence |
+|---|---|---|
+| A1 `phase/a1-merchant-domain` | Merchant/membership domain and repository skeleton | Tenant membership and repository tests; no product features |
+| A2 `phase/a2-product-crud` | Tenant-scoped draft product CRUD | CRUD, validation, SKU uniqueness and denial tests |
+| A3 `phase/a3-catalog-publication` | Versioning, publish/unpublish and buyer-safe search/read | Draft invisibility, version/stale-write and published-read contract tests |
+| A4 `phase/a4-merchant-policy` | Policy persistence/configuration and review-facing operations | Policy-mode/version and tenant tests; transaction evaluation remains B2 |
+| A5 `phase/a5-product-storage` | Storage integration and ordered image metadata lifecycle | Type/size/count/order/delete and storage-contract tests |
+
+Each phase branches from `feature/merchant-catalog`, follows `PHASE_EXECUTION.md`, and stops after
+its own review package. Do not pull A6 dashboard work or transaction behavior into A1–A5.
+
 ## Required tests
 
 Unpublished invisible, published visible, tenant denial, trusted integer price, version increments, stock constraints, CSV atomic/partial behavior per frozen contract, image count/order/delete, safe buyer response, policy modes and repository constraints.
@@ -92,4 +105,5 @@ Create transactions, call Razorpay, trust client totals, leak draft/cross-tenant
 
 Escalate entity/service signature changes, stock-reservation semantics, product-version invalidation rules, CSV behavior or public-vs-signed image URLs.
 
-See `../../MASTER_DEVELOPMENT_PLAN.md`, `../../API.md`, `../../DATA_MODEL.md` and `../../SECURITY.md`.
+See `../../MASTER_DEVELOPMENT_PLAN.md`, `../../PHASE_EXECUTION.md`, `../../API.md`,
+`../../DATA_MODEL.md` and `../../SECURITY.md`.

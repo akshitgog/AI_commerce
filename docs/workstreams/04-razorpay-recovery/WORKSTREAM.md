@@ -64,6 +64,18 @@ Keep credentials server-side; verify signatures using exact raw/input rules; ded
 4. Implement callback verification and deduplication.
 5. Implement timeout fixture and reconciliation lookup flow.
 
+## Lane phases
+
+| Phase | Scope | Exit evidence |
+|---|---|---|
+| B4 `phase/b4-razorpay-adapter` | Test Mode truth spike, provisional-contract resolution, order creation and checkout initiation | Redacted real-provider evidence, adapter contract tests and explicit order-not-success proof |
+| B5 `phase/b5-provider-verification` | Checkout verification, webhook verification/deduplication and lookup translation | Valid/invalid signature, duplicate/out-of-order event and provider-state tests |
+| B6 `phase/b6-reconciliation` | Timeout-after-dispatch, `UNKNOWN`/`RECONCILING` and provider lookup recovery | No-blind-retry, lookup resolution, restart and final-state evidence |
+
+Each phase branches from `feature/transaction-core`. B4 may change the provisional provider contract
+only through the documented contract-change process. B5 must not absorb reconciliation; B6 must not
+weaken B1 state rules or B3 idempotency to make recovery tests pass.
+
 ## Required tests
 
 Order creation not success, valid/invalid signatures, duplicate/out-of-order webhook, provider translation, timeout after dispatch, unknown no blind retry, lookup resolution, one live order under concurrency/restart, redaction and failure/abandoned checkout.
@@ -92,4 +104,5 @@ Approve buyer/merchant gates, compute totals, set platform state outside transac
 
 Escalate any undocumented Test Mode behavior, success/capture ambiguity, lookup inconsistency, signature-field change or need for a second provider attempt.
 
-See `../../MASTER_DEVELOPMENT_PLAN.md`, `../../ARCHITECTURE.md`, `../../API.md`, `../../DATA_MODEL.md`, `../../SECURITY.md` and `../../EVALUATION.md`.
+See `../../MASTER_DEVELOPMENT_PLAN.md`, `../../PHASE_EXECUTION.md`, `../../ARCHITECTURE.md`,
+`../../API.md`, `../../DATA_MODEL.md`, `../../SECURITY.md` and `../../EVALUATION.md`.
