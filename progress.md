@@ -647,3 +647,77 @@ their secret manager/environment override.
 
 Commit the configuration integration, advance `phase/b5-provider-verification` to that lane head
 and implement only B5.
+
+---
+
+## Entry 012 — Provider verification and success gate implemented
+
+Date/time:       2026-09-04 17:28 IST
+Git branch:      phase/b5-provider-verification
+Commit:          commit containing this entry
+Author/Agent:    Codex Agent B
+Workstream:      provider
+Change:          Implemented checkout signature verification, webhook HMAC/deduplication, payment/order lookup and strict success gate
+Files/modules:   domain/provider_verification.py, application/provider_verification.py, infrastructure/database/provider_verification.py, api/provider_callbacks.py, providers/razorpay.py, B5 tests and documentation
+
+### What Changed
+
+Added checkout HMAC-SHA256 verification using the stored order ID and returned payment ID. Added
+raw-body webhook HMAC verification with a distinct webhook secret, durable deduplication by
+verified event ID with payload-hash integrity, and safe dispatch of supported/unsupported events.
+Added authenticated payment and order lookups with strict response validation. Implemented a
+two-step application service: PAYMENT_PENDING → VERIFYING on authentic signature, then VERIFYING →
+SUCCEEDED only when independent lookups confirm captured payment, paid order and exact
+amount/currency match with the immutable transaction. Added sanitized API error envelopes for
+provider callback routes.
+
+B4 was committed as 6c7a6e7, approved and merged into feature/transaction-core as 25bff1b. The
+YAML configuration integration was committed as d6a72ff on the lane before B5 branched.
+
+### Reason
+
+Complete B5's verification and strict success gate without absorbing B6 reconciliation or weakening
+B1–B3 state/idempotency rules.
+
+### Technical Impact
+
+SUCCEEDED requires all five conditions: valid authenticity, correlated references, captured payment
+state, paid order state and exact amount/currency. Terminal states cannot be downgraded by late or
+out-of-order webhooks. Duplicate webhooks with matching payload hashes replay safely; mismatched
+hashes are rejected. Failed payments do not advance to VERIFYING. Provider exceptions in lookups
+are sanitized before reaching clients. Frozen M0 DTOs, enums, ORM models and migration are
+unchanged.
+
+### Validation
+
+`uv run ruff check .` passed. `uv run mypy` passed with no issues in 33 source files. `uv run
+pytest --cov=ai_commerce_gateway --cov-report=term-missing` passed 439 tests with five skips and
+95% total coverage. `uv run alembic upgrade head --sql` passed. `git diff d6a72ff -- domain/enums.py
+infrastructure/database/models.py migrations/` was empty.
+
+### Evidence
+
+57 new B5 tests across three modules cover: checkout signature verification and tampering; raw-body
+webhook HMAC with distinct secret; durable deduplication and payload-hash reuse rejection; captured/
+authorized/failed payment lookup mapping; order lookup with paid/created/mismatch states;
+money-mismatch rejection without state corruption; two-step causal state transition; terminal state
+downgrade prevention; out-of-order webhook ordering; orphan and ignored webhook recording;
+interrupted webhook resumption; replay safety; sanitized API error envelopes; and contract shape
+tests. Real Test Mode run B5-RZP-20260904-01 created and looked up a redacted order ending
+...qM0YHJ. An actual captured Test Mode payment and real webhook delivery were not exercised
+because those require interactive checkout and webhook secret configuration.
+
+### Result
+
+SUCCESS — B5 READY_FOR_REVIEW
+
+### Problems / Limitations
+
+PostgreSQL-specific tests skipped because TEST_DATABASE_URL is unset. A live checkout flow and
+webhook delivery were not exercised because they require a browser session and Razorpay Dashboard
+webhook configuration respectively. J05 and J11 remain NOT RUN. The B5 checkout evidence harness
+is available in scripts/b5_checkout_evidence.py for manual execution.
+
+### Next Step
+
+Commit B5, merge into feature/transaction-core, and begin B6 reconciliation.

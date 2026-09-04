@@ -58,8 +58,12 @@ Structured financial inputs are loaded from server records and passed directly t
 
 - Test Mode keys and webhook secrets remain server-side.
 - Browser and MCP responses receive only the minimum checkout-safe/public data required by the chosen integration.
-- Verify supported checkout response and webhook signatures before trusting them.
+- Verify checkout signatures from the stored server order ID plus submitted payment ID.
+- Verify webhook HMAC over exact raw request bytes with the distinct webhook secret before parsing.
+- Deduplicate only by the verified `X-Razorpay-Event-Id`; reject one event ID reused with another payload hash.
 - Map provider events only through stored references.
+- Independently query both payment and order before accepting captured-payment success.
+- Require correlated references, payment `captured`, order `paid` and exact amount/currency match.
 - Query provider truth when state is uncertain or conflicting.
 - Never treat a provider order ID as payment success.
 

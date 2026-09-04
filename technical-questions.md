@@ -8,7 +8,7 @@ Do not invent answers.
 
 ## Q: What exact Razorpay Test Mode condition should map to platform `SUCCEEDED`?
 
-Status: OPEN
+Status: RESOLVED
 Branch-raised: phase/b4-razorpay-adapter
 Last-updated-by: Codex Agent B
 
@@ -16,25 +16,27 @@ Context:
 Creating a Razorpay order is not equivalent to a successful payment. The implementation must identify the provider truth required before setting the platform transaction to `SUCCEEDED`.
 
 Current Answer:
-Official Razorpay documentation identifies `captured` as the successful payment status and requires
-server-side verification of the Checkout signature. The current candidate platform gate is thus a
-payment tied to the stored server-side order whose Checkout signature is valid and whose provider
-lookup/webhook evidence confirms `captured`. A created order, attempted order or merely authorized
-payment is insufficient. B4 exercised real order creation, but the candidate success gate still
-requires the B5 payment/signature flow.
+B5 implemented the strict five-condition success gate. Platform `SUCCEEDED` requires all of:
+(1) valid checkout HMAC-SHA256 or webhook HMAC authenticity; (2) provider payment and order IDs
+correlated to the stored attempt; (3) payment state `captured` with `captured: true` from an
+independent lookup; (4) order state `paid` with zero amount due from an independent lookup; and
+(5) provider amount and currency matching the immutable transaction. The two-step transition
+(PAYMENT_PENDING → VERIFYING → SUCCEEDED) ensures that neither order creation, authorization,
+failure, a valid signature alone, nor a mismatched amount can produce SUCCEEDED.
 
 Evidence:
 Razorpay Standard Checkout integration and Test/Live Mode documentation reviewed on 2026-09-04;
 B4 adapter tests prove that `created` yields only `PAYMENT_PENDING`. Real Test Mode run
-`B4-RZP-20260904-01` passed with redacted order suffix `...JzsC44` and no payment/capture truth. See
-`docs/RAZORPAY_TEST_MODE.md`.
+`B4-RZP-20260904-01` passed with redacted order suffix `...JzsC44` and no payment/capture truth.
+B5 integration tests prove the two-step transition and that each insufficient condition blocks
+success. Real Test Mode run `B5-RZP-20260904-01` created and looked up a redacted order ending
+`...qM0YHJ`. See `docs/RAZORPAY_TEST_MODE.md`.
 
 Decision:
-B4 cannot mark success. Keep this question OPEN until B5 validates signature plus captured-provider
-truth against Test Mode and records redacted evidence.
+Resolved in B5 by D-010.
 
 Confidence:
-MEDIUM
+HIGH
 
 Last updated:
 2026-09-04

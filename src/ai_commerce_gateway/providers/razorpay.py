@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import hashlib
+import hmac
+import json
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
@@ -10,19 +13,29 @@ import httpx
 from ai_commerce_gateway.contracts.models import (
     CreateProviderOrderCommand,
     HandleWebhookCommand,
+    Money,
     ProviderLookupCommand,
     ProviderObservation,
     VerifyCheckoutCommand,
 )
 from ai_commerce_gateway.core.config import Settings
 from ai_commerce_gateway.domain.enums import ProviderName
+from ai_commerce_gateway.domain.provider_verification import ProviderEvidence
 
 RAZORPAY_API_BASE_URL: Final = "https://api.razorpay.com"
 RAZORPAY_CHECKOUT_SCRIPT_URL: Final = "https://checkout.razorpay.com/v1/checkout.js"
 RAZORPAY_ORDER_PATH: Final = "/v1/orders"
+RAZORPAY_PAYMENT_PATH: Final = "/v1/payments"
 _TEST_KEY_PREFIX: Final = "rzp_test_"
 _ORDER_ID_PREFIX: Final = "order_"
+_PAYMENT_ID_PREFIX: Final = "pay_"
 _CREATED_ORDER_STATE: Final = "created"
+_ORDER_STATES: Final = frozenset({"created", "attempted", "paid"})
+_PAYMENT_STATES: Final = frozenset({"created", "authorized", "captured", "refunded", "failed"})
+_SUPPORTED_WEBHOOK_EVENTS: Final = frozenset(
+    {"payment.authorized", "payment.captured", "payment.failed", "order.paid"}
+)
+_MAX_WEBHOOK_BYTES: Final = 1_000_000
 
 
 class RazorpayAdapterError(RuntimeError):
@@ -53,6 +66,10 @@ class RazorpayProtocolError(RazorpayAdapterError):
     pass
 
 
+class RazorpaySignatureError(RazorpayAdapterError):
+    pass
+
+
 @dataclass(frozen=True, slots=True)
 class RazorpayCheckoutOptions:
     """Safe public fields required to open Razorpay Standard Checkout."""
@@ -75,8 +92,7 @@ class RazorpayCheckoutOptions:
 class RazorpayAdapter:
     """Synchronous Test Mode adapter for order creation and checkout initiation.
 
-    B4 intentionally performs exactly one create-order request and does not enable transport
-    retries. Verification, webhooks and lookups remain unavailable until B5.
+    Provider HTTP requests are single-dispatch operations with transport retries disabled.
     """
 
     def __init__(
@@ -84,6 +100,7 @@ class RazorpayAdapter:
         *,
         key_id: str,
         key_secret: str,
+        webhook_secret: str | None = None,
         api_base_url: str = RAZORPAY_API_BASE_URL,
         timeout_seconds: float = 10.0,
         checkout_name: str = "AI Commerce Gateway",
@@ -98,6 +115,7 @@ class RazorpayAdapter:
         )
         self._key_id = key_id
         self._key_secret = key_secret
+        self._webhook_secret = webhook_secret
         self._api_base_url = api_base_url.rstrip("/")
         self._timeout_seconds = timeout_seconds
         self._checkout_name = checkout_name
@@ -113,6 +131,11 @@ class RazorpayAdapter:
         return cls(
             key_id=settings.razorpay_key_id,
             key_secret=settings.razorpay_key_secret.get_secret_value(),
+            webhook_secret=(
+                settings.razorpay_webhook_secret.get_secret_value()
+                if settings.razorpay_webhook_secret is not None
+                else None
+            ),
             api_base_url=settings.razorpay_api_base_url,
             timeout_seconds=settings.razorpay_timeout_seconds,
             checkout_name=settings.razorpay_checkout_name,
@@ -197,17 +220,118 @@ class RazorpayAdapter:
             description=description,
         )
 
-    def verify_checkout(self, command: VerifyCheckoutCommand) -> ProviderObservation:
-        raise NotImplementedError("Checkout verification belongs to phase B5.")
+    def verify_checkout(self, command: VerifyCheckoutCommand) -> ProviderEvidence:
+        _validate_reference(command.provider_order_id, _ORDER_ID_PREFIX, "order")
+        _validate_reference(command.provider_payment_id, _PAYMENT_ID_PREFIX, "payment")
+        if not command.transaction_id.strip():
+            raise RazorpayRequestError("Checkout transaction identifier is required.")
+        message = f"{command.provider_order_id}|{command.provider_payment_id}".encode()
+        _verify_hmac(message, command.signature, self._key_secret, "checkout")
+        return ProviderEvidence(
+            provider=ProviderName.RAZORPAY,
+            provider_order_id=command.provider_order_id,
+            provider_payment_id=command.provider_payment_id,
+            authenticity_verified=True,
+            observed_at=datetime.now(UTC),
+            observation_source="razorpay_checkout_signature",
+        )
 
-    def handle_webhook(self, command: HandleWebhookCommand) -> ProviderObservation:
-        raise NotImplementedError("Webhook verification belongs to phase B5.")
+    def handle_webhook(self, command: HandleWebhookCommand) -> ProviderEvidence:
+        if self._webhook_secret is None or not self._webhook_secret:
+            raise RazorpayConfigurationError("Razorpay webhook secret is not configured.")
+        if not command.raw_body or len(command.raw_body) > _MAX_WEBHOOK_BYTES:
+            raise RazorpayRequestError("Razorpay webhook body size is invalid.")
+        _verify_hmac(command.raw_body, command.signature, self._webhook_secret, "webhook")
+        try:
+            payload = json.loads(command.raw_body)
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise RazorpayProtocolError("Razorpay webhook body is not valid JSON.") from exc
+        if not isinstance(payload, dict) or payload.get("entity") != "event":
+            raise RazorpayProtocolError("Razorpay webhook is not an event object.")
+        event_name = _required_string(payload, "event")
+        if event_name not in _SUPPORTED_WEBHOOK_EVENTS:
+            return ProviderEvidence(
+                provider=ProviderName.RAZORPAY,
+                authenticity_verified=True,
+                observed_at=datetime.now(UTC),
+                observation_source=f"razorpay_webhook_ignored:{event_name[:64]}",
+            )
+        payment = _webhook_payment(payload)
+        observation = _payment_observation(
+            payment,
+            source=f"razorpay_webhook:{event_name}",
+        )
+        if event_name in {"payment.captured", "order.paid"} and (
+            observation.provider_payment_state != "captured"
+            or observation.capture_state != "captured"
+        ):
+            raise RazorpayProtocolError("Razorpay captured webhook has inconsistent payment state.")
+        return observation
 
-    def lookup_order(self, command: ProviderLookupCommand) -> ProviderObservation:
-        raise NotImplementedError("Provider lookup belongs to phase B5.")
+    def lookup_order(self, command: ProviderLookupCommand) -> ProviderEvidence:
+        if command.provider_order_id is None:
+            raise RazorpayRequestError("Razorpay order lookup requires an order identifier.")
+        _validate_reference(command.provider_order_id, _ORDER_ID_PREFIX, "order")
+        payload = self._get(f"{RAZORPAY_ORDER_PATH}/{command.provider_order_id}")
+        order_id = _required_string(payload, "id")
+        if order_id != command.provider_order_id or payload.get("entity") != "order":
+            raise RazorpayProtocolError("Razorpay returned a mismatched order lookup.")
+        order_state = _required_string(payload, "status")
+        if order_state not in _ORDER_STATES:
+            raise RazorpayProtocolError("Razorpay returned an unsupported order state.")
+        amount = _required_integer(payload, "amount")
+        amount_paid = _required_integer(payload, "amount_paid")
+        amount_due = _required_integer(payload, "amount_due")
+        if amount <= 0 or amount_paid < 0 or amount_due < 0 or amount_paid + amount_due != amount:
+            raise RazorpayProtocolError("Razorpay returned inconsistent order money fields.")
+        if order_state == "paid" and amount_due != 0:
+            raise RazorpayProtocolError("Razorpay paid order still has an amount due.")
+        currency = _required_string(payload, "currency")
+        if len(currency) != 3 or not currency.isupper():
+            raise RazorpayProtocolError("Razorpay returned an invalid order currency.")
+        if _required_integer(payload, "attempts") < 0:
+            raise RazorpayProtocolError("Razorpay returned an invalid order attempt count.")
+        return ProviderEvidence(
+            provider=ProviderName.RAZORPAY,
+            provider_amount=Money(amount_minor=amount, currency=currency),
+            provider_order_id=order_id,
+            provider_order_state=order_state,
+            authenticity_verified=True,
+            observed_at=datetime.now(UTC),
+            observation_source="razorpay_order_lookup",
+        )
 
-    def lookup_payment(self, command: ProviderLookupCommand) -> ProviderObservation:
-        raise NotImplementedError("Provider lookup belongs to phase B5.")
+    def lookup_payment(self, command: ProviderLookupCommand) -> ProviderEvidence:
+        if command.provider_payment_id is None:
+            raise RazorpayRequestError("Razorpay payment lookup requires a payment identifier.")
+        _validate_reference(command.provider_payment_id, _PAYMENT_ID_PREFIX, "payment")
+        payload = self._get(f"{RAZORPAY_PAYMENT_PATH}/{command.provider_payment_id}")
+        observation = _payment_observation(payload, source="razorpay_payment_lookup")
+        if observation.provider_payment_id != command.provider_payment_id:
+            raise RazorpayProtocolError("Razorpay returned a mismatched payment lookup.")
+        if (
+            command.provider_order_id is not None
+            and observation.provider_order_id != command.provider_order_id
+        ):
+            raise RazorpayProtocolError("Razorpay payment belongs to another order.")
+        return observation
+
+    def _get(self, path: str) -> Mapping[str, Any]:
+        try:
+            response = self._client.get(
+                f"{self._api_base_url}{path}",
+                auth=httpx.BasicAuth(self._key_id, self._key_secret),
+                headers={"Accept": "application/json"},
+                timeout=self._timeout_seconds,
+            )
+        except (httpx.TimeoutException, httpx.TransportError) as exc:
+            raise RazorpayTransportError(
+                "Razorpay lookup did not return a trustworthy response."
+            ) from exc
+        payload = _json_mapping(response)
+        if not 200 <= response.status_code < 300:
+            raise RazorpayApiError(response.status_code, _provider_error_code(payload))
+        return payload
 
 
 def _validate_configuration(
@@ -265,14 +389,84 @@ def _provider_error_code(payload: Mapping[str, Any]) -> str | None:
 def _required_string(payload: Mapping[str, Any], field_name: str) -> str:
     value = payload.get(field_name)
     if not isinstance(value, str) or not value:
-        raise RazorpayProtocolError(f"Razorpay order field {field_name} is invalid.")
+        raise RazorpayProtocolError(f"Razorpay field {field_name} is invalid.")
     return value
+
+
+def _required_boolean(payload: Mapping[str, Any], field_name: str) -> bool:
+    value = payload.get(field_name)
+    if not isinstance(value, bool):
+        raise RazorpayProtocolError(f"Razorpay field {field_name} is invalid.")
+    return value
+
+
+def _validate_reference(value: str, prefix: str, label: str) -> None:
+    if not value.startswith(prefix) or len(value) > 255:
+        raise RazorpayRequestError(f"Razorpay {label} identifier is invalid.")
+
+
+def _verify_hmac(message: bytes, signature: str, secret: str, label: str) -> None:
+    is_hex = all(character in "0123456789abcdefABCDEF" for character in signature)
+    if len(signature) != 64 or not is_hex:
+        raise RazorpaySignatureError(f"Razorpay {label} signature is invalid.")
+    expected = hmac.new(secret.encode(), message, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected, signature.lower()):
+        raise RazorpaySignatureError(f"Razorpay {label} signature is invalid.")
+
+
+def _webhook_payment(payload: Mapping[str, Any]) -> Mapping[str, Any]:
+    webhook_payload = payload.get("payload")
+    if not isinstance(webhook_payload, dict):
+        raise RazorpayProtocolError("Razorpay webhook payload is invalid.")
+    payment_wrapper = webhook_payload.get("payment")
+    if not isinstance(payment_wrapper, dict):
+        raise RazorpayProtocolError("Razorpay webhook payment is missing.")
+    payment = payment_wrapper.get("entity")
+    if not isinstance(payment, dict):
+        raise RazorpayProtocolError("Razorpay webhook payment entity is invalid.")
+    return payment
+
+
+def _payment_observation(payload: Mapping[str, Any], *, source: str) -> ProviderEvidence:
+    payment_id = _required_string(payload, "id")
+    _validate_reference(payment_id, _PAYMENT_ID_PREFIX, "payment")
+    if payload.get("entity") != "payment":
+        raise RazorpayProtocolError("Razorpay returned an unexpected payment entity.")
+    order_id = _required_string(payload, "order_id")
+    _validate_reference(order_id, _ORDER_ID_PREFIX, "order")
+    payment_state = _required_string(payload, "status")
+    if payment_state not in _PAYMENT_STATES:
+        raise RazorpayProtocolError("Razorpay returned an unsupported payment state.")
+    captured = _required_boolean(payload, "captured")
+    if payment_state == "captured" and not captured:
+        raise RazorpayProtocolError("Razorpay returned inconsistent capture fields.")
+    if payment_state in {"created", "authorized", "failed"} and captured:
+        raise RazorpayProtocolError("Razorpay returned inconsistent capture fields.")
+    if _required_integer(payload, "amount") <= 0:
+        raise RazorpayProtocolError("Razorpay returned an invalid payment amount.")
+    currency = _required_string(payload, "currency")
+    if len(currency) != 3 or not currency.isupper():
+        raise RazorpayProtocolError("Razorpay returned an invalid payment currency.")
+    return ProviderEvidence(
+        provider=ProviderName.RAZORPAY,
+        provider_amount=Money(
+            amount_minor=_required_integer(payload, "amount"),
+            currency=currency,
+        ),
+        provider_order_id=order_id,
+        provider_payment_id=payment_id,
+        provider_payment_state=payment_state,
+        capture_state="captured" if captured else "not_captured",
+        authenticity_verified=True,
+        observed_at=datetime.now(UTC),
+        observation_source=source,
+    )
 
 
 def _required_integer(payload: Mapping[str, Any], field_name: str) -> int:
     value = payload.get(field_name)
     if isinstance(value, bool) or not isinstance(value, int):
-        raise RazorpayProtocolError(f"Razorpay order field {field_name} is invalid.")
+        raise RazorpayProtocolError(f"Razorpay field {field_name} is invalid.")
     return value
 
 

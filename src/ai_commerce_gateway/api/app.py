@@ -3,15 +3,23 @@ from uuid import uuid4
 from fastapi import FastAPI, Request
 from sqlalchemy import text
 
+from ai_commerce_gateway.api.provider_callbacks import (
+    ProviderVerificationService,
+    create_provider_callback_router,
+)
 from ai_commerce_gateway.core.config import get_settings
 from ai_commerce_gateway.core.errors import AppError, ErrorCode, install_error_handlers
 from ai_commerce_gateway.infrastructure.database.session import create_engine
 
 
-def create_app() -> FastAPI:
+def create_app(
+    provider_verification_service: ProviderVerificationService | None = None,
+) -> FastAPI:
     settings = get_settings()
     app = FastAPI(title=settings.app_name, version="0.1.0")
     install_error_handlers(app)
+    if provider_verification_service is not None:
+        app.include_router(create_provider_callback_router(provider_verification_service))
 
     @app.middleware("http")
     async def correlation_id(request: Request, call_next):  # type: ignore[no-untyped-def]

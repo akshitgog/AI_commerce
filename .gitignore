@@ -13,3 +13,4 @@ dist/
 build/
 *.egg-info/
 graphify-out/
+.b5_evidence.db

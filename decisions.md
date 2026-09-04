@@ -316,3 +316,51 @@ compatibility tests.
 
 Refines the environment-template portion of D-005; no frozen commerce or persistence contract is
 changed.
+
+---
+
+## D-010 — Require five independent conditions for platform SUCCEEDED
+
+Status: ACTIVE
+Date: 2026-09-04
+Branch: phase/b5-provider-verification
+Owner: Workstream 04 / Agent B
+
+### Decision
+
+Platform `SUCCEEDED` requires all of: (1) valid checkout HMAC or webhook HMAC authenticity;
+(2) provider payment and order IDs correlated to the stored attempt; (3) payment state `captured`
+with `captured: true` from an independent lookup; (4) order state `paid` with zero amount due from
+an independent lookup; and (5) provider amount and currency matching the immutable transaction.
+
+Neither a created order, an authorized payment, a failed payment, a valid signature alone, nor a
+mismatched amount can produce SUCCEEDED.
+
+### Why
+
+Order creation is not payment. Checkout signatures prove message integrity, not payment capture.
+Only an independent provider lookup can confirm the actual financial state. Amount verification
+prevents partial-payment or currency-mismatch acceptance.
+
+### Alternatives Considered
+
+- Accept signature validity alone as success.
+- Accept any non-failed payment state as success.
+- Skip independent lookup and trust webhook payload.
+- Allow checkout callback without amount verification.
+
+### Consequences
+
+The verification service always performs two independent lookups (payment + order) before
+transitioning to SUCCEEDED. This adds latency but prevents accepting unverified or inconsistent
+provider states as platform truth.
+
+### Evidence / Trigger
+
+B5 integration tests prove the two-step transition (PAYMENT_PENDING → VERIFYING → SUCCEEDED) and
+that each insufficient condition blocks success. Official Razorpay documentation for Standard
+Checkout verification and payment capture states.
+
+### Supersedes
+
+Resolves the open question in technical-questions.md about the exact SUCCEEDED condition.

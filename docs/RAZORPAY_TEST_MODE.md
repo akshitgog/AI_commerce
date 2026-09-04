@@ -43,11 +43,30 @@ Provider timeouts, transport failures, rejected responses and malformed/mismatch
 do not trigger an adapter retry. Once called through the B3 execution service, any exception after
 the pre-dispatch commit follows the existing conservative `UNKNOWN` path.
 
-## Deferred to B5/B6
+## B5 verification and lookup mapping
 
-- B5: checkout signature verification, webhooks, order/payment lookup translation and the exact
-  verified `captured` gate for `SUCCEEDED`.
-- B6: timeout-after-dispatch reconciliation and resolution from provider lookup truth.
+B5 verifies the checkout HMAC from the stored order ID and returned payment ID. It verifies webhook
+HMAC over the unmodified body with a separately configured webhook secret and durably deduplicates
+the verified `X-Razorpay-Event-Id` plus body hash. Supported payment/order events correlate only
+through stored attempt references.
+
+Neither authenticity mechanism is sufficient for success. Checkout completion and captured
+webhooks independently fetch the payment and order. Platform `SUCCEEDED` requires all of:
+
+- valid callback or webhook authenticity;
+- payment linked to the stored order and attempt;
+- payment state `captured` with `captured: true`;
+- order state `paid` with no amount due;
+- payment/order amount and currency agreeing with the immutable transaction.
+
+Created or attempted orders, authorized payments, failed payments, unsigned input, mismatched
+references/money and malformed provider responses cannot produce success. Duplicate and
+out-of-order webhooks cannot repeat or downgrade a terminal transition.
+
+## Deferred to B6
+
+B6 owns timeout-after-dispatch reconciliation and resolution from provider lookup truth. B5 does
+not create a replacement provider order or implement a reconciliation worker.
 
 ## Reproducible real-provider check
 
@@ -78,3 +97,23 @@ Checkout order correlation: matched
 
 The complete credentialed suite subsequently passed 373 tests with four PostgreSQL-only skips and
 97% package coverage. This order-only evidence does not mark J05 payment completion as passed.
+
+## Recorded B5 provider evidence
+
+```text
+Run ID: B5-RZP-20260904-01
+Date/time: 2026-09-04 (Asia/Calcutta)
+Mode: Razorpay TEST
+Command: uv run pytest tests/integration/test_razorpay_test_mode.py -m provider -s -q
+Result: PASS
+Order reference: ...qM0YHJ
+Created state: created
+Fetched state: created
+Fetched amount/currency: matched the trusted INR 1.00 command
+Payment/capture evidence: none
+```
+
+This real-provider run proves authenticated order lookup and response correlation. It does not
+prove checkout signature, a captured Test Mode payment or webhook delivery because no interactive
+checkout/payment and no separately configured webhook delivery secret were supplied. J05 and J11
+therefore remain `NOT RUN`.

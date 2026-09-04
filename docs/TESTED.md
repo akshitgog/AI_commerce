@@ -36,6 +36,28 @@ explicit deployment loading, deep merge, precedence, secret redaction, invalid t
 fields/shapes and missing-file failure. Ruff, mypy and offline Alembic validation passed. This does
 not change any J01–J16 status.
 
+## B5 provider verification validation
+
+On 2026-09-04, the provider verification phase passed 439 tests with 95% coverage, five
+credential/PostgreSQL tests skipped. Ruff, mypy and offline Alembic validation passed. Frozen
+M0 enums, DTOs, ORM models and migration have zero diff from the B4 lane head.
+
+57 new B5 tests exercise: checkout HMAC signature verification and four tampering cases; raw-body
+webhook HMAC verification with distinct webhook secret; durable webhook deduplication and
+payload-hash reuse rejection; supported and ignored webhook event dispatch; captured/authorized/
+failed payment lookup mapping; order lookup with paid/created/mismatch states; money-mismatch
+rejection without state corruption; two-step causal state transition (PAYMENT_PENDING → VERIFYING
+→ SUCCEEDED); terminal state downgrade prevention; out-of-order webhook ordering (failed then
+captured, authorized after success); orphan and ignored webhook recording; interrupted webhook
+resumption on duplicate; replay safety requiring valid signature; sanitized API error envelopes;
+contract shape tests for frozen webhook command and callback routes; and real Test Mode order
+creation and lookup.
+
+Real provider run `B5-RZP-20260904-01` created and looked up a redacted order ending `...qM0YHJ`
+in `created` state with matching INR 1.00 amount. No captured Test Mode payment or live webhook
+delivery was exercised because those require an interactive checkout session and a separately
+configured webhook secret. J05 and J11 therefore remain `NOT RUN`.
+
 ## Allowed statuses
 
 - `PASS`: executed, matched expected behavior and evidence is linked.

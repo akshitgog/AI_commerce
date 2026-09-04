@@ -8,10 +8,7 @@ import pytest
 
 from ai_commerce_gateway.contracts.models import (
     CreateProviderOrderCommand,
-    HandleWebhookCommand,
     Money,
-    ProviderLookupCommand,
-    VerifyCheckoutCommand,
 )
 from ai_commerce_gateway.core.config import Settings
 from ai_commerce_gateway.domain.enums import ProviderName
@@ -277,23 +274,3 @@ def test_from_settings_requires_credentials_and_unwraps_secret_only_in_adapter()
         adapter = RazorpayAdapter.from_settings(settings, client=client)
         assert adapter.create_order(command()).provider_order_id == "order_test_123456"
     assert KEY_SECRET not in repr(settings)
-
-
-def test_b5_operations_remain_explicitly_unimplemented() -> None:
-    with client_for(lambda _: httpx.Response(200, json=created_order())) as client:
-        adapter = RazorpayAdapter(key_id=KEY_ID, key_secret=KEY_SECRET, client=client)
-        with pytest.raises(NotImplementedError, match="B5"):
-            adapter.verify_checkout(
-                VerifyCheckoutCommand(
-                    transaction_id="txn_test",
-                    provider_order_id="order_test",
-                    provider_payment_id="pay_test",
-                    signature="signature",
-                )
-            )
-        with pytest.raises(NotImplementedError, match="B5"):
-            adapter.handle_webhook(HandleWebhookCommand(raw_body=b"{}", signature="sig"))
-        with pytest.raises(NotImplementedError, match="B5"):
-            adapter.lookup_order(ProviderLookupCommand(provider_order_id="order_test"))
-        with pytest.raises(NotImplementedError, match="B5"):
-            adapter.lookup_payment(ProviderLookupCommand(provider_payment_id="pay_test"))
