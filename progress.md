@@ -536,3 +536,59 @@ verification, webhooks and lookup are intentionally B5; reconciliation remains B
 ### Next Step
 
 Commit B4, perform independent audit and request human approval. Do not begin B5.
+
+---
+
+## Entry 010 — B4 review findings closed and human approval received
+
+Date/time:       2026-09-04 16:40 IST
+Git branch:      phase/b4-razorpay-adapter
+Commit:          6c7a6e7
+Author/Agent:    Codex Agent B
+Workstream:      provider
+Change:          Closed every finding from the independent B4 phase review
+Files/modules:   B4 commit and provider evidence records; no additional runtime change
+
+### What Changed
+
+Resolved the independent review's three required actions. Ran the credential-gated Razorpay Test
+Mode test and recorded only a redacted order suffix and non-payment state. Restored
+`contracts/provider.py` byte-for-byte so no frozen-contract file differs from the B3 base. Committed
+all B4 implementation, tests, documentation and evidence as `6c7a6e7` with a clean phase branch.
+
+### Reason
+
+The initial review found sound implementation but correctly blocked approval on missing real
+provider evidence, an unapproved frozen-file docstring edit and an uncommitted working tree.
+
+### Technical Impact
+
+No additional provider behavior was introduced. B4 remains order creation and safe checkout
+initiation only. Verification/webhooks/lookups remain B5, and reconciliation remains B6.
+
+### Validation
+
+The real provider test passed against Razorpay Test Mode. The credentialed full suite passed 373
+tests with four PostgreSQL-only skips, 97% coverage and 98% adapter coverage. Ruff, mypy and offline
+Alembic validation passed. `git diff 1a17c78..6c7a6e7 --
+src/ai_commerce_gateway/contracts/provider.py migrations src/ai_commerce_gateway/domain/enums.py`
+was empty.
+
+### Evidence
+
+Run `B4-RZP-20260904-01` in `docs/RAZORPAY_TEST_MODE.md`; independent B4 review supplied by the
+integrator; human instruction on 2026-09-04 to move to the next phase after confirming the fixes.
+
+### Result
+
+SUCCESS — B4 APPROVED FOR LANE MERGE
+
+### Problems / Limitations
+
+PostgreSQL-specific tests remain skipped locally because `TEST_DATABASE_URL` is unset. J05 remains
+`NOT RUN`: an order in `created` state is not a verified captured payment.
+
+### Next Step
+
+Merge B4 into `feature/transaction-core`, create `phase/b5-provider-verification` from that lane and
+implement only B5.
