@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import UTC, datetime
 
 from ai_commerce_gateway.contracts.models import (
@@ -24,6 +25,22 @@ from ai_commerce_gateway.domain.repositories import MerchantRepository, ProductR
 
 def _now() -> datetime:
     return datetime.now(tz=UTC)
+
+def _to_product_view(prod: ProductEntity) -> ProductView:
+    return ProductView(
+        id=prod.id,
+        merchant_id=prod.merchant_id,
+        sku=prod.sku,
+        title=prod.title,
+        description=prod.description,
+        category=prod.category,
+        price=Money(amount_minor=prod.price.amount_minor, currency=prod.price.currency),
+        available_quantity=prod.available_quantity,
+        status=prod.status,
+        version=prod.version,
+        images=()
+    )
+
 
 
 def _require_merchant_access(actor: ActorContext, merchant_id: str, required_roles: frozenset[MerchantRole] | set[MerchantRole] | None = None) -> None:  # noqa: E501
@@ -207,13 +224,50 @@ class ApplicationMerchantCatalogService:
         )
 
     def publish_product(self, command: SetProductPublicationCommand, actor: ActorContext) -> ProductView:  # noqa: E501
-        raise NotImplementedError("Publication is scope of A3")
+        _require_merchant_access(actor, command.merchant_id, required_roles=frozenset([MerchantRole.ADMIN, MerchantRole.EDITOR]))  # noqa: E501
+        
+        prod = self._product_repo.get_by_id(command.merchant_id, command.product_id)
+        if not prod:
+            raise AppError(ErrorCode.NOT_FOUND, "Product not found", status_code=404)
+        
+        # We rely on DB for concurrent check, but do a pre-check here
+        if prod.version != command.expected_version:
+            raise AppError(ErrorCode.VALIDATION_ERROR, "Version mismatch (stale write)", status_code=409)  # noqa: E501
+            
+        prod = replace(
+            prod,
+            status=ProductStatus.PUBLISHED,
+            version=prod.version + 1,
+            updated_at=_now()
+        )
+        
+        updated_prod = self._product_repo.update(prod)
+        return _to_product_view(updated_prod)
 
     def unpublish_product(self, command: SetProductPublicationCommand, actor: ActorContext) -> ProductView:  # noqa: E501
-        raise NotImplementedError("Publication is scope of A3")
+        _require_merchant_access(actor, command.merchant_id, required_roles=frozenset([MerchantRole.ADMIN, MerchantRole.EDITOR]))  # noqa: E501
+        
+        prod = self._product_repo.get_by_id(command.merchant_id, command.product_id)
+        if not prod:
+            raise AppError(ErrorCode.NOT_FOUND, "Product not found", status_code=404)
+        
+        if prod.version != command.expected_version:
+            raise AppError(ErrorCode.VALIDATION_ERROR, "Version mismatch (stale write)", status_code=409)  # noqa: E501
+            
+        prod = replace(
+            prod,
+            status=ProductStatus.UNPUBLISHED,
+            version=prod.version + 1,
+            updated_at=_now()
+        )
+        
+        updated_prod = self._product_repo.update(prod)
+        return _to_product_view(updated_prod)
+
+
 
     def add_product_image(self, command: AddProductImageCommand, actor: ActorContext) -> ProductImageView:  # noqa: E501
         raise NotImplementedError("Image storage is scope of A5")
 
-    def delete_product_image(self, command: DeleteProductImageCommand, actor: ActorContext) -> None:
+    def delete_product_image(self, command: DeleteProductImageCommand, actor: ActorContext) -> None:  # noqa: E501
         raise NotImplementedError("Image storage is scope of A5")

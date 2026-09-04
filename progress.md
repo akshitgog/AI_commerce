@@ -400,3 +400,13 @@ ext_cursor logic with 55 created products.
 1. **DB Atomic Concurrency Enforcement:** Refactored SqlAlchemyProductRepository.update to execute an atomic UPDATE ... WHERE id = X AND merchant_id = Y AND version = expected_version instead of a select-and-modify. This enforces optimistic concurrency natively at the SQL level, ensuring a concurrent race maps cleanly to a 409 VALIDATION_ERROR (stale write) rather than causing unexpected overwrite behavior. Added a rigorous 	est_merchant_catalog_service_update_product_db_race unit test verifying that bypassing the application-level pre-checks still hits this SQL-level lock properly.
 2. **Review Status Updated:** Phase A2 is reviewed and approved.
 
+
+## Phase A3 Updates (Catalog Publication)
+- Updated CatalogService.get_product contract to explicitly require merchant_id to strictly preserve SQL-level tenant isolation, per D-008.
+- Implemented publish_product and unpublish_product in ApplicationMerchantCatalogService enforcing atomic version increments and stale-write checks.
+- Implemented ApplicationCatalogService for buyers in src/ai_commerce_gateway/application/buyer_catalog_service.py to fulfill the CatalogService contract:
+  - get_product validates ProductStatus.PUBLISHED before returning the product, rendering draft products strictly invisible to buyers.
+  - search handles multi-parameter CatalogSearchQuery filtering across query strings, prices, and categories over the repository list_published page.
+- Added comprehensive unit tests in test_buyer_catalog_service.py verifying published visibility, draft invisibility, filter correctness, publish/unpublish mechanics, and 409 stale-write scenarios.
+- Ran formatting and static checks (ruff check, mypy). All pass cleanly. Test coverage remains at 95% across 141 tests.
+- Status: READY FOR REVIEW
