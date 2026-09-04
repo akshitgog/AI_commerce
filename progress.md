@@ -237,3 +237,65 @@ each lane.
 
 Choose the first active phase per lane and create only those three child branches from their current
 lane heads.
+
+---
+
+## Entry 005 — Transaction state machine and atomic audit foundation implemented
+
+Date/time:       2026-09-04 11:35 IST
+Git branch:      phase/b1-transaction-domain
+Commit:          uncommitted working tree
+Author/Agent:    Codex Agent B
+Workstream:      transaction
+Change:          Added the provider-independent transaction transition validator and atomic causal event persistence
+Files/modules:   domain/transactions.py, infrastructure/database/transactions.py, transaction state/event tests
+
+### What Changed
+
+Added an immutable transaction aggregate that uses the frozen canonical `TransactionState` enum,
+defines the exact allowed transition graph and produces a structured causal event for every valid
+state change. Added an internal SQLAlchemy state repository that flushes the state update and event
+append together inside the caller's database transaction.
+
+The B1 scope follows the repository phase plan: proposal hashing, buyer authorization, merchant
+policy/decision and readiness application behavior remain deferred to B2.
+
+### Reason
+
+Establish deterministic, provider-independent state and audit semantics before proposal-gate
+application services, idempotent provider orchestration or Razorpay integration are added.
+
+### Technical Impact
+
+Canonical transitions are centrally validated; terminal states cannot transition; `SUCCEEDED` is
+reachable only from `VERIFYING` or `RECONCILING`; and cancellation/expiry are limited to states
+before provider dispatch. Frozen DTOs, service/provider/storage ports, persistence schema, money
+conventions, errors and identifier conventions were not changed.
+
+### Validation
+
+`uv run ruff check .` passed. `uv run mypy` passed. `uv run pytest
+--cov=ai_commerce_gateway` passed 259 tests with 98% package coverage; two PostgreSQL tests skipped
+because `TEST_DATABASE_URL` was not configured. `uv run alembic upgrade head --sql` passed. A
+targeted coverage run reported 100% for the new transaction domain module and 98% for its database
+repository.
+
+### Evidence
+
+Local command output on branch `phase/b1-transaction-domain`. The portable database test proves
+that a deliberately failed event insert rolls back the accompanying state update.
+
+### Result
+
+SUCCESS
+
+### Problems / Limitations
+
+The PostgreSQL-specific transaction/event atomicity test was not run locally because
+`TEST_DATABASE_URL` is unset. B1 intentionally contains no proposal, authorization, merchant-gate,
+readiness, idempotency, locking, provider, reconciliation-worker or interface implementation.
+
+### Next Step
+
+Submit B1 for independent audit and human review. Do not begin B2 before approval and merge into
+`feature/transaction-core`.
