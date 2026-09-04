@@ -184,14 +184,10 @@ class ToolOrchestrator:
             req_audit = GetTransactionAuditRequest(**arguments)
             res_audit = self.adapter.get_transaction_audit(actor, invocation, req_audit)
 
-            # Redact provider details for buyer presentation
-            audit_items = []
-            for e in res_audit.items:
-                item = e.model_dump()
-                # Strip any internal or provider metadata
-                if "metadata" in item:
-                    item["metadata"] = "[REDACTED]" if item["metadata"] else {}
-                audit_items.append(item)
+            # Metadata was already allowlist-redacted at the adapter
+            # (SECURITY.md strict allowlist, see adapter._redact_event);
+            # present the compliant events as-is.
+            audit_items = [e.model_dump() for e in res_audit.items]
 
             return {"items": audit_items, "next_cursor": res_audit.next_cursor}
 

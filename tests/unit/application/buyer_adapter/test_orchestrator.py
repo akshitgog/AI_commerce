@@ -225,10 +225,15 @@ def test_status_mapping_and_recovery(
         assert "no action needed" in res["recovery_instructions"]
 
 
-def test_transaction_audit_redaction(
+def test_transaction_audit_presentation_passthrough(
     actor: ActorContext, invocation: InvocationContext, mock_adapter: BuyerAdapter
 ) -> None:
-    """Verify get_transaction_audit redacts metadata/provider secrets."""
+    """Verify get_transaction_audit presents adapter output as-is.
+
+    Metadata allowlist redaction is enforced inside BuyerAdapter
+    (SECURITY.md strict allowlist); the orchestrator presents the
+    already-compliant events without further mutation.
+    """
     from datetime import UTC, datetime
     from unittest.mock import patch
 
@@ -246,7 +251,7 @@ def test_transaction_audit_redaction(
         new_state=TransactionState.FAILED,
         correlation_id="corr_1",
         provider_reference_redacted="[REDACTED]",
-        metadata={"provider_error": "insufficient_funds", "secret_key": "sk_test_123"},
+        metadata={"attempt_id": "att_1", "provider": "razorpay"},
         created_at=datetime.now(UTC),
     )
     page = AuditPage(items=(event,), next_cursor=None)
@@ -260,6 +265,4 @@ def test_transaction_audit_redaction(
 
         assert len(res["items"]) == 1
         item = res["items"][0]
-        assert item["metadata"] == "[REDACTED]"
-        # The secret shouldn't be exposed
-        assert "sk_test_123" not in str(item)
+        assert item["metadata"] == {"attempt_id": "att_1", "provider": "razorpay"}

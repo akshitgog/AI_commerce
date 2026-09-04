@@ -1,4 +1,5 @@
 import logging
+from typing import Final
 
 from ai_commerce_gateway.application.buyer_adapter.schemas import (
     CreatePurchaseProposalRequest,
@@ -34,13 +35,39 @@ from ai_commerce_gateway.contracts.services import (
 
 logger = logging.getLogger(__name__)
 
+# SECURITY.md: "Audit metadata uses a strict allowlist." This is the closed
+# set of operational keys the transaction lane writes into TransactionEvent
+# metadata (scope references, attempt correlation, verification provenance).
+# Any other key is stripped before the event reaches a buyer surface, so a
+# leaked or future non-allowlisted key can never reach chat or MCP clients.
+AUDIT_METADATA_ALLOWLIST: Final[frozenset[str]] = frozenset(
+    {
+        "proposal_id",
+        "buyer_authorization_id",
+        "merchant_decision_id",
+        "merchant_id",
+        "buyer_id",
+        "attempt_id",
+        "attempt_number",
+        "provider",
+        "observation_source",
+        "authenticity_verified",
+    }
+)
+
 
 def _redact_event(event: TransactionEventView) -> TransactionEventView:
-    """Redacts any sensitive provider/internal fields before returning to buyer."""
-    # The event already has provider_reference_redacted, but we ensure
-    # we don't leak anything else in metadata if it's sensitive.
-    # In a full implementation, we might strip out specific keys from metadata.
-    return event
+    """Enforce the strict metadata allowlist for buyer-facing audit events.
+
+    ``provider_reference_redacted`` is already redacted at write time by the
+    transaction lane; this is the single enforcement point for metadata.
+    Returns the same instance when nothing needs stripping.
+    """
+    metadata = event.metadata
+    filtered = {k: v for k, v in metadata.items() if k in AUDIT_METADATA_ALLOWLIST}
+    if len(filtered) == len(metadata):
+        return event
+    return event.model_copy(update={"metadata": filtered})
 
 
 class BuyerAdapter:
