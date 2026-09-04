@@ -35,15 +35,9 @@ def transaction() -> Transaction:
 def test_execution_fingerprints_are_stable_and_scope_bound() -> None:
     first = execution_request_fingerprint(actor_id="buy_test", transaction_id="txn_test")
 
-    assert first == execution_request_fingerprint(
-        actor_id="buy_test", transaction_id="txn_test"
-    )
-    assert first != execution_request_fingerprint(
-        actor_id="buy_other", transaction_id="txn_test"
-    )
-    assert first != execution_request_fingerprint(
-        actor_id="buy_test", transaction_id="txn_other"
-    )
+    assert first == execution_request_fingerprint(actor_id="buy_test", transaction_id="txn_test")
+    assert first != execution_request_fingerprint(actor_id="buy_other", transaction_id="txn_test")
+    assert first != execution_request_fingerprint(actor_id="buy_test", transaction_id="txn_other")
     assert provider_request_fingerprint(
         transaction(), ProviderName.RAZORPAY
     ) == provider_request_fingerprint(transaction(), ProviderName.RAZORPAY)

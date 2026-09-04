@@ -41,7 +41,7 @@ _BASE_TRANSITIONS: Final[dict[TransactionState, frozenset[TransactionState]]] = 
     ),
     TransactionState.READY: frozenset({TransactionState.EXECUTING}),
     TransactionState.EXECUTING: frozenset(
-        {TransactionState.PAYMENT_PENDING, TransactionState.UNKNOWN}
+        {TransactionState.PAYMENT_PENDING, TransactionState.UNKNOWN, TransactionState.RECONCILING}
     ),
     TransactionState.PAYMENT_PENDING: frozenset({TransactionState.VERIFYING}),
     TransactionState.VERIFYING: frozenset({TransactionState.SUCCEEDED, TransactionState.FAILED}),
@@ -51,6 +51,7 @@ _BASE_TRANSITIONS: Final[dict[TransactionState, frozenset[TransactionState]]] = 
             TransactionState.PAYMENT_PENDING,
             TransactionState.SUCCEEDED,
             TransactionState.FAILED,
+            TransactionState.UNKNOWN,
         }
     ),
     TransactionState.SUCCEEDED: frozenset(),

@@ -144,12 +144,8 @@ def seed_ready_transaction(factory: SessionFactory) -> str:
         session.add_all(
             [
                 models.Merchant(id="mer_test", name="Merchant", status="ACTIVE"),
-                models.Buyer(
-                    id="buy_test", external_identity="buyer@test", status="ACTIVE"
-                ),
-                models.Buyer(
-                    id="buy_other", external_identity="other@test", status="ACTIVE"
-                ),
+                models.Buyer(id="buy_test", external_identity="buyer@test", status="ACTIVE"),
+                models.Buyer(id="buy_other", external_identity="other@test", status="ACTIVE"),
                 models.Product(
                     id="prod_test",
                     merchant_id="mer_test",
@@ -211,9 +207,7 @@ def seed_ready_transaction(factory: SessionFactory) -> str:
         MerchantGateApplicationService(repository, clock=lambda: NOW).evaluate(
             EvaluateMerchantPolicyCommand(proposal_id=proposal.id), actor()
         )
-        transaction = TransactionCreationApplicationService(
-            repository, clock=lambda: NOW
-        ).create(
+        transaction = TransactionCreationApplicationService(repository, clock=lambda: NOW).create(
             CreateTransactionCommand(
                 proposal_id=proposal.id,
                 idempotency_key="transaction-create-key",
@@ -289,8 +283,9 @@ def test_execute_commits_before_dispatch_and_reuses_one_durable_attempt(tmp_path
             assert session.scalar(select(func.count()).select_from(models.PaymentAttempt)) == 1
             assert session.scalar(select(func.count()).select_from(models.IdempotencyRecord)) == 2
             events = session.scalars(
-                select(models.TransactionEvent)
-                .where(models.TransactionEvent.transaction_id == transaction_id)
+                select(models.TransactionEvent).where(
+                    models.TransactionEvent.transaction_id == transaction_id
+                )
             ).all()
             transitions = {
                 (event.previous_state, event.new_state, event.reason_code) for event in events
@@ -325,9 +320,7 @@ def test_same_idempotency_key_rejects_a_different_fingerprint(tmp_path: Path) ->
         provider = RecordingProvider()
         execution = service(factory, provider)
         execution.execute(
-            ExecuteTransactionCommand(
-                transaction_id=transaction_id, idempotency_key="shared-key"
-            ),
+            ExecuteTransactionCommand(transaction_id=transaction_id, idempotency_key="shared-key"),
             actor(),
         )
 

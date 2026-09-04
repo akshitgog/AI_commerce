@@ -721,3 +721,43 @@ is available in scripts/b5_checkout_evidence.py for manual execution.
 ### Next Step
 
 Commit B5, merge into feature/transaction-core, and begin B6 reconciliation.
+
+---
+
+## Entry 013 — B6 Provider lookup recovery and reconciliation implemented
+
+Date/time:       2026-09-04 17:40 IST
+Git branch:      phase/b6-reconciliation
+Commit:          commit containing this entry
+Author/Agent:    Antigravity Agent
+Workstream:      provider
+Change:          Implemented reconciliation service to recover UNKNOWN/EXECUTING transactions.
+Files/modules:   domain/reconciliation.py, application/reconciliation.py, domain/transactions.py, tests
+
+### What Changed
+
+Added strict state-machine bounds for RECONCILING transitions from EXECUTING and UNKNOWN.
+Implemented the reconciliation application service to securely query the provider and deduce
+the actual canonical state without retrying order creation or mutating external state.
+
+### Reason
+
+Fulfill the B6 phase requirement: recover stuck transactions gracefully while respecting the
+timeout-after-dispatch safety guarantees and B1-B3 idempotency rules.
+
+### Technical Impact
+
+Added RECONCILING support to EXECUTING and UNKNOWN. RECONCILING is allowed to resolve into
+PAYMENT_PENDING, SUCCEEDED, FAILED, or revert back to UNKNOWN.
+
+### Validation
+
+Full test suite passes (447 passed, 5 skipped). Coverage is 95%. Ruff and mypy passed.
+
+### Result
+
+SUCCESS — B6 READY_FOR_REVIEW
+
+### Next Step
+
+Merge B6 and move to B7/C0.
