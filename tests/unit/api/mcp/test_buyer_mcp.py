@@ -240,3 +240,33 @@ async def test_mcp_cannot_bypass_adapter(
             "publish_product",
         }
         assert tool_names & forbidden == set()
+
+
+@pytest.mark.anyio
+async def test_execute_transaction_is_idempotent(
+    buyer_adapter: BuyerAdapter,
+) -> None:
+    """Mutating tools must derive deterministic idempotency keys on replay."""
+    from unittest.mock import patch
+
+    mcp = create_buyer_mcp_server(buyer_adapter)
+
+    with patch.object(
+        buyer_adapter, "execute_transaction", wraps=buyer_adapter.execute_transaction
+    ) as mock_exec:
+        async with Client(mcp) as client:
+            await client.call_tool(
+                "execute_transaction",
+                {"proposal_id": "prop_demo_001"},
+            )
+            await client.call_tool(
+                "execute_transaction",
+                {"proposal_id": "prop_demo_001"},
+            )
+
+        assert mock_exec.call_count == 2
+        # Verify the same idempotency_key was passed both times
+        inv1 = mock_exec.call_args_list[0][0][1]
+        inv2 = mock_exec.call_args_list[1][0][1]
+        assert inv1.idempotency_key == inv2.idempotency_key
+        assert inv1.idempotency_key.startswith("idem_")

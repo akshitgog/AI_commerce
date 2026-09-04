@@ -8,6 +8,7 @@ production authentication. A real deployment would use a server-side
 session/token mechanism.
 """
 
+import hashlib
 import json
 import logging
 from uuid import uuid4
@@ -53,6 +54,15 @@ def _make_invocation(
         idempotency_key=idempotency_key or f"idem_{uuid4().hex}",
         request_id=f"req_{uuid4().hex[:12]}",
     )
+
+
+def _derive_idempotency_key(actor_id: str, tool_name: str, **kwargs: object) -> str:
+    """Derive a deterministic idempotency key from the actor and request shape."""
+    payload = json.dumps(
+        {"actor_id": actor_id, "tool_name": tool_name, "kwargs": kwargs},
+        sort_keys=True,
+    )
+    return "idem_" + hashlib.sha256(payload.encode()).hexdigest()[:16]
 
 
 def _result_to_text(data: object) -> str:
@@ -110,7 +120,14 @@ def create_buyer_mcp_server(adapter: BuyerAdapter) -> MCPServer:
     ) -> str:
         """Create an immutable purchase proposal. AI cannot derive price."""
         actor = _make_actor()
-        invocation = _make_invocation()
+        idem_key = _derive_idempotency_key(
+            actor.actor_id,
+            "create_purchase_proposal",
+            merchant_id=merchant_id,
+            product_id=product_id,
+            quantity=quantity,
+        )
+        invocation = _make_invocation(idempotency_key=idem_key)
         req = CreatePurchaseProposalRequest(
             merchant_id=merchant_id,
             product_id=product_id,
@@ -123,7 +140,12 @@ def create_buyer_mcp_server(adapter: BuyerAdapter) -> MCPServer:
     def request_authorization(proposal_id: str) -> str:
         """Request human buyer authorization for a proposal. Cannot approve."""
         actor = _make_actor()
-        invocation = _make_invocation()
+        idem_key = _derive_idempotency_key(
+            actor.actor_id,
+            "request_authorization",
+            proposal_id=proposal_id,
+        )
+        invocation = _make_invocation(idempotency_key=idem_key)
         req = RequestAuthorizationRequest(proposal_id=proposal_id)
         result = adapter.request_authorization(actor, invocation, req)
         return _result_to_text(result)
@@ -132,7 +154,12 @@ def create_buyer_mcp_server(adapter: BuyerAdapter) -> MCPServer:
     def execute_transaction(proposal_id: str) -> str:
         """Execute a transaction for an authorized proposal."""
         actor = _make_actor()
-        invocation = _make_invocation()
+        idem_key = _derive_idempotency_key(
+            actor.actor_id,
+            "execute_transaction",
+            proposal_id=proposal_id,
+        )
+        invocation = _make_invocation(idempotency_key=idem_key)
         req = ExecuteTransactionRequest(proposal_id=proposal_id)
         result = adapter.execute_transaction(actor, invocation, req)
         return _result_to_text(result)
