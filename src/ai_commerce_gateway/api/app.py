@@ -12,6 +12,7 @@ from ai_commerce_gateway.api.composition import (
     compose_default_buyer_services_factory,
 )
 from ai_commerce_gateway.api.mcp.buyer_server import create_buyer_mcp_server
+from ai_commerce_gateway.api.mcp.merchant_server import create_merchant_mcp_server
 from ai_commerce_gateway.api.session_auth import BuyerSessionService
 from ai_commerce_gateway.core.config import Settings, get_settings
 from ai_commerce_gateway.core.errors import AppError, ErrorCode, install_error_handlers
@@ -49,12 +50,36 @@ def create_app(
         streamable_http_path="/",
     )
 
+    # The merchant MCP adapter (C7) is mounted only when the trusted merchant
+    # service base URL is configured; it shares no tools with the buyer MCP.
+    merchant_mcp = None
+    merchant_mcp_asgi_app = None
+    if settings.merchant_mcp_api_base_url:
+        import httpx
+
+        from ai_commerce_gateway.infrastructure.http.merchant_api_client import (
+            MerchantApiClient,
+        )
+
+        merchant_api_client = MerchantApiClient(
+            httpx.Client(timeout=settings.merchant_mcp_timeout_seconds),
+            settings.merchant_mcp_api_base_url,
+        )
+        merchant_mcp = create_merchant_mcp_server(merchant_api_client)
+        merchant_mcp_asgi_app = merchant_mcp.streamable_http_app(
+            streamable_http_path="/",
+        )
+
     @contextlib.asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-        # The parent lifespan must enter the MCP session manager
+        # The parent lifespan must enter the MCP session managers
         # because Starlette does not run mounted sub-app lifespans.
         async with buyer_mcp.session_manager.run():
-            yield
+            if merchant_mcp is not None:
+                async with merchant_mcp.session_manager.run():
+                    yield
+            else:
+                yield
 
     app = FastAPI(
         title=settings.app_name,
@@ -73,6 +98,11 @@ def create_app(
     # Mount MCP Streamable HTTP at /mcp/buyer.
     # The official SDK owns HTTP method/session/protocol behavior.
     app.mount("/mcp/buyer", mcp_asgi_app)
+
+    if merchant_mcp_asgi_app is not None:
+        # Merchant MCP (C7): disjoint registry, session-passthrough auth,
+        # transport-level idempotency for mutations.
+        app.mount("/mcp/merchant", merchant_mcp_asgi_app)
 
     @app.exception_handler(ValueError)
     async def handle_value_error(request: Request, exc: ValueError) -> JSONResponse:

@@ -60,6 +60,8 @@ _CONFIG_SCHEMA: dict[str, dict[str, str]] = {
         "timeout_seconds": "buyer_services_timeout_seconds",
     },
     "merchant_mcp": {
+        "api_base_url": "merchant_mcp_api_base_url",
+        "timeout_seconds": "merchant_mcp_timeout_seconds",
         "publication_secret": "merchant_mcp_publication_secret",
         "publication_audience": "merchant_mcp_publication_audience",
         "confirmation_ttl_seconds": "merchant_mcp_confirmation_ttl_seconds",
@@ -112,6 +114,8 @@ class Settings(BaseSettings):
     buyer_sessions_issuer_key: SecretStr | None = None
     buyer_sessions_ttl_seconds: int = Field(default=3600, ge=60, le=86400)
 
+    merchant_mcp_api_base_url: str | None = None
+    merchant_mcp_timeout_seconds: float = Field(default=10.0, gt=0)
     merchant_mcp_publication_secret: SecretStr | None = None
     merchant_mcp_publication_audience: str = "merchant-mcp-publication"
     merchant_mcp_confirmation_ttl_seconds: int = Field(default=300, ge=1, le=300)

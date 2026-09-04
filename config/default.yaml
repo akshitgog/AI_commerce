@@ -51,6 +51,11 @@ buyer_sessions:
   ttl_seconds: 3600
 
 merchant_mcp:
+  # Base URL of the trusted merchant catalog service (Agent A). When set,
+  # the gateway mounts the merchant MCP adapter at /mcp/merchant; when null,
+  # the merchant MCP surface is not exposed at all.
+  api_base_url: null
+  timeout_seconds: 10.0
   publication_secret: null
   publication_audience: merchant-mcp-publication
   confirmation_ttl_seconds: 300
