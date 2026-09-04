@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     storage_provider: str = "unconfigured"
     storage_bucket: str = "product-images"
     storage_public_base_url: str | None = None
-    llm_provider_url: str = "https://api.openai.com/v1/chat/completions"
+    llm_provider_url: str | None = None  # LiteLLM api_base override (None = provider default)
     llm_api_key: str | None = Field(default=None, repr=False)
     llm_model: str = "gpt-4o-mini"
     publication_confirmation_secret: str = Field(default_factory=lambda: token_urlsafe(32))

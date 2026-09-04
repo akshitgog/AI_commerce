@@ -16,7 +16,7 @@ import logging
 import re
 from typing import Final, Literal, Protocol
 
-import httpx
+from litellm import completion
 from pydantic import BaseModel, Field
 
 from ai_commerce_gateway.core.errors import AppError, ErrorCode
@@ -140,10 +140,11 @@ class StubProductDraftExtractor:
 
 
 class LLMProductDraftExtractor:
-    """LLM-backed extractor against an OpenAI-compatible chat endpoint.
+    """LLM-backed extractor via LiteLLM (OpenAI-compatible and others).
 
     Active only when ``llm_api_key`` is configured; otherwise the stub is
     used (see ``get_product_draft_extractor`` in the merchant API layer).
+    ``provider_url`` maps to LiteLLM's ``api_base`` (None = provider default).
     """
 
     _SYSTEM_PROMPT: Final[str] = (
@@ -157,33 +158,28 @@ class LLMProductDraftExtractor:
         "field the merchant did not state. Never invent facts."
     )
 
-    def __init__(self, *, provider_url: str, api_key: str, model: str) -> None:
-        self._provider_url = provider_url.rstrip("/")
+    def __init__(self, *, provider_url: str | None, api_key: str, model: str) -> None:
+        self._api_base = provider_url.rstrip("/") if provider_url else None
         self._api_key = api_key
         self._model = model
 
     def extract(self, text: str) -> ProductDraft:
         cleaned = _validate_text(text)
-        payload = {
-            "model": self._model,
-            "messages": [
-                {"role": "system", "content": self._SYSTEM_PROMPT},
-                {"role": "user", "content": cleaned},
-            ],
-            "response_format": {"type": "json_object"},
-            "temperature": 0,
-        }
         try:
-            response = httpx.post(
-                f"{self._provider_url}/chat/completions",
-                headers={"Authorization": f"Bearer {self._api_key}"},
-                json=payload,
+            response = completion(
+                model=self._model,
+                api_key=self._api_key,
+                api_base=self._api_base,
+                messages=[
+                    {"role": "system", "content": self._SYSTEM_PROMPT},
+                    {"role": "user", "content": cleaned},
+                ],
+                response_format={"type": "json_object"},
+                temperature=0,
                 timeout=_LLM_TIMEOUT_SECONDS,
             )
-            response.raise_for_status()
-            body = response.json()
-            content = body["choices"][0]["message"]["content"]
-            parsed = json.loads(content)
+            content = response.choices[0].message.content
+            parsed = json.loads(content) if isinstance(content, str) else content
         except AppError:
             raise
         except Exception as exc:

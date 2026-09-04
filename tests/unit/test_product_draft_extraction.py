@@ -71,33 +71,31 @@ class TestStubProductDraftExtractor:
 
 
 # ---------------------------------------------------------------------------
-# LLMProductDraftExtractor — mocked transport
+# LLMProductDraftExtractor — mocked LiteLLM transport
 # ---------------------------------------------------------------------------
 
+class _FakeMessage:
+    def __init__(self, content: str) -> None:
+        self.content = content
+
+
+class _FakeChoice:
+    def __init__(self, content: str) -> None:
+        self.message = _FakeMessage(content)
+
+
 class _FakeResponse:
-    def __init__(self, body: dict, status_code: int = 200) -> None:
-        self._body = body
-        self.status_code = status_code
-
-    def raise_for_status(self) -> None:
-        if self.status_code >= 400:
-            raise RuntimeError(f"HTTP {self.status_code}")
-
-    def json(self) -> dict:
-        return self._body
+    def __init__(self, content: str) -> None:
+        self.choices = [_FakeChoice(content)]
 
 
 def _patch_llm(monkeypatch: pytest.MonkeyPatch, body: dict | Exception) -> None:
-    def fake_post(*args: object, **kwargs: object) -> _FakeResponse:
+    def fake_completion(*args: object, **kwargs: object) -> _FakeResponse:
         if isinstance(body, Exception):
             raise body
-        return _FakeResponse(body)
+        return _FakeResponse(json.dumps(body))
 
-    monkeypatch.setattr(pde.httpx, "post", fake_post)
-
-
-def _completions_body(content: str) -> dict:
-    return {"choices": [{"message": {"content": content}}]}
+    monkeypatch.setattr(pde, "completion", fake_completion)
 
 
 class TestLLMProductDraftExtractor:
@@ -111,19 +109,15 @@ class TestLLMProductDraftExtractor:
     def test_valid_llm_response(self, monkeypatch: pytest.MonkeyPatch):
         _patch_llm(
             monkeypatch,
-            _completions_body(
-                json.dumps(
-                    {
-                        "title": "65W GaN Charger",
-                        "description": "Compact fast charger",
-                        "category": "Chargers",
-                        "price_amount_minor": 169900,
-                        "currency": "INR",
-                        "available_quantity": 25,
-                        "attributes": {"ports": "2x USB-C"},
-                    }
-                )
-            ),
+            {
+                "title": "65W GaN Charger",
+                "description": "Compact fast charger",
+                "category": "Chargers",
+                "price_amount_minor": 169900,
+                "currency": "INR",
+                "available_quantity": 25,
+                "attributes": {"ports": "2x USB-C"},
+            },
         )
         draft = self._extractor().extract("I sell a 65W GaN charger for 1699 rupees")
         assert draft.source == "llm"
@@ -138,7 +132,10 @@ class TestLLMProductDraftExtractor:
         assert exc_info.value.status_code == 502
 
     def test_llm_non_dict_payload_rejected(self, monkeypatch: pytest.MonkeyPatch):
-        _patch_llm(monkeypatch, _completions_body("[1,2,3]"))
+        def fake_completion(*args: object, **kwargs: object) -> _FakeResponse:
+            return _FakeResponse("[1,2,3]")
+
+        monkeypatch.setattr(pde, "completion", fake_completion)
         with pytest.raises(AppError) as exc_info:
             self._extractor().extract("A nice lamp")
         assert exc_info.value.status_code == 400
@@ -146,19 +143,15 @@ class TestLLMProductDraftExtractor:
     def test_llm_never_invents_missing_fields(self, monkeypatch: pytest.MonkeyPatch):
         _patch_llm(
             monkeypatch,
-            _completions_body(
-                json.dumps(
-                    {
-                        "title": "Wooden stool",
-                        "description": None,
-                        "category": None,
-                        "price_amount_minor": None,
-                        "currency": None,
-                        "available_quantity": None,
-                        "attributes": {},
-                    }
-                )
-            ),
+            {
+                "title": "Wooden stool",
+                "description": None,
+                "category": None,
+                "price_amount_minor": None,
+                "currency": None,
+                "available_quantity": None,
+                "attributes": {},
+            },
         )
         draft = self._extractor().extract("A wooden stool")
         assert draft.price_amount_minor is None
