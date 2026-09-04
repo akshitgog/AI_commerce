@@ -7,7 +7,6 @@ from sqlalchemy.dialects.postgresql import insert as postgresql_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import Session, sessionmaker
 
-from ai_commerce_gateway.application.transaction_execution import ExecutionRepository
 from ai_commerce_gateway.contracts.models import ProviderObservation
 from ai_commerce_gateway.core.ids import new_id
 from ai_commerce_gateway.domain.enums import ActorType, ProviderName, TransactionState
@@ -258,7 +257,7 @@ class SqlAlchemyExecutionUnitOfWork:
         self._event_id_factory = event_id_factory or (lambda: new_id("tevt"))
         self._clock = clock or (lambda: datetime.now(UTC))
         self._session: Session | None = None
-        self.repository: ExecutionRepository
+        self.repository: SqlAlchemyExecutionRepository
 
     def __enter__(self) -> "SqlAlchemyExecutionUnitOfWork":
         self._session = self._session_factory()

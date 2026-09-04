@@ -301,6 +301,42 @@ class RazorpayAdapter:
             observation_source="razorpay_order_lookup",
         )
 
+    def lookup_order_by_receipt(
+        self, command: CreateProviderOrderCommand
+    ) -> ProviderEvidence:
+        """Recover an ambiguously-created order without dispatching a second order.
+
+        This is an internal recovery capability rather than an addition to the frozen
+        provider contract. The deterministic transaction receipt and request notes bind
+        the discovered order to the durable payment attempt.
+        """
+
+        _validate_order_command(command)
+        payload = self._get(
+            RAZORPAY_ORDER_PATH,
+            params={"receipt": command.receipt, "count": "100"},
+        )
+        if payload.get("entity") != "collection":
+            raise RazorpayProtocolError("Razorpay returned an invalid order collection.")
+        items = payload.get("items")
+        if not isinstance(items, list):
+            raise RazorpayProtocolError("Razorpay returned an invalid order collection.")
+
+        matches: list[Mapping[str, Any]] = []
+        for item in items:
+            if not isinstance(item, dict):
+                raise RazorpayProtocolError("Razorpay returned an invalid order entry.")
+            if item.get("receipt") == command.receipt:
+                matches.append(item)
+        if len(matches) != 1:
+            raise RazorpayProtocolError(
+                "Razorpay receipt lookup did not identify exactly one trustworthy order."
+            )
+
+        order = matches[0]
+        _validate_recovered_order(order, command)
+        return _order_observation(order, source="razorpay_order_receipt_lookup")
+
     def lookup_payment(self, command: ProviderLookupCommand) -> ProviderEvidence:
         if command.provider_payment_id is None:
             raise RazorpayRequestError("Razorpay payment lookup requires a payment identifier.")
@@ -316,12 +352,15 @@ class RazorpayAdapter:
             raise RazorpayProtocolError("Razorpay payment belongs to another order.")
         return observation
 
-    def _get(self, path: str) -> Mapping[str, Any]:
+    def _get(
+        self, path: str, *, params: Mapping[str, str] | None = None
+    ) -> Mapping[str, Any]:
         try:
             response = self._client.get(
                 f"{self._api_base_url}{path}",
                 auth=httpx.BasicAuth(self._key_id, self._key_secret),
                 headers={"Accept": "application/json"},
+                params=params,
                 timeout=self._timeout_seconds,
             )
         except (httpx.TimeoutException, httpx.TransportError) as exc:
@@ -492,3 +531,51 @@ def _validate_created_order(
         raise RazorpayProtocolError("Razorpay did not return a newly created order.")
     if _required_integer(payload, "attempts") != 0:
         raise RazorpayProtocolError("A newly created Razorpay order has unexpected attempts.")
+
+
+def _validate_recovered_order(
+    payload: Mapping[str, Any], command: CreateProviderOrderCommand
+) -> None:
+    if payload.get("entity") != "order":
+        raise RazorpayProtocolError("Razorpay returned an unexpected receipt lookup entity.")
+    order_id = _required_string(payload, "id")
+    _validate_reference(order_id, _ORDER_ID_PREFIX, "order")
+    if _required_integer(payload, "amount") != command.amount.amount_minor:
+        raise RazorpayProtocolError("Razorpay returned a mismatched recovered order amount.")
+    if _required_string(payload, "currency") != command.amount.currency:
+        raise RazorpayProtocolError("Razorpay returned a mismatched recovered order currency.")
+    if payload.get("receipt") != command.receipt:
+        raise RazorpayProtocolError("Razorpay returned a mismatched recovered order receipt.")
+    order_state = _required_string(payload, "status")
+    if order_state not in _ORDER_STATES:
+        raise RazorpayProtocolError("Razorpay returned an unsupported recovered order state.")
+    amount = _required_integer(payload, "amount")
+    amount_paid = _required_integer(payload, "amount_paid")
+    amount_due = _required_integer(payload, "amount_due")
+    if amount_paid < 0 or amount_due < 0 or amount_paid + amount_due != amount:
+        raise RazorpayProtocolError("Razorpay returned inconsistent recovered order money fields.")
+    notes = payload.get("notes")
+    if not isinstance(notes, dict):
+        raise RazorpayProtocolError("Razorpay recovered order notes are invalid.")
+    expected_notes = {
+        "transaction_id": command.transaction_id,
+        "attempt_id": command.attempt_id,
+        "request_fingerprint": command.request_fingerprint,
+    }
+    if any(notes.get(key) != value for key, value in expected_notes.items()):
+        raise RazorpayProtocolError("Razorpay recovered order is not bound to this attempt.")
+
+
+def _order_observation(payload: Mapping[str, Any], *, source: str) -> ProviderEvidence:
+    return ProviderEvidence(
+        provider=ProviderName.RAZORPAY,
+        provider_amount=Money(
+            amount_minor=_required_integer(payload, "amount"),
+            currency=_required_string(payload, "currency"),
+        ),
+        provider_order_id=_required_string(payload, "id"),
+        provider_order_state=_required_string(payload, "status"),
+        authenticity_verified=True,
+        observed_at=datetime.now(UTC),
+        observation_source=source,
+    )

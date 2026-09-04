@@ -209,7 +209,8 @@ with SessionFactory() as session:
     session.commit()
 
 print(
-    f"✓ Transaction {TRANSACTION_ID} seeded in PAYMENT_PENDING with order ...{observation.provider_order_id[-6:]}"
+    f"✓ Transaction {TRANSACTION_ID} seeded in PAYMENT_PENDING "
+    f"with order ...{observation.provider_order_id[-6:]}"
 )
 
 # ---------------------------------------------------------------------------
@@ -298,7 +299,8 @@ CHECKOUT_HTML = textwrap.dedent(f"""\
               el.textContent = "✓ PLATFORM SUCCEEDED\\n" + JSON.stringify(data, null, 2);
             }} else {{
               el.className = "error";
-              el.textContent = "State: " + (data.state || "error") + "\\n" + JSON.stringify(data, null, 2);
+              el.textContent = "State: " + (data.state || "error") + "\\n" +
+                JSON.stringify(data, null, 2);
             }}
           }})
           .catch(err => {{
@@ -358,7 +360,9 @@ def verify_checkout(request_data: dict) -> dict:  # type: ignore[type-arg]
         print(f"  Order ID:        ...{request_data['razorpay_order_id'][-6:]}")
         print(f"  Payment ID:      ...{request_data['razorpay_payment_id'][-6:]}")
         print(
-            f"  Signature:       {request_data['razorpay_signature'][:8]}...{request_data['razorpay_signature'][-4:]}"
+            "  Signature:       "
+            f"{request_data['razorpay_signature'][:8]}..."
+            f"{request_data['razorpay_signature'][-4:]}"
         )
         print("=" * 60)
 
@@ -374,7 +378,8 @@ def verify_checkout(request_data: dict) -> dict:  # type: ignore[type-arg]
             print(f"\n  Audit trail ({len(events)} events):")
             for evt in events:
                 print(
-                    f"    {evt.previous_state} → {evt.new_state}  [{evt.reason_code}]  ref={evt.provider_reference_redacted}"
+                    f"    {evt.previous_state} → {evt.new_state}  "
+                    f"[{evt.reason_code}]  ref={evt.provider_reference_redacted}"
                 )
 
         print("\n✓ B5 evidence complete. Copy the above to docs/RAZORPAY_TEST_MODE.md")

@@ -1,4 +1,3 @@
-import os
 from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import UTC, datetime
@@ -24,6 +23,7 @@ from ai_commerce_gateway.contracts.models import (
     RecordMerchantDecisionCommand,
     RequestAuthorizationCommand,
 )
+from ai_commerce_gateway.core.config import get_settings
 from ai_commerce_gateway.core.errors import AppError, ErrorCode
 from ai_commerce_gateway.core.ids import EntityPrefix
 from ai_commerce_gateway.domain.enums import (
@@ -447,9 +447,9 @@ def test_cross_buyer_and_cross_merchant_proposal_access_is_denied() -> None:
 
 @pytest.mark.integration
 def test_proposal_gate_flow_in_postgresql_when_configured() -> None:
-    database_url = os.getenv("TEST_DATABASE_URL")
+    database_url = get_settings().test_database_url
     if not database_url:
-        pytest.skip("TEST_DATABASE_URL is not configured")
+        pytest.skip("database.test_url is not configured")
     engine = create_engine(database_url, pool_pre_ping=True)
     connection = engine.connect()
     outer_transaction = connection.begin()

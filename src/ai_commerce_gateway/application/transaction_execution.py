@@ -476,11 +476,13 @@ def _redact_provider_reference(reference: str | None) -> str | None:
     return f"...{reference[-4:]}"
 
 
-def _audit_scope(transaction: Transaction) -> dict[str, str | None]:
+def _audit_scope(transaction: Transaction) -> dict[str, str | int | None]:
     return {
         "proposal_id": transaction.proposal_id,
         "buyer_authorization_id": transaction.buyer_authorization_id,
         "merchant_decision_id": transaction.merchant_decision_id,
         "merchant_id": transaction.merchant_id,
         "buyer_id": transaction.buyer_id,
+        "amount_minor": transaction.amount_minor,
+        "currency": transaction.currency,
     }

@@ -10,11 +10,12 @@ from ai_commerce_gateway.application.reconciliation import (
 )
 from ai_commerce_gateway.contracts.models import (
     ActorContext,
-    ProviderObservation,
+    Money,
     ReconcileTransactionCommand,
 )
 from ai_commerce_gateway.core.errors import AppError, ErrorCode
 from ai_commerce_gateway.domain.enums import ActorType, ProviderName, TransactionState
+from ai_commerce_gateway.domain.provider_verification import ProviderEvidence
 from ai_commerce_gateway.infrastructure.database import models
 from ai_commerce_gateway.infrastructure.database.execution import (
     SqlAlchemyExecutionUnitOfWork,
@@ -31,6 +32,7 @@ def db_engine():
     models.Base.metadata.create_all(engine)
     yield engine
     models.Base.metadata.drop_all(engine)
+    engine.dispose()
 
 
 @pytest.fixture
@@ -98,12 +100,28 @@ def seed_data(session_factory) -> str:
 
 
 class FakeProviderAdapter:
-    def __init__(self, order_observation=None, payment_observation=None, error=None):
+    def __init__(
+        self,
+        order_observation=None,
+        payment_observation=None,
+        receipt_observation=None,
+        error=None,
+    ):
         self.order_observation = order_observation
         self.payment_observation = payment_observation
+        self.receipt_observation = receipt_observation
         self.error = error
+        self.receipt_lookups = 0
+        self.order_lookups = 0
+
+    def lookup_order_by_receipt(self, command):
+        self.receipt_lookups += 1
+        if self.error:
+            raise self.error
+        return self.receipt_observation
 
     def lookup_order(self, command):
+        self.order_lookups += 1
         if self.error:
             raise self.error
         return self.order_observation
@@ -116,8 +134,10 @@ class FakeProviderAdapter:
 
 def test_reconciliation_integration_executing_to_pending(session_factory, seed_data) -> None:
     provider = FakeProviderAdapter(
-        order_observation=ProviderObservation(
+        order_observation=ProviderEvidence(
             provider=ProviderName.RAZORPAY,
+            provider_amount=Money(amount_minor=100, currency="INR"),
+            provider_order_id="order_test_123",
             provider_order_state="created",
             authenticity_verified=True,
             observed_at=NOW,
@@ -149,15 +169,20 @@ def test_reconciliation_integration_unknown_to_succeeded(session_factory, seed_d
         session.commit()
 
     provider = FakeProviderAdapter(
-        order_observation=ProviderObservation(
+        order_observation=ProviderEvidence(
             provider=ProviderName.RAZORPAY,
+            provider_amount=Money(amount_minor=100, currency="INR"),
+            provider_order_id="order_test_123",
             provider_order_state="paid",
             authenticity_verified=True,
             observed_at=NOW,
             observation_source="lookup",
         ),
-        payment_observation=ProviderObservation(
+        payment_observation=ProviderEvidence(
             provider=ProviderName.RAZORPAY,
+            provider_amount=Money(amount_minor=100, currency="INR"),
+            provider_order_id="order_test_123",
+            provider_payment_id="pay_test_123",
             provider_payment_state="captured",
             capture_state="captured",
             authenticity_verified=True,
@@ -202,4 +227,54 @@ def test_reconciliation_integration_missing_attempt(session_factory, seed_data) 
         ReconcileTransactionCommand(transaction_id=seed_data, idempotency_key="k4"),
         ActorContext(actor_id="sys", actor_type=ActorType.SYSTEM, correlation_id="c4"),
     )
-    assert result.state == TransactionState.FAILED
+    assert result.state == TransactionState.UNKNOWN
+
+
+def test_reconciliation_recovers_lost_response_by_receipt_without_redispatch(
+    session_factory, seed_data
+) -> None:
+    with session_factory() as session:
+        transaction = session.get(models.Transaction, seed_data)
+        transaction.state = TransactionState.UNKNOWN.value
+        attempt = session.query(models.PaymentAttempt).filter_by(transaction_id=seed_data).one()
+        attempt.provider_order_id = None
+        attempt.provider_order_state = None
+        session.commit()
+
+    recovered = ProviderEvidence(
+        provider=ProviderName.RAZORPAY,
+        provider_amount=Money(amount_minor=100, currency="INR"),
+        provider_order_id="order_recovered_123",
+        provider_order_state="created",
+        authenticity_verified=True,
+        observed_at=NOW,
+        observation_source="receipt_lookup",
+    )
+    provider = FakeProviderAdapter(
+        receipt_observation=recovered,
+        order_observation=recovered,
+    )
+    service = TransactionReconciliationApplicationService(
+        unit_of_work_factory=lambda: SqlAlchemyExecutionUnitOfWork(session_factory),
+        provider_service=provider,
+    )
+
+    result = service.reconcile(
+        ReconcileTransactionCommand(transaction_id=seed_data, idempotency_key="k5"),
+        ActorContext(actor_id="sys", actor_type=ActorType.SYSTEM, correlation_id="c5"),
+    )
+
+    assert result.state is TransactionState.PAYMENT_PENDING
+    assert provider.receipt_lookups == 1
+    assert provider.order_lookups == 1
+    assert not hasattr(provider, "create_order")
+    with session_factory() as session:
+        attempt = session.query(models.PaymentAttempt).filter_by(transaction_id=seed_data).one()
+        events = list(
+            session.query(models.TransactionEvent)
+            .filter_by(transaction_id=seed_data)
+            .order_by(models.TransactionEvent.created_at)
+        )
+        assert attempt.provider_order_id == "order_recovered_123"
+        assert events[-1].metadata_json["recovery_method"] == "transaction_receipt"
+        assert events[-1].provider_reference_redacted == "..._123"

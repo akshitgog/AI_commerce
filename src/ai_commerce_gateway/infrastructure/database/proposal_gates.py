@@ -205,6 +205,10 @@ class SqlAlchemyProposalGateRepository:
                     "proposal_id": transaction.proposal_id,
                     "buyer_authorization_id": transaction.buyer_authorization_id,
                     "merchant_decision_id": transaction.merchant_decision_id,
+                    "merchant_id": transaction.merchant_id,
+                    "buyer_id": transaction.buyer_id,
+                    "amount_minor": transaction.amount_minor,
+                    "currency": transaction.currency,
                 },
                 created_at=transaction.created_at,
             )

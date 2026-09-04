@@ -8,6 +8,8 @@ from ai_commerce_gateway.application.reconciliation import (
 )
 from ai_commerce_gateway.contracts.models import (
     ActorContext,
+    CreateProviderOrderCommand,
+    Money,
     ProviderLookupCommand,
     ProviderObservation,
     ReconcileTransactionCommand,
@@ -15,6 +17,7 @@ from ai_commerce_gateway.contracts.models import (
 from ai_commerce_gateway.core.errors import AppError, ErrorCode
 from ai_commerce_gateway.domain.enums import ActorType, ProviderName, TransactionState
 from ai_commerce_gateway.domain.execution import PaymentAttempt
+from ai_commerce_gateway.domain.provider_verification import ProviderEvidence
 from ai_commerce_gateway.domain.transactions import Transaction
 
 NOW = datetime(2026, 9, 4, 12, 0, tzinfo=UTC)
@@ -26,12 +29,25 @@ class FakeProvider:
         order_observation: ProviderObservation | None = None,
         payment_observation: ProviderObservation | None = None,
         error: Exception | None = None,
+        receipt_observation: ProviderObservation | None = None,
     ):
         self.order_observation = order_observation
         self.payment_observation = payment_observation
         self.error = error
+        self.receipt_observation = receipt_observation
         self.order_lookups: list[str] = []
         self.payment_lookups: list[tuple[str, str]] = []
+        self.receipt_lookups: list[str] = []
+
+    def lookup_order_by_receipt(
+        self, command: CreateProviderOrderCommand
+    ) -> ProviderObservation:
+        if self.error:
+            raise self.error
+        self.receipt_lookups.append(command.receipt)
+        if self.receipt_observation is None:
+            raise RuntimeError("no receipt data")
+        return self.receipt_observation
 
     def lookup_order(self, command: ProviderLookupCommand) -> ProviderObservation:
         if self.error:
@@ -69,6 +85,24 @@ class FakeRepository:
         if transaction_id == self._transaction.id:
             return self._attempt
         return None
+
+    def save_provider_observation(
+        self, attempt_id: str, observation: ProviderObservation
+    ) -> PaymentAttempt:
+        if self._attempt is None or self._attempt.id != attempt_id:
+            raise LookupError("attempt missing")
+        self._attempt = replace(
+            self._attempt,
+            provider_order_id=observation.provider_order_id,
+            provider_payment_id=observation.provider_payment_id,
+            provider_order_state=observation.provider_order_state,
+            provider_payment_state=observation.provider_payment_state,
+            capture_state=observation.capture_state,
+            last_verified_at=(
+                observation.observed_at if observation.authenticity_verified else None
+            ),
+        )
+        return self._attempt
 
     def transition(
         self,
@@ -146,7 +180,7 @@ def attempt() -> PaymentAttempt:
     )
 
 
-def test_reconcile_no_attempt_fails_fast(transaction: Transaction) -> None:
+def test_reconcile_no_attempt_preserves_unknown(transaction: Transaction) -> None:
     repository = FakeRepository(transaction, None)
     service = TransactionReconciliationApplicationService(
         lambda: FakeUoW(repository), FakeProvider()
@@ -155,10 +189,10 @@ def test_reconcile_no_attempt_fails_fast(transaction: Transaction) -> None:
         ReconcileTransactionCommand(transaction_id="txn_123", idempotency_key="key_1"),
         ActorContext(actor_id="sys", actor_type=ActorType.SYSTEM, correlation_id="c1"),
     )
-    assert result.state == TransactionState.FAILED
+    assert result.state == TransactionState.UNKNOWN
     assert repository.transitions == [
         ("txn_123", TransactionState.RECONCILING),
-        ("txn_123", TransactionState.FAILED),
+        ("txn_123", TransactionState.UNKNOWN),
     ]
 
 
@@ -185,15 +219,20 @@ def test_reconcile_paid_order_and_captured_payment(
     transaction: Transaction, attempt: PaymentAttempt
 ) -> None:
     provider = FakeProvider(
-        order_observation=ProviderObservation(
+        order_observation=ProviderEvidence(
             provider=ProviderName.RAZORPAY,
+            provider_amount=Money(amount_minor=1000, currency="INR"),
+            provider_order_id="order_123",
             provider_order_state="paid",
             authenticity_verified=True,
             observed_at=NOW,
             observation_source="lookup",
         ),
-        payment_observation=ProviderObservation(
+        payment_observation=ProviderEvidence(
             provider=ProviderName.RAZORPAY,
+            provider_amount=Money(amount_minor=1000, currency="INR"),
+            provider_order_id="order_123",
+            provider_payment_id="pay_123",
             provider_payment_state="captured",
             capture_state="captured",
             authenticity_verified=True,
@@ -215,6 +254,124 @@ def test_reconcile_paid_order_and_captured_payment(
     ]
     assert provider.order_lookups == ["order_123"]
     assert provider.payment_lookups == [("order_123", "pay_123")]
+
+
+def test_reconcile_recovers_lost_order_id_by_durable_receipt(
+    transaction: Transaction, attempt: PaymentAttempt
+) -> None:
+    attempt = replace(attempt, provider_order_id=None, provider_payment_id=None)
+    recovered = ProviderEvidence(
+        provider=ProviderName.RAZORPAY,
+        provider_amount=Money(amount_minor=1000, currency="INR"),
+        provider_order_id="order_recovered",
+        provider_order_state="created",
+        authenticity_verified=True,
+        observed_at=NOW,
+        observation_source="receipt_lookup",
+    )
+    provider = FakeProvider(order_observation=recovered, receipt_observation=recovered)
+    repository = FakeRepository(transaction, attempt)
+    service = TransactionReconciliationApplicationService(lambda: FakeUoW(repository), provider)
+
+    result = service.reconcile(
+        ReconcileTransactionCommand(transaction_id="txn_123", idempotency_key="key_1"),
+        ActorContext(actor_id="sys", actor_type=ActorType.SYSTEM, correlation_id="c1"),
+    )
+
+    assert result.state is TransactionState.PAYMENT_PENDING
+    assert provider.receipt_lookups == ["txn_123"]
+    assert provider.order_lookups == ["order_recovered"]
+    assert result.provider_phase is not None
+    assert result.provider_phase.order_state == "created"
+
+
+def test_reconcile_receipt_mismatch_preserves_unknown_without_order_dispatch(
+    transaction: Transaction, attempt: PaymentAttempt
+) -> None:
+    attempt = replace(attempt, provider_order_id=None, provider_payment_id=None)
+    untrusted = ProviderEvidence(
+        provider=ProviderName.RAZORPAY,
+        provider_amount=Money(amount_minor=1000, currency="INR"),
+        provider_order_id="order_untrusted",
+        provider_order_state="created",
+        authenticity_verified=False,
+        observed_at=NOW,
+        observation_source="untrusted",
+    )
+    provider = FakeProvider(receipt_observation=untrusted)
+    repository = FakeRepository(transaction, attempt)
+    service = TransactionReconciliationApplicationService(lambda: FakeUoW(repository), provider)
+
+    result = service.reconcile(
+        ReconcileTransactionCommand(transaction_id="txn_123", idempotency_key="key_1"),
+        ActorContext(actor_id="sys", actor_type=ActorType.SYSTEM, correlation_id="c1"),
+    )
+
+    assert result.state is TransactionState.UNKNOWN
+    assert provider.receipt_lookups == ["txn_123"]
+    assert provider.order_lookups == []
+
+
+def test_reconcile_mismatched_order_money_cannot_establish_provider_truth(
+    transaction: Transaction, attempt: PaymentAttempt
+) -> None:
+    provider = FakeProvider(
+        order_observation=ProviderEvidence(
+            provider=ProviderName.RAZORPAY,
+            provider_amount=Money(amount_minor=1, currency="INR"),
+            provider_order_id="order_123",
+            provider_order_state="paid",
+            authenticity_verified=True,
+            observed_at=NOW,
+            observation_source="lookup",
+        )
+    )
+    repository = FakeRepository(transaction, attempt)
+    service = TransactionReconciliationApplicationService(lambda: FakeUoW(repository), provider)
+
+    result = service.reconcile(
+        ReconcileTransactionCommand(transaction_id="txn_123", idempotency_key="key_1"),
+        ActorContext(actor_id="sys", actor_type=ActorType.SYSTEM, correlation_id="c1"),
+    )
+
+    assert result.state is TransactionState.UNKNOWN
+    assert provider.payment_lookups == []
+
+
+def test_reconcile_mismatched_payment_money_cannot_succeed(
+    transaction: Transaction, attempt: PaymentAttempt
+) -> None:
+    provider = FakeProvider(
+        order_observation=ProviderEvidence(
+            provider=ProviderName.RAZORPAY,
+            provider_amount=Money(amount_minor=1000, currency="INR"),
+            provider_order_id="order_123",
+            provider_order_state="paid",
+            authenticity_verified=True,
+            observed_at=NOW,
+            observation_source="lookup",
+        ),
+        payment_observation=ProviderEvidence(
+            provider=ProviderName.RAZORPAY,
+            provider_amount=Money(amount_minor=1, currency="INR"),
+            provider_order_id="order_123",
+            provider_payment_id="pay_123",
+            provider_payment_state="captured",
+            capture_state="captured",
+            authenticity_verified=True,
+            observed_at=NOW,
+            observation_source="lookup",
+        ),
+    )
+    repository = FakeRepository(transaction, attempt)
+    service = TransactionReconciliationApplicationService(lambda: FakeUoW(repository), provider)
+
+    result = service.reconcile(
+        ReconcileTransactionCommand(transaction_id="txn_123", idempotency_key="key_1"),
+        ActorContext(actor_id="sys", actor_type=ActorType.SYSTEM, correlation_id="c1"),
+    )
+
+    assert result.state is TransactionState.UNKNOWN
 
 
 def test_reconcile_provider_lookup_failure_stays_unknown(

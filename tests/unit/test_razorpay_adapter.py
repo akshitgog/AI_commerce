@@ -55,6 +55,18 @@ def created_order(**overrides: object) -> dict[str, object]:
     return payload
 
 
+def recovered_order(**overrides: object) -> dict[str, object]:
+    payload = created_order(
+        notes={
+            "transaction_id": "txn_test",
+            "attempt_id": "pay_test",
+            "request_fingerprint": "sha256:provider-request",
+        },
+    )
+    payload.update(overrides)
+    return payload
+
+
 def client_for(handler: Callable[[httpx.Request], httpx.Response]) -> httpx.Client:
     return httpx.Client(transport=httpx.MockTransport(handler))
 
@@ -217,6 +229,68 @@ def test_transport_timeout_is_uncertain_and_never_retried() -> None:
         with pytest.raises(RazorpayTransportError):
             adapter.create_order(command())
     assert calls == 1
+
+
+def test_receipt_lookup_recovers_one_exact_order_without_creating_another() -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(
+            200,
+            json={"entity": "collection", "count": 1, "items": [recovered_order()]},
+        )
+
+    with client_for(handler) as client:
+        adapter = RazorpayAdapter(key_id=KEY_ID, key_secret=KEY_SECRET, client=client)
+        observation = adapter.lookup_order_by_receipt(command())
+
+    assert len(requests) == 1
+    assert requests[0].method == "GET"
+    assert requests[0].url.path == "/v1/orders"
+    assert requests[0].url.params["receipt"] == "txn_test"
+    assert requests[0].url.params["count"] == "100"
+    assert observation.provider_order_id == "order_test_123456"
+    assert observation.provider_amount == Money(amount_minor=50_000, currency="INR")
+    assert observation.authenticity_verified is True
+    assert observation.observation_source == "razorpay_order_receipt_lookup"
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"entity": "collection", "count": 0, "items": []},
+        {
+            "entity": "collection",
+            "count": 2,
+            "items": [recovered_order(), recovered_order(id="order_test_other")],
+        },
+        {"entity": "orders", "count": 1, "items": [recovered_order()]},
+        {"entity": "collection", "count": 1, "items": "invalid"},
+        {
+            "entity": "collection",
+            "count": 1,
+            "items": [recovered_order(amount=1, amount_due=1)],
+        },
+        {
+            "entity": "collection",
+            "count": 1,
+            "items": [recovered_order(currency="USD")],
+        },
+        {
+            "entity": "collection",
+            "count": 1,
+            "items": [recovered_order(notes={"transaction_id": "txn_other"})],
+        },
+    ],
+)
+def test_receipt_lookup_rejects_absent_ambiguous_or_mismatched_orders(
+    payload: dict[str, object],
+) -> None:
+    with client_for(lambda _: httpx.Response(200, json=payload)) as client:
+        adapter = RazorpayAdapter(key_id=KEY_ID, key_secret=KEY_SECRET, client=client)
+        with pytest.raises(RazorpayProtocolError):
+            adapter.lookup_order_by_receipt(command())
 
 
 @pytest.mark.parametrize(

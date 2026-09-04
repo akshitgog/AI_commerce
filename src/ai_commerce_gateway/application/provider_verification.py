@@ -284,7 +284,10 @@ class ProviderVerificationApplicationService:
                     reason_code=f"{reason_prefix}_AUTHENTICITY_VERIFIED",
                     correlation_id=correlation_id,
                     provider_reference_redacted=_redact(combined.provider_payment_id),
-                    metadata=_provider_metadata(attempt, combined),
+                    metadata={
+                        **_audit_scope(transaction),
+                        **_provider_metadata(attempt, combined),
+                    },
                 )
             if _is_verified_success(combined) and transaction.state is TransactionState.VERIFYING:
                 transaction = repository.transition(
@@ -295,7 +298,10 @@ class ProviderVerificationApplicationService:
                     reason_code="PROVIDER_PAYMENT_CAPTURED",
                     correlation_id=correlation_id,
                     provider_reference_redacted=_redact(combined.provider_payment_id),
-                    metadata=_provider_metadata(attempt, combined),
+                    metadata={
+                        **_audit_scope(transaction),
+                        **_provider_metadata(attempt, combined),
+                    },
                 )
             return _transaction_view(transaction, attempt)
 
@@ -416,6 +422,18 @@ def _provider_metadata(
         "capture_state": observation.capture_state,
         "authenticity_verified": observation.authenticity_verified,
         "observation_source": observation.observation_source,
+    }
+
+
+def _audit_scope(transaction: Transaction) -> dict[str, str | int | None]:
+    return {
+        "proposal_id": transaction.proposal_id,
+        "buyer_authorization_id": transaction.buyer_authorization_id,
+        "merchant_decision_id": transaction.merchant_decision_id,
+        "merchant_id": transaction.merchant_id,
+        "buyer_id": transaction.buyer_id,
+        "amount_minor": transaction.amount_minor,
+        "currency": transaction.currency,
     }
 
 

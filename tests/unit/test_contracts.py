@@ -6,6 +6,7 @@ from pydantic import ValidationError
 from ai_commerce_gateway.contracts.models import (
     ApproveAuthorizationCommand,
     CatalogSearchQuery,
+    CreateProposalCommand,
     Money,
 )
 
@@ -16,6 +17,23 @@ def test_money_requires_minor_units_and_iso_currency_shape() -> None:
         Money(amount_minor=-1, currency="INR")
     with pytest.raises(ValidationError):
         Money(amount_minor=1, currency="inr")
+
+
+@pytest.mark.parametrize("unsafe_amount", [True, 1.0, 1699.0, "1699"])
+def test_money_rejects_coerced_values(unsafe_amount: object) -> None:
+    with pytest.raises(ValidationError):
+        Money(amount_minor=unsafe_amount, currency="INR")  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize("unsafe_quantity", [True, 1.0, "1"])
+def test_security_sensitive_integer_inputs_are_strict(unsafe_quantity: object) -> None:
+    with pytest.raises(ValidationError):
+        CreateProposalCommand(
+            merchant_id="mer_1",
+            product_id="prod_1",
+            quantity=unsafe_quantity,  # type: ignore[arg-type]
+            idempotency_key="proposal-1",
+        )
 
 
 def test_catalog_range_must_be_ordered() -> None:

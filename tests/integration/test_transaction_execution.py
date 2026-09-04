@@ -1,5 +1,4 @@
 import json
-import os
 from collections.abc import Callable, Iterator
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
@@ -35,6 +34,7 @@ from ai_commerce_gateway.contracts.models import (
     ProviderObservation,
     RequestAuthorizationCommand,
 )
+from ai_commerce_gateway.core.config import get_settings
 from ai_commerce_gateway.core.errors import AppError, ErrorCode
 from ai_commerce_gateway.domain.enums import (
     ActorType,
@@ -563,9 +563,9 @@ def test_cross_buyer_cannot_execute_or_claim_an_idempotency_key(tmp_path: Path) 
 
 @pytest.mark.integration
 def test_postgresql_concurrent_execution_creates_one_attempt_when_configured() -> None:
-    database_url = os.getenv("TEST_DATABASE_URL")
+    database_url = get_settings().test_database_url
     if not database_url:
-        pytest.skip("TEST_DATABASE_URL is not configured")
+        pytest.skip("database.test_url is not configured")
 
     schema = f"b3_execution_{uuid4().hex}"
     administration_engine = create_engine(database_url, pool_pre_ping=True)

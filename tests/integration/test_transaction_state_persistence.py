@@ -1,4 +1,3 @@
-import os
 from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
@@ -8,6 +7,7 @@ from sqlalchemy import Engine, create_engine, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from ai_commerce_gateway.core.config import get_settings
 from ai_commerce_gateway.core.errors import AppError, ErrorCode
 from ai_commerce_gateway.core.ids import new_id
 from ai_commerce_gateway.domain.enums import ActorType, TransactionState
@@ -177,9 +177,9 @@ def test_state_update_and_event_append_are_atomic_in_sqlite() -> None:
 
 @pytest.mark.integration
 def test_state_update_and_event_append_are_atomic_in_postgresql_when_configured() -> None:
-    database_url = os.getenv("TEST_DATABASE_URL")
+    database_url = get_settings().test_database_url
     if not database_url:
-        pytest.skip("TEST_DATABASE_URL is not configured")
+        pytest.skip("database.test_url is not configured")
     engine = create_engine(database_url, pool_pre_ping=True)
     try:
         with rollback_session(engine) as session:
