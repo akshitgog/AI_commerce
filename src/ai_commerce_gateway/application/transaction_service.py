@@ -112,16 +112,23 @@ class TransactionApplicationService:
         execution: TransactionExecutePort,
         reconciliation: TransactionReconcilePort,
         queries: TransactionQueryApplicationService,
+        commit_created_transaction: Callable[[], None] | None = None,
     ) -> None:
         self._creation = creation
         self._execution = execution
         self._reconciliation = reconciliation
         self._queries = queries
+        self._commit_created_transaction = commit_created_transaction
 
     def create(
         self, command: CreateTransactionCommand, actor: ActorContext
     ) -> TransactionView:
-        return self._creation.create(command, actor)
+        transaction = self._creation.create(command, actor)
+        if self._commit_created_transaction is not None:
+            # Execution opens a fresh, locking unit of work. Persist the READY
+            # transaction before that unit of work attempts to lock it.
+            self._commit_created_transaction()
+        return transaction
 
     def execute(
         self, command: ExecuteTransactionCommand, actor: ActorContext

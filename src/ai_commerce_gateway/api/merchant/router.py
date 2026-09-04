@@ -15,6 +15,7 @@ at integration (07); until then they answer 501 instead of fake data.
 from __future__ import annotations
 
 from collections.abc import Iterator
+from datetime import datetime
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Header, Request
@@ -30,24 +31,32 @@ from ai_commerce_gateway.application.product_draft_extraction import (
     ProductDraftExtractor,
     StubProductDraftExtractor,
 )
+from ai_commerce_gateway.application.proposal_gates import MerchantGateApplicationService
 from ai_commerce_gateway.application.publication_confirmation_service import (
     PublicationConfirmationService,
 )
 from ai_commerce_gateway.contracts.models import (
     ActorContext,
     CreateProductCommand,
+    MerchantDecisionView,
     MerchantPolicyView,
     MerchantReviewPage,
     Money,
     ProductPage,
     ProductView,
+    RecordMerchantDecisionCommand,
     SetProductPublicationCommand,
     UpdateMerchantPolicyCommand,
     UpdateProductCommand,
 )
 from ai_commerce_gateway.core.config import get_settings
 from ai_commerce_gateway.core.errors import AppError, ErrorCode
-from ai_commerce_gateway.domain.enums import ActorType, MerchantRole, PolicyMode
+from ai_commerce_gateway.domain.enums import (
+    ActorType,
+    MerchantDecisionValue,
+    MerchantRole,
+    PolicyMode,
+)
 from ai_commerce_gateway.domain.publication_confirmation import (
     ACTION_PUBLISH,
     ACTION_UNPUBLISH,
@@ -68,6 +77,9 @@ from ai_commerce_gateway.infrastructure.database.merchant_repositories import (
 )
 from ai_commerce_gateway.infrastructure.database.merchant_sessions import (
     SqlAlchemyMerchantSessionService,
+)
+from ai_commerce_gateway.infrastructure.database.proposal_gates import (
+    SqlAlchemyProposalGateRepository,
 )
 
 router = APIRouter(prefix="/merchants", tags=["merchant"])
@@ -177,6 +189,15 @@ def get_policy_service(db: DbSession) -> ApplicationMerchantPolicyService:
 PolicySvc = Annotated[ApplicationMerchantPolicyService, Depends(get_policy_service)]
 
 
+def get_merchant_gate_service(db: DbSession) -> MerchantGateApplicationService:
+    return MerchantGateApplicationService(SqlAlchemyProposalGateRepository(db))
+
+
+MerchantGateSvc = Annotated[
+    MerchantGateApplicationService, Depends(get_merchant_gate_service)
+]
+
+
 def get_confirmation_service(db: DbSession) -> PublicationConfirmationService:
     return PublicationConfirmationService(
         get_settings().publication_secret_value,
@@ -250,6 +271,13 @@ class UpdatePolicyBody(BaseModel):
     mode: PolicyMode
     auto_accept_max: Money | None = None
     expected_version: int | None = Field(default=None, ge=1)
+    idempotency_key: str = Field(min_length=1, max_length=255)
+
+
+class RecordMerchantDecisionBody(BaseModel):
+    decision: MerchantDecisionValue
+    reason_code: str = Field(min_length=1, max_length=128)
+    expires_at: datetime | None = None
     idempotency_key: str = Field(min_length=1, max_length=255)
 
 
@@ -525,6 +553,30 @@ def list_reviews(
     cursor: str | None = None,
 ) -> MerchantReviewPage:
     return policy.list_reviews(merchant_id, actor, cursor=cursor)
+
+
+@router.post(
+    "/{merchant_id}/reviews/{proposal_id}/decisions",
+    status_code=201,
+)
+def record_manual_decision(
+    merchant_id: str,
+    proposal_id: str,
+    body: RecordMerchantDecisionBody,
+    actor: MerchantActor,
+    merchant_gates: MerchantGateSvc,
+) -> MerchantDecisionView:
+    """Record an authenticated merchant approver's independent decision."""
+    return merchant_gates.record_manual_decision(
+        RecordMerchantDecisionCommand(
+            proposal_id=proposal_id,
+            decision=body.decision,
+            reason_code=body.reason_code,
+            expires_at=body.expires_at,
+            idempotency_key=body.idempotency_key,
+        ),
+        actor,
+    )
 
 
 # ---------------------------------------------------------------------------

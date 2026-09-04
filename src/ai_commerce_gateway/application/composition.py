@@ -138,6 +138,7 @@ def compose_transaction_services(
         execution=execution,
         reconciliation=reconciliation,
         queries=queries,
+        commit_created_transaction=request_session.commit,
     )
     verification = ProviderVerificationApplicationService(
         lambda: SqlAlchemyVerificationUnitOfWork(session_factory),

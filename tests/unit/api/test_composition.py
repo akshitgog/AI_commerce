@@ -141,6 +141,10 @@ def test_in_process_factory_composes_integrated_services(
             self.gates = gates
             self.verifier = verifier
 
+    class FakeMerchantGateService:
+        def __init__(self, gates: object) -> None:
+            self.gates = gates
+
     fake_session = SimpleNamespace(name="fake-session")
     fake_txn = SimpleNamespace(request_session=fake_session)
 
@@ -161,6 +165,7 @@ def test_in_process_factory_composes_integrated_services(
             ApplicationCatalogService=FakeCatalogService,
             TransactionCompositionRoot=SimpleNamespace(from_settings=lambda s: fake_root),
             AuthorizationApplicationService=FakeAuthorizationService,
+            MerchantGateApplicationService=FakeMerchantGateService,
             ProposalApplicationService=FakeProposalService,
             SqlAlchemyProductImageRepository=FakeImageRepo,
             SqlAlchemyProductRepository=FakeProductRepo,
@@ -181,6 +186,7 @@ def test_in_process_factory_composes_integrated_services(
         assert isinstance(bundle.proposal, FakeProposalService)
         assert isinstance(bundle.auth, FakeAuthorizationService)
         assert isinstance(bundle.auth.verifier, SessionBuyerApprovalVerifier)
+        assert isinstance(bundle.merchant_gates, FakeMerchantGateService)
         assert bundle.transaction is fake_txn
 
 

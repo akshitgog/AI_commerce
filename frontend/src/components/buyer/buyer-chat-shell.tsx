@@ -8,6 +8,7 @@ import type { Transaction } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { GateProgressView } from "@/components/shared/gate-progress";
+import { AuditTimeline } from "@/components/shared/audit-timeline";
 import { TransactionStatusBadge } from "@/components/shared/status-badge";
 
 import { AssistantMessage } from "./assistant-message";
@@ -31,15 +32,11 @@ export type ChatItem =
 
 const SUGGESTED_PROMPT = "Find me a USB-C charger under ₹1,000.";
 
-const delay = (ms: number) =>
-  new Promise<void>((resolve) => setTimeout(resolve, ms));
-
 function newId(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
     : `chat-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
-
 // Lightweight intent parse for the demo. Never interprets financial
 // authorization from natural language — approval is a bounded button only.
 function parseIntent(text: string): { query: string; maxPriceMinor?: number } {
@@ -83,10 +80,7 @@ export function BuyerChatShell() {
     setBusy(true);
     push({ id: searchId, kind: "searching" });
     try {
-      const [results] = await Promise.all([
-        actions.searchCatalog(parseIntent(text)),
-        delay(600),
-      ]);
+      const results = await actions.searchCatalog(parseIntent(text));
       setItems((prev) => prev.filter((item) => item.id !== searchId));
       if (results.length === 0) {
         push({
@@ -148,7 +142,9 @@ export function BuyerChatShell() {
 
   const send = (text: string) => {
     const trimmed = text.trim();
-    if (!trimmed || busy) return;
+    // Never search before the catalog has loaded — init() populates
+    // state.products, and searching earlier would always report zero matches.
+    if (!trimmed || busy || !state.initialized) return;
     push({ id: newId(), kind: "buyer-message", text: trimmed });
     if (isRepeatBuyIntent(trimmed) && lastProductId) {
       void handleBuy(lastProductId);
@@ -180,7 +176,7 @@ export function BuyerChatShell() {
     try {
       await actions.requestAndApproveAuthorization(proposalId);
     } catch (error) {
-      if (error instanceof Error && error.message === "PROPOSAL_EXPIRED") {
+      if ((error as any)?.code === "PROPOSAL_STALE" || (error instanceof Error && error.message === "PROPOSAL_EXPIRED")) {
         // Never silently reuse a stale proposal — surface the expired state.
         setClosed((prev) => ({ ...prev, [proposalId]: "expired" }));
       } else {
@@ -295,15 +291,26 @@ export function BuyerChatShell() {
             onPay={() => void handleExecute(item.proposalId)}
           />
         );
-      case "payment-status":
+      case "payment-status": {
+        const events = state.audit[item.transactionId] ?? [];
         return (
-          <PaymentStatusCard
-            key={item.id}
-            transactionId={item.transactionId}
-            refreshing={!!refreshingIds[item.transactionId]}
-            onRefresh={() => void handleRefresh(item.transactionId)}
-          />
+          <div key={item.id} className="flex flex-col gap-3">
+            <PaymentStatusCard
+              transactionId={item.transactionId}
+              refreshing={!!refreshingIds[item.transactionId]}
+              onRefresh={() => void handleRefresh(item.transactionId)}
+            />
+            {events.length > 0 ? (
+              <Card className="p-4">
+                <h3 className="mb-3 text-sm font-semibold">
+                  Transaction audit trail
+                </h3>
+                <AuditTimeline events={events} />
+              </Card>
+            ) : null}
+          </div>
         );
+      }
     }
   };
 
@@ -385,7 +392,7 @@ export function BuyerChatShell() {
           <p className="mb-2 text-center text-xs text-muted-foreground">
             AI proposes — you approve. Nothing is paid without your approval.
           </p>
-          <BuyerComposer disabled={busy} onSend={send} />
+          <BuyerComposer disabled={busy || !state.initialized} onSend={send} />
         </div>
       </div>
     </div>

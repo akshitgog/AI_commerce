@@ -14,6 +14,10 @@ build/
 *.egg-info/
 graphify-out/
 .b5_evidence.db
+e2e_test.db
+frontend/playwright-report/
+frontend/test-results/
+test-results/
 
 # local secrets / tooling
 rzp-key.csv

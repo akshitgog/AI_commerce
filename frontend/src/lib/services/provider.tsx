@@ -34,6 +34,11 @@ export function CommerceProvider({ children }: { children: ReactNode }) {
     store.getState,
     store.getState,
   );
+
+  useEffect(() => {
+    store.actions.init().catch(console.error);
+  }, [store]);
+
   return (
     <CommerceContext.Provider value={{ state, actions: store.actions }}>
       {children}

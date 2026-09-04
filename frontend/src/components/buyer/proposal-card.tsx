@@ -45,6 +45,7 @@ export function ProposalCard({
   const transaction = Object.values(state.transactions).find(
     (entry) => entry.proposalId === proposalId,
   );
+  const decision = state.decisions[proposalId];
   const authorization = Object.values(state.authorizations)
     .filter((entry) => entry.proposalId === proposalId)
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
@@ -144,7 +145,8 @@ export function ProposalCard({
 
       {approved ? <MerchantAcceptanceCard proposalId={proposalId} /> : null}
 
-      {transaction?.state === "READY" ? (
+      {approved &&
+      (transaction?.state === "READY" || decision?.decision === "ALLOW") ? (
         <ReadyForPaymentCard
           total={proposal.total}
           busy={busy}

@@ -41,6 +41,12 @@ from ai_commerce_gateway.domain.repositories import MerchantPolicyRepository
 from ai_commerce_gateway.infrastructure.database import models as orm
 
 
+def _as_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
+
+
 def _to_policy_view(entity: MerchantPolicyEntity) -> MerchantPolicyView:
     return MerchantPolicyView(
         id=entity.id,
@@ -195,8 +201,8 @@ class ApplicationMerchantPolicyService(MerchantPolicyService):
                 proposal_hash=prop_row.proposal_hash,
                 status=ProposalStatus(prop_row.status),
                 next_required_gate=NextRequiredGate.MERCHANT_REVIEW_REQUIRED,
-                expires_at=prop_row.expires_at,
-                created_at=prop_row.created_at,
+                expires_at=_as_utc(prop_row.expires_at),
+                created_at=_as_utc(prop_row.created_at),
             )
             auth_view = BuyerAuthorizationView(
                 id=auth_row.id,
@@ -212,8 +218,8 @@ class ApplicationMerchantPolicyService(MerchantPolicyService):
                 ),
                 authorized_by=auth_row.authorized_by,
                 status=AuthorizationStatus(auth_row.status),
-                expires_at=auth_row.expires_at,
-                created_at=auth_row.created_at,
+                expires_at=_as_utc(auth_row.expires_at),
+                created_at=_as_utc(auth_row.created_at),
             )
             items.append(
                 MerchantReviewItem(

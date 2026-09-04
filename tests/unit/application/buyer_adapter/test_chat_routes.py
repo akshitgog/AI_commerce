@@ -14,11 +14,21 @@ use stub services (no real DB / Razorpay) and verify:
   - no MCP dependency exists in this module
 """
 
+from dataclasses import replace
+from datetime import UTC, datetime
+
 import pytest
 from fastapi.testclient import TestClient
 
 from ai_commerce_gateway.api.app import create_app
 from ai_commerce_gateway.api.composition import static_bundle_factory
+from ai_commerce_gateway.contracts.models import (
+    ActorContext,
+    EvaluateMerchantPolicyCommand,
+    MerchantDecisionView,
+)
+from ai_commerce_gateway.core.errors import AppError, ErrorCode
+from ai_commerce_gateway.domain.enums import MerchantDecisionValue
 from tests.conftest import buyer_headers, fake_service_bundle, make_test_settings
 
 
@@ -34,6 +44,35 @@ def client() -> TestClient:
 BUYER_HEADERS = buyer_headers("buyer_test_001", correlation_id="corr_test_001")
 
 IDEM_HEADERS = {**BUYER_HEADERS, "Idempotency-Key": "idem_test_001"}
+
+
+class FakeMerchantGateService:
+    def __init__(self, *, require_authorization: bool = False) -> None:
+        self.require_authorization = require_authorization
+        self.calls: list[tuple[EvaluateMerchantPolicyCommand, ActorContext]] = []
+
+    def evaluate(
+        self, command: EvaluateMerchantPolicyCommand, actor: ActorContext
+    ) -> MerchantDecisionView:
+        self.calls.append((command, actor))
+        if self.require_authorization:
+            raise AppError(
+                ErrorCode.AUTHORIZATION_REQUIRED,
+                "Buyer authorization is required before merchant evaluation.",
+                status_code=409,
+            )
+        return MerchantDecisionView(
+            id="mdec_123",
+            proposal_id=command.proposal_id,
+            merchant_id="mer_123",
+            policy_id="pol_123",
+            policy_version=2,
+            decision=MerchantDecisionValue.ALLOW,
+            reason_code="AUTO_BELOW_LIMIT",
+            decided_by="policy:pol_123:v2",
+            expires_at=None,
+            created_at=datetime.now(UTC),
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -154,6 +193,77 @@ def test_request_authorization_missing_idempotency_key_raises(client: TestClient
         headers=BUYER_HEADERS,  # no Idempotency-Key
     )
     assert resp.status_code in (422, 400, 500)
+
+
+# ---------------------------------------------------------------------------
+# Evaluate merchant policy
+# ---------------------------------------------------------------------------
+
+
+def test_evaluate_merchant_policy_returns_persisted_decision() -> None:
+    merchant_gates = FakeMerchantGateService()
+    bundle = replace(fake_service_bundle(), merchant_gates=merchant_gates)
+    app = create_app(
+        services_factory=static_bundle_factory(bundle),
+        settings=make_test_settings(),
+    )
+
+    with TestClient(app, raise_server_exceptions=True) as route_client:
+        resp = route_client.post(
+            "/v1/buyer/purchase-proposals/prop_001/merchant-evaluations",
+            headers=BUYER_HEADERS,
+        )
+
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body == {
+        "id": "mdec_123",
+        "proposal_id": "prop_001",
+        "merchant_id": "mer_123",
+        "policy_id": "pol_123",
+        "policy_version": 2,
+        "decision": "ALLOW",
+        "reason_code": "AUTO_BELOW_LIMIT",
+        "decided_by": "policy:pol_123:v2",
+        "expires_at": None,
+        "created_at": body["created_at"],
+        "correlation_id": "corr_test_001",
+    }
+    command, actor = merchant_gates.calls[0]
+    assert command.proposal_id == "prop_001"
+    assert actor.actor_id == "buyer_test_001"
+
+
+def test_evaluate_merchant_policy_requires_buyer_authorization() -> None:
+    bundle = replace(
+        fake_service_bundle(),
+        merchant_gates=FakeMerchantGateService(require_authorization=True),
+    )
+    app = create_app(
+        services_factory=static_bundle_factory(bundle),
+        settings=make_test_settings(),
+    )
+
+    with TestClient(app, raise_server_exceptions=True) as route_client:
+        resp = route_client.post(
+            "/v1/buyer/purchase-proposals/prop_001/merchant-evaluations",
+            headers=BUYER_HEADERS,
+        )
+
+    assert resp.status_code == 409
+    assert resp.json()["error"]["code"] == "AUTHORIZATION_REQUIRED"
+
+
+def test_evaluate_merchant_policy_fails_closed_without_composition(
+    client: TestClient,
+) -> None:
+    resp = client.post(
+        "/v1/buyer/purchase-proposals/prop_001/merchant-evaluations",
+        headers=BUYER_HEADERS,
+    )
+
+    assert resp.status_code == 503
+    assert resp.json()["error"]["code"] == "INTERNAL_ERROR"
 
 
 # ---------------------------------------------------------------------------

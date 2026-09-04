@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { CheckCircle2, Circle, XCircle } from "lucide-react";
 
@@ -11,6 +11,7 @@ import {
   CardContent,
   CardHeader,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface MerchantAcceptanceCardProps {
@@ -62,7 +63,9 @@ function StatusRow({
 export function MerchantAcceptanceCard({
   proposalId,
 }: MerchantAcceptanceCardProps) {
-  const { state } = useCommerce();
+  const { state, actions } = useCommerce();
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState(false);
   const decision = state.decisions[proposalId];
   const proposal = state.proposals[proposalId];
   const merchantName = state.merchant.name;
@@ -127,6 +130,28 @@ export function MerchantAcceptanceCard({
           </Link>{" "}
           to approve.
         </p>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="mt-3"
+          disabled={refreshing}
+          onClick={() => {
+            setRefreshing(true);
+            setRefreshError(false);
+            void actions
+              .refreshMerchantDecision(proposalId)
+              .catch(() => setRefreshError(true))
+              .finally(() => setRefreshing(false));
+          }}
+        >
+          {refreshing ? "Checking…" : "Check merchant decision"}
+        </Button>
+        {refreshError ? (
+          <p className="mt-2 text-xs text-destructive" role="alert">
+            Could not refresh the merchant decision. Please try again.
+          </p>
+        ) : null}
       </StatusRow>
     );
   } else {

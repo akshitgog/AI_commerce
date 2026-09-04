@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { CommerceProvider } from "@/lib/services/provider";
-import { DemoControls } from "@/components/shared/demo-controls";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -29,7 +28,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         <CommerceProvider>
           {children}
-          <DemoControls />
         </CommerceProvider>
       </body>
     </html>

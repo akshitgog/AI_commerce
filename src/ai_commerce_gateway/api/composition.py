@@ -49,6 +49,7 @@ class BuyerServiceBundle:
     proposal: ProposalService
     auth: AuthorizationService
     transaction: TransactionService
+    merchant_gates: Any | None = None
 
 
 #: Callable that opens a request-scoped bundle of the real buyer services.
@@ -145,6 +146,7 @@ def _import_integrated_services() -> Any:
     )
     from ai_commerce_gateway.application.proposal_gates import (
         AuthorizationApplicationService,
+        MerchantGateApplicationService,
         ProposalApplicationService,
     )
     from ai_commerce_gateway.infrastructure.database.merchant_repositories import (
@@ -159,6 +161,7 @@ def _import_integrated_services() -> Any:
         ApplicationCatalogService=ApplicationCatalogService,
         TransactionCompositionRoot=TransactionCompositionRoot,
         AuthorizationApplicationService=AuthorizationApplicationService,
+        MerchantGateApplicationService=MerchantGateApplicationService,
         ProposalApplicationService=ProposalApplicationService,
         SqlAlchemyProductImageRepository=SqlAlchemyProductImageRepository,
         SqlAlchemyProductRepository=SqlAlchemyProductRepository,
@@ -234,6 +237,7 @@ def compose_in_process_buyer_services_factory(
                     gates, approval_verifier
                 ),
                 transaction=transaction_services.transactions,
+                merchant_gates=integrated.MerchantGateApplicationService(gates),
             )
 
     # Let the host close the provider/engine when this factory owns the root.

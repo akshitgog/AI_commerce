@@ -219,6 +219,10 @@ class MerchantGateApplicationService:
             raise AppError(
                 ErrorCode.NOT_FOUND, "Active merchant policy was not found.", status_code=404
             )
+        current = self._repository.get_latest_merchant_decision(proposal.id)
+        if current is not None and current.is_current_for(policy):
+            current.require_matches(proposal, now=now)
+            return _merchant_decision_view(current)
         decision = evaluate_merchant_policy(
             decision_id=self._id_factory("mdec"),
             proposal=proposal,

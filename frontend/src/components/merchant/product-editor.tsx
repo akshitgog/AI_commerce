@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowDown,
@@ -131,6 +131,16 @@ export function ProductEditor({
   const [suggestion, setSuggestion] = useState<string | null>(null);
   const [suggestBusy, setSuggestBusy] = useState(false);
   const [suggestError, setSuggestError] = useState<string | null>(null);
+  const hydratedProductId = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (product && hydratedProductId.current !== product.id) {
+      const loaded = fieldsFromProduct(product);
+      setFields(loaded);
+      setBaseline(loaded);
+      hydratedProductId.current = product.id;
+    }
+  }, [product]);
 
   if (mode === "edit" && !product) {
     return (

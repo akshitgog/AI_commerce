@@ -323,6 +323,30 @@ def approve_authorization(
     return {**auth.model_dump(), "correlation_id": invocation.correlation_id}
 
 
+@router.post(
+    "/purchase-proposals/{proposal_id}/merchant-evaluations", status_code=201
+)
+def evaluate_merchant_policy(
+    proposal_id: str,
+    actor: Annotated[ActorContext, Depends(get_buyer_actor)],
+    invocation: Annotated[InvocationContext, Depends(get_invocation_context)],
+    services: Annotated[BuyerServiceBundle, Depends(get_buyer_services)],
+) -> dict[str, Any]:
+    """Evaluate the current merchant policy after human buyer approval."""
+    from ai_commerce_gateway.contracts.models import EvaluateMerchantPolicyCommand
+    from ai_commerce_gateway.core.errors import AppError, ErrorCode
+
+    if services.merchant_gates is None:
+        raise AppError(
+            ErrorCode.INTERNAL_ERROR,
+            "Merchant policy evaluation is not configured.",
+            status_code=503,
+        )
+    command = EvaluateMerchantPolicyCommand(proposal_id=proposal_id)
+    decision = services.merchant_gates.evaluate(command, actor)
+    return {**decision.model_dump(), "correlation_id": invocation.correlation_id}
+
+
 @router.post("/transactions")
 def execute_transaction(
     body: ExecuteTransactionBody,
