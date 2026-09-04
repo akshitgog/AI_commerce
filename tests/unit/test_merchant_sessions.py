@@ -196,3 +196,74 @@ class TestDurableSessions:
         assert len(row.token_hash) == 64  # sha256 hex
         s.close()
         engine.dispose()
+
+
+class TestSessionAuditEvents:
+    """P0-7 auth-boundary auditing: issue/failure/revoke are logged, secret-free."""
+
+    def _records(self, caplog) -> list[dict]:
+        import json
+
+        return [
+            json.loads(rec.message)
+            for rec in caplog.records
+            if rec.name == "ai_commerce_gateway.catalog_audit"
+        ]
+
+    def test_issue_emits_event(self, session_db: Session, caplog):
+        import logging
+
+        _seed_member(session_db)
+        svc = InMemoryMerchantSessionService(SqlAlchemyMerchantUserRepository(session_db))
+        with caplog.at_level(logging.INFO, logger="ai_commerce_gateway.catalog_audit"):
+            session = svc.issue("mer_1", "user_1", correlation_id="corr_sess_1")
+
+        events = self._records(caplog)
+        assert len(events) == 1
+        evt = events[0]
+        assert evt["action"] == "session.issue"
+        assert evt["actor_id"] == "user_1"
+        assert evt["merchant_id"] == "mer_1"
+        assert evt["target_type"] == "session"
+        assert evt["correlation_id"] == "corr_sess_1"
+        # Never log token material — not even the hash.
+        assert session.token not in str(caplog.records)
+        assert "msess_" not in str(caplog.records)
+
+    def test_failed_issue_emits_event(self, session_db: Session, caplog):
+        import logging
+
+        _seed_member(session_db)
+        svc = InMemoryMerchantSessionService(SqlAlchemyMerchantUserRepository(session_db))
+        with caplog.at_level(logging.INFO, logger="ai_commerce_gateway.catalog_audit"):
+            with pytest.raises(MerchantAuthenticationError):
+                svc.issue("mer_1", "ghost", correlation_id="corr_fail")
+
+        events = self._records(caplog)
+        assert len(events) == 1
+        assert events[0]["action"] == "session.issue_failed"
+        assert events[0]["actor_id"] == "ghost"
+
+    def test_revoke_emits_event(self, session_db: Session, caplog):
+        import logging
+
+        _seed_member(session_db)
+        svc = InMemoryMerchantSessionService(SqlAlchemyMerchantUserRepository(session_db))
+        session = svc.issue("mer_1", "user_1")
+        with caplog.at_level(logging.INFO, logger="ai_commerce_gateway.catalog_audit"):
+            caplog.clear()
+            svc.revoke(session.token, correlation_id="corr_rev")
+
+        events = self._records(caplog)
+        assert len(events) == 1
+        assert events[0]["action"] == "session.revoke"
+        assert events[0]["correlation_id"] == "corr_rev"
+
+    def test_revoke_unknown_token_emits_nothing(self, session_db: Session, caplog):
+        import logging
+
+        _seed_member(session_db)
+        svc = InMemoryMerchantSessionService(SqlAlchemyMerchantUserRepository(session_db))
+        with caplog.at_level(logging.INFO, logger="ai_commerce_gateway.catalog_audit"):
+            svc.revoke("msess_nonexistent")
+        assert self._records(caplog) == []

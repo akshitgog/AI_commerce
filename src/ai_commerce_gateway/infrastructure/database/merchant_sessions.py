@@ -16,11 +16,16 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from ai_commerce_gateway.application.catalog_audit import (
+    CatalogAuditEvent,
+    emit_catalog_audit,
+)
 from ai_commerce_gateway.application.merchant_sessions import (
     SESSION_TTL,
     MerchantAuthenticationError,
     MerchantSession,
 )
+from ai_commerce_gateway.domain.enums import ActorType
 from ai_commerce_gateway.domain.repositories import MerchantUserRepository
 from ai_commerce_gateway.infrastructure.database import models
 
@@ -39,15 +44,53 @@ class SqlAlchemyMerchantSessionService:
         *,
         ttl: timedelta = SESSION_TTL,
         clock: Callable[[], datetime] | None = None,
+        audit_emitter: Callable[[CatalogAuditEvent], None] | None = emit_catalog_audit,
     ) -> None:
         self._user_repo = user_repo
         self._session = session
         self._ttl = ttl
         self._clock = clock or (lambda: datetime.now(tz=UTC))
+        self._audit_emitter = audit_emitter
 
-    def issue(self, merchant_id: str, user_id: str) -> MerchantSession:
+    def _audit(
+        self,
+        *,
+        action: str,
+        merchant_id: str,
+        user_id: str,
+        correlation_id: str,
+    ) -> None:
+        if self._audit_emitter is None:
+            return
+        self._audit_emitter(
+            CatalogAuditEvent(
+                actor_id=user_id,
+                actor_type=ActorType.MERCHANT_USER.value,
+                action=action,
+                merchant_id=merchant_id,
+                target_type="session",
+                target_id=user_id,
+                correlation_id=correlation_id,
+                causation=None,
+                before=None,
+                after=None,
+                version_before=None,
+                version_after=None,
+                occurred_at=self._clock(),
+            )
+        )
+
+    def issue(
+        self, merchant_id: str, user_id: str, *, correlation_id: str = ""
+    ) -> MerchantSession:
         membership = self._user_repo.get(merchant_id, user_id)
         if membership is None:
+            self._audit(
+                action="session.issue_failed",
+                merchant_id=merchant_id,
+                user_id=user_id,
+                correlation_id=correlation_id,
+            )
             # Do not reveal whether the merchant or the user is unknown.
             raise MerchantAuthenticationError("No such merchant user or membership.")
 
@@ -67,6 +110,12 @@ class SqlAlchemyMerchantSessionService:
         )
         self._session.add(record)
         self._session.flush()
+        self._audit(
+            action="session.issue",
+            merchant_id=merchant_id,
+            user_id=user_id,
+            correlation_id=correlation_id,
+        )
         return MerchantSession(
             token=token,
             merchant_id=merchant_id,
@@ -102,7 +151,7 @@ class SqlAlchemyMerchantSessionService:
             expires_at=expires_at,
         )
 
-    def revoke(self, token: str) -> None:
+    def revoke(self, token: str, *, correlation_id: str = "") -> None:
         record = self._session.scalar(
             select(models.MerchantSessionRecord).where(
                 models.MerchantSessionRecord.token_hash == _hash_token(token)
@@ -111,6 +160,12 @@ class SqlAlchemyMerchantSessionService:
         if record is not None and record.revoked_at is None:
             record.revoked_at = self._clock()
             self._session.flush()
+            self._audit(
+                action="session.revoke",
+                merchant_id=record.merchant_id,
+                user_id=record.user_id,
+                correlation_id=correlation_id,
+            )
 
 
 def _as_utc(value: datetime) -> datetime:

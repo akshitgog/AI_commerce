@@ -17,12 +17,17 @@ any route.
 from __future__ import annotations
 
 import secrets
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Final, Protocol
 
+from ai_commerce_gateway.application.catalog_audit import (
+    CatalogAuditEvent,
+    emit_catalog_audit,
+)
 from ai_commerce_gateway.core.errors import AppError, ErrorCode
-from ai_commerce_gateway.domain.enums import MerchantRole
+from ai_commerce_gateway.domain.enums import ActorType, MerchantRole
 from ai_commerce_gateway.domain.repositories import MerchantUserRepository
 
 SESSION_TTL: Final[timedelta] = timedelta(hours=8)
@@ -51,7 +56,9 @@ class MerchantSession:
 class MerchantSessionService(Protocol):
     """The single trust boundary for merchant request identity."""
 
-    def issue(self, merchant_id: str, user_id: str) -> MerchantSession:
+    def issue(
+        self, merchant_id: str, user_id: str, *, correlation_id: str = ""
+    ) -> MerchantSession:
         """Create a session after server-side membership verification."""
         ...
 
@@ -59,7 +66,7 @@ class MerchantSessionService(Protocol):
         """Return the live session for an opaque token, or None."""
         ...
 
-    def revoke(self, token: str) -> None:
+    def revoke(self, token: str, *, correlation_id: str = "") -> None:
         """Invalidate a session (logout)."""
         ...
 
@@ -70,8 +77,8 @@ class InMemoryMerchantSessionService:
     Tokens are server-minted (``secrets.token_urlsafe``), opaque and revocable.
     Roles are resolved from the authoritative ``MerchantUserRepository`` at
     issuance and re-checked against membership at resolve time, so a forged or
-    tampered token can never inflate privileges.  Durable storage would require
-    a persistence-schema change and is deferred pending approval.
+    tampered token can never inflate privileges.  Auth-boundary events are
+    audited (issue / failed issue / revoke) with no token material logged.
     """
 
     def __init__(
@@ -80,16 +87,54 @@ class InMemoryMerchantSessionService:
         *,
         store: dict[str, MerchantSession] | None = None,
         ttl: timedelta = SESSION_TTL,
+        audit_emitter: Callable[[CatalogAuditEvent], None] | None = emit_catalog_audit,
     ) -> None:
         self._user_repo = user_repo
         # Shared, app-scoped store so sessions survive across requests while
         # each request binds its own repository/session.
         self._sessions: dict[str, MerchantSession] = store if store is not None else {}
         self._ttl = ttl
+        self._audit_emitter = audit_emitter
 
-    def issue(self, merchant_id: str, user_id: str) -> MerchantSession:
+    def _audit(
+        self,
+        *,
+        action: str,
+        merchant_id: str,
+        user_id: str,
+        correlation_id: str,
+    ) -> None:
+        if self._audit_emitter is None:
+            return
+        self._audit_emitter(
+            CatalogAuditEvent(
+                actor_id=user_id,
+                actor_type=ActorType.MERCHANT_USER.value,
+                action=action,
+                merchant_id=merchant_id,
+                target_type="session",
+                target_id=user_id,
+                correlation_id=correlation_id,
+                causation=None,
+                before=None,
+                after=None,
+                version_before=None,
+                version_after=None,
+                occurred_at=datetime.now(tz=UTC),
+            )
+        )
+
+    def issue(
+        self, merchant_id: str, user_id: str, *, correlation_id: str = ""
+    ) -> MerchantSession:
         membership = self._user_repo.get(merchant_id, user_id)
         if membership is None:
+            self._audit(
+                action="session.issue_failed",
+                merchant_id=merchant_id,
+                user_id=user_id,
+                correlation_id=correlation_id,
+            )
             # Do not reveal whether the merchant or the user is unknown.
             raise MerchantAuthenticationError(
                 "No such merchant user or membership."
@@ -104,6 +149,12 @@ class InMemoryMerchantSessionService:
             expires_at=now + self._ttl,
         )
         self._sessions[session.token] = session
+        self._audit(
+            action="session.issue",
+            merchant_id=merchant_id,
+            user_id=user_id,
+            correlation_id=correlation_id,
+        )
         return session
 
     def resolve(self, token: str) -> MerchantSession | None:
@@ -128,5 +179,12 @@ class InMemoryMerchantSessionService:
             expires_at=session.expires_at,
         )
 
-    def revoke(self, token: str) -> None:
-        self._sessions.pop(token, None)
+    def revoke(self, token: str, *, correlation_id: str = "") -> None:
+        session = self._sessions.pop(token, None)
+        if session is not None:
+            self._audit(
+                action="session.revoke",
+                merchant_id=session.merchant_id,
+                user_id=session.user_id,
+                correlation_id=correlation_id,
+            )

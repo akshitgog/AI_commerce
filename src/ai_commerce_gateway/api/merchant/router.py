@@ -259,7 +259,7 @@ class UpdatePolicyBody(BaseModel):
 
 @router.post("/{merchant_id}/sessions", status_code=201)
 def issue_session(
-    merchant_id: str, body: IssueSessionBody, sessions: SessionService
+    merchant_id: str, body: IssueSessionBody, sessions: SessionService, request: Request
 ) -> dict[str, str]:
     """Issue a merchant session after server-side membership verification.
 
@@ -267,7 +267,11 @@ def issue_session(
     repository and derives roles from the membership record.  Production
     credential verification plugs into the same seam without route changes.
     """
-    session = sessions.issue(merchant_id, body.user_id)
+    session = sessions.issue(
+        merchant_id,
+        body.user_id,
+        correlation_id=getattr(request.state, "correlation_id", ""),
+    )
     return {"session_token": session.token, "expires_at": session.expires_at.isoformat()}
 
 
@@ -275,10 +279,14 @@ def issue_session(
 def revoke_session(
     merchant_id: str,
     sessions: SessionService,
+    request: Request,
     authorization: Annotated[str | None, Header()] = None,
 ) -> None:
     if authorization and authorization.startswith("Bearer "):
-        sessions.revoke(authorization.removeprefix("Bearer ").strip())
+        sessions.revoke(
+            authorization.removeprefix("Bearer ").strip(),
+            correlation_id=getattr(request.state, "correlation_id", ""),
+        )
 
 
 # ---------------------------------------------------------------------------
