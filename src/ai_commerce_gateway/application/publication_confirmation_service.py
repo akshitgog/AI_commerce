@@ -11,6 +11,7 @@ never publish twice.
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from typing import Protocol
 
 from ai_commerce_gateway.core.errors import AppError, ErrorCode
 from ai_commerce_gateway.domain.publication_confirmation import (
@@ -21,12 +22,26 @@ from ai_commerce_gateway.domain.publication_confirmation import (
 )
 
 
+class UsedConfirmationStore(Protocol):
+    """Persistence seam for consumed confirmation JTIs."""
+
+    def is_used(self, jti: str, now: datetime) -> bool:
+        """Return True iff this JTI was already consumed (and is unexpired)."""
+        ...
+
+    def mark_used(
+        self, jti: str, expires_at: datetime, *, merchant_id: str = "", product_id: str = ""
+    ) -> None:
+        """Record the JTI as consumed until its natural expiry."""
+        ...
+
+
 class InMemoryUsedConfirmationStore:
     """Tracks consumed JTIs so a token can be used exactly once.
 
-    Entries are evicted once their token would have expired anyway; a durable
-    store would require a persistence-schema change and is deferred pending
-    approval (in-memory is safe here because tokens live only 5 minutes).
+    Entries are evicted once their token would have expired anyway.  Kept for
+    tests; production wiring uses the durable SQLAlchemy store so replay
+    protection survives restarts.
     """
 
     def __init__(self) -> None:
@@ -41,7 +56,9 @@ class InMemoryUsedConfirmationStore:
         self._evict(now)
         return jti in self._used
 
-    def mark_used(self, jti: str, expires_at: datetime) -> None:
+    def mark_used(
+        self, jti: str, expires_at: datetime, *, merchant_id: str = "", product_id: str = ""
+    ) -> None:
         self._used[jti] = expires_at
 
 
@@ -53,7 +70,7 @@ class PublicationConfirmationService:
         secret: str,
         *,
         lifetime: timedelta = TOKEN_LIFETIME,
-        used_store: InMemoryUsedConfirmationStore | None = None,
+        used_store: UsedConfirmationStore | None = None,
     ) -> None:
         self._secret = secret
         self._lifetime = lifetime
@@ -105,4 +122,9 @@ class PublicationConfirmationService:
 
     def mark_used(self, claim: PublicationConfirmationClaim) -> None:
         """Consume the token after a successful publication."""
-        self._used.mark_used(claim.jti, claim.expires_at)
+        self._used.mark_used(
+            claim.jti,
+            claim.expires_at,
+            merchant_id=claim.merchant_id,
+            product_id=claim.product_id,
+        )

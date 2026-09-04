@@ -117,3 +117,82 @@ def test_shared_store_survives_service_instances(session_db: Session):
         SqlAlchemyMerchantUserRepository(session_db), store=store
     )
     assert svc_b.resolve(session.token) is not None
+
+
+class TestDurableSessions:
+    """SqlAlchemy store: sessions survive a simulated restart (fresh engine)."""
+
+    def test_session_survives_restart(self, tmp_path):
+        from ai_commerce_gateway.infrastructure.database.merchant_sessions import (
+            SqlAlchemyMerchantSessionService,
+        )
+
+        url = f"sqlite:///{(tmp_path / 'sessions.db').as_posix()}"
+
+        engine1 = create_engine(url)
+        Base.metadata.create_all(engine1)
+        s1 = sessionmaker(bind=engine1, autoflush=False)()
+        SqlAlchemyMerchantRepository(s1).add(
+            CreateMerchantDomain(id="mer_1", name="M", idempotency_key="ik_m")
+        )
+        SqlAlchemyMerchantUserRepository(s1).add(
+            AddMerchantUserDomain(
+                id="mu_1", merchant_id="mer_1", user_id="user_1", role=MerchantRole.EDITOR
+            )
+        )
+        s1.commit()
+        svc1 = SqlAlchemyMerchantSessionService(SqlAlchemyMerchantUserRepository(s1), s1)
+        raw_token = svc1.issue("mer_1", "user_1").token
+        s1.commit()
+        s1.close()
+        engine1.dispose()
+
+        # Simulated restart: brand-new engine, session and service instance.
+        engine2 = create_engine(url)
+        s2 = sessionmaker(bind=engine2, autoflush=False)()
+        svc2 = SqlAlchemyMerchantSessionService(SqlAlchemyMerchantUserRepository(s2), s2)
+        resolved = svc2.resolve(raw_token)
+        assert resolved is not None
+        assert resolved.user_id == "user_1"
+        assert resolved.role is MerchantRole.EDITOR
+
+        # Revocation also persists across a further restart.
+        svc2.revoke(raw_token)
+        s2.commit()
+        s2.close()
+        engine2.dispose()
+        engine3 = create_engine(url)
+        s3 = sessionmaker(bind=engine3, autoflush=False)()
+        svc3 = SqlAlchemyMerchantSessionService(SqlAlchemyMerchantUserRepository(s3), s3)
+        assert svc3.resolve(raw_token) is None
+        s3.close()
+        engine3.dispose()
+
+    def test_raw_token_never_persisted(self, tmp_path):
+        from ai_commerce_gateway.infrastructure.database.merchant_sessions import (
+            SqlAlchemyMerchantSessionService,
+        )
+        from ai_commerce_gateway.infrastructure.database.models import MerchantSessionRecord
+
+        url = f"sqlite:///{(tmp_path / 'sessions2.db').as_posix()}"
+        engine = create_engine(url)
+        Base.metadata.create_all(engine)
+        s = sessionmaker(bind=engine, autoflush=False)()
+        SqlAlchemyMerchantRepository(s).add(
+            CreateMerchantDomain(id="mer_1", name="M", idempotency_key="ik_m")
+        )
+        SqlAlchemyMerchantUserRepository(s).add(
+            AddMerchantUserDomain(
+                id="mu_1", merchant_id="mer_1", user_id="user_1", role=MerchantRole.ADMIN
+            )
+        )
+        s.commit()
+        svc = SqlAlchemyMerchantSessionService(SqlAlchemyMerchantUserRepository(s), s)
+        issued = svc.issue("mer_1", "user_1")
+        s.commit()
+        row = s.query(MerchantSessionRecord).one()
+        assert row.token_hash != issued.token
+        assert issued.token not in str(row.token_hash)
+        assert len(row.token_hash) == 64  # sha256 hex
+        s.close()
+        engine.dispose()

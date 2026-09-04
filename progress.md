@@ -635,3 +635,30 @@ Status:          IMPLEMENTED - READY FOR REVIEW
 **Validation:**
 - ruff: PASS; mypy: PASS (40 files); alembic upgrade head --sql: PASS (no schema change)
 - pytest: 277 passed, 27 skipped (PostgreSQL integration, TEST_DATABASE_URL unset), 0 failed
+
+---
+
+## Entry - Durable Session and Confirmation Stores (approved schema change)
+
+Date/time:       2026-09-04
+Git branch:      phase/a6-merchant-dashboard
+Author/Agent:    Agent A (Merchant/Catalog Lane)
+Status:          IMPLEMENTED - READY FOR REVIEW
+
+**Approved by human:** durable persistence for sessions and confirmation JTIs (P0-4 constraint lifted for this change).
+
+**Implemented:**
+1. **Schema** (migration b7f3c91d5e20, revises 2a8a78d61842):
+   - merchant_sessions: hashed-token store (SHA-256 token_hash; raw tokens never persisted), merchant FK, user, role, issued/expires/revoked timestamps
+   - used_confirmation_tokens: consumed JTIs with merchant/product context, expires_at for lazy eviction
+2. **SqlAlchemyMerchantSessionService** (infrastructure/database/merchant_sessions.py): same trust rules as in-memory (membership re-verified on resolve, mid-session demotion effective); sessions survive restarts; revocation persisted
+3. **SqlAlchemyUsedConfirmationStore** (infrastructure/database/merchant_confirmations.py): durable JTI replay protection; savepoint insert so a duplicate JTI never rolls back the caller's transaction; UsedConfirmationStore Protocol added
+4. **App wiring:** merchant routes now use the durable stores per request (no app-state singletons)
+5. **Frozen-surface discipline:** new_id prefix list left untouched after the freeze test caught a proposed addition; session row IDs generated locally
+
+**New tests (3):** session survives simulated restart (fresh engine/session/service), revocation persists across restarts, raw token never persisted; used-JTI persists across restart (replay after restart -> 409).
+
+**Validation:**
+- ruff: PASS; mypy: PASS (42 files)
+- pytest: 280 passed, 27 skipped (PostgreSQL integration), 0 failed
+- alembic upgrade head --sql: PASS; migration upgrade/downgrade round-trip test updated for the two new tables

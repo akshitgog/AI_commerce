@@ -20,6 +20,8 @@ EXPECTED_TABLES = {
     "payment_attempts",
     "provider_webhooks",
     "transaction_events",
+    "merchant_sessions",
+    "used_confirmation_tokens",
 }
 
 

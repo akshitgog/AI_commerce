@@ -190,3 +190,43 @@ class TestClaimMismatchSemantics:
         claim = verify_publication_confirmation(token, SECRET)
         assert claim.action == ACTION_PUBLISH
         assert claim.action != ACTION_UNPUBLISH
+
+
+class TestDurableReplayProtection:
+    """SqlAlchemy used-token store: replay protection survives restarts."""
+
+    def test_used_jti_persists_across_restart(self, tmp_path):
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import sessionmaker
+
+        from ai_commerce_gateway.infrastructure.database.merchant_confirmations import (
+            SqlAlchemyUsedConfirmationStore,
+        )
+        from ai_commerce_gateway.infrastructure.database.models import Base
+
+        url = f"sqlite:///{(tmp_path / 'jtis.db').as_posix()}"
+
+        engine1 = create_engine(url)
+        Base.metadata.create_all(engine1)
+        s1 = sessionmaker(bind=engine1, autoflush=False)()
+        svc1 = PublicationConfirmationService(
+            SECRET, used_store=SqlAlchemyUsedConfirmationStore(s1)
+        )
+        token, _, _ = _issue()
+        claim = svc1.verify(token)
+        svc1.mark_used(claim)
+        s1.commit()
+        s1.close()
+        engine1.dispose()
+
+        # Simulated restart: fresh engine/session/store, same database file.
+        engine2 = create_engine(url)
+        s2 = sessionmaker(bind=engine2, autoflush=False)()
+        svc2 = PublicationConfirmationService(
+            SECRET, used_store=SqlAlchemyUsedConfirmationStore(s2)
+        )
+        with pytest.raises(AppError) as exc_info:
+            svc2.verify(token)
+        assert exc_info.value.status_code == 409
+        s2.close()
+        engine2.dispose()

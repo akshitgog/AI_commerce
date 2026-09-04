@@ -23,10 +23,7 @@ from sqlalchemy.orm import Session
 
 from ai_commerce_gateway.application.catalog_idempotency import IdempotentCatalogService
 from ai_commerce_gateway.application.catalog_service import ApplicationMerchantCatalogService
-from ai_commerce_gateway.application.merchant_sessions import (
-    InMemoryMerchantSessionService,
-    MerchantSession,
-)
+from ai_commerce_gateway.application.merchant_sessions import MerchantSession
 from ai_commerce_gateway.application.policy_service import ApplicationMerchantPolicyService
 from ai_commerce_gateway.application.product_draft_extraction import (
     LLMProductDraftExtractor,
@@ -56,6 +53,9 @@ from ai_commerce_gateway.domain.publication_confirmation import (
     ACTION_UNPUBLISH,
     PublicationConfirmationClaim,
 )
+from ai_commerce_gateway.infrastructure.database.merchant_confirmations import (
+    SqlAlchemyUsedConfirmationStore,
+)
 from ai_commerce_gateway.infrastructure.database.merchant_idempotency import (
     SqlAlchemyMerchantIdempotencyRepository,
 )
@@ -65,6 +65,9 @@ from ai_commerce_gateway.infrastructure.database.merchant_repositories import (
     SqlAlchemyMerchantUserRepository,
     SqlAlchemyProductImageRepository,
     SqlAlchemyProductRepository,
+)
+from ai_commerce_gateway.infrastructure.database.merchant_sessions import (
+    SqlAlchemyMerchantSessionService,
 )
 
 router = APIRouter(prefix="/merchants", tags=["merchant"])
@@ -91,15 +94,12 @@ DbSession = Annotated[Session, Depends(get_db_session)]
 
 
 def get_session_service(
-    request: Request, db: DbSession
-) -> InMemoryMerchantSessionService:
-    return InMemoryMerchantSessionService(
-        SqlAlchemyMerchantUserRepository(db),
-        store=request.app.state.merchant_session_store,
-    )
+    db: DbSession,
+) -> SqlAlchemyMerchantSessionService:
+    return SqlAlchemyMerchantSessionService(SqlAlchemyMerchantUserRepository(db), db)
 
 
-SessionService = Annotated[InMemoryMerchantSessionService, Depends(get_session_service)]
+SessionService = Annotated[SqlAlchemyMerchantSessionService, Depends(get_session_service)]
 
 
 def get_merchant_actor(
@@ -177,10 +177,10 @@ def get_policy_service(db: DbSession) -> ApplicationMerchantPolicyService:
 PolicySvc = Annotated[ApplicationMerchantPolicyService, Depends(get_policy_service)]
 
 
-def get_confirmation_service(request: Request) -> PublicationConfirmationService:
+def get_confirmation_service(db: DbSession) -> PublicationConfirmationService:
     return PublicationConfirmationService(
         get_settings().publication_confirmation_secret,
-        used_store=request.app.state.confirmation_store,
+        used_store=SqlAlchemyUsedConfirmationStore(db),
     )
 
 
