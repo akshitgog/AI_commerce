@@ -237,3 +237,58 @@ each lane.
 
 Choose the first active phase per lane and create only those three child branches from their current
 lane heads.
+
+---
+
+## Entry 005 — Required merchant MCP extension recorded
+
+Date/time:       2026-09-04 (Asia/Calcutta)
+Git branch:      codex/merchant-mcp-extension-plan
+Commit:          commit containing this entry
+Author/Agent:    Codex
+Workstream:      docs / merchant catalog / buyer MCP
+Change:          Added required A7/C7 delivery, security, API and release-evidence contracts
+Files/modules:   decisions.md, technical-questions.md, docs/
+
+### What Changed
+
+Recorded two isolated MCP permission surfaces: buyer-only C4 and required merchant catalog C7.
+Added A7 for durable fingerprinted catalog-mutation idempotency using the existing
+`IdempotencyRecord`, plus dashboard-controlled human publication confirmation. Defined the six
+merchant tools, role/tenant binding, transport idempotency metadata, five-minute signed publication
+claims, canonical service mapping and required J16 external-client evidence.
+
+### Reason
+
+Make two-sided MCP interoperability a v1 release requirement without duplicating catalog logic,
+widening buyer C4 or delaying the transaction/provider lane.
+
+### Technical Impact
+
+Documentation and delivery governance only. Frozen M0 DTOs, enums, service methods, database tables
+and migrations did not change. A7/C7 runtime behavior is not implemented by this change.
+
+### Validation
+
+`git diff --check`, `uv run ruff check .` and `uv run mypy` passed. `uv run pytest` passed 20
+tests with one PostgreSQL connection test skipped because `TEST_DATABASE_URL` was not configured.
+Only documentation and project-memory files changed.
+
+### Evidence
+
+Repository diff on `codex/merchant-mcp-extension-plan`; decision D-007; J16 remains `NOT RUN` in
+`docs/TESTED.md`.
+
+### Result
+
+SUCCESS — ROADMAP/CONTRACT DECISION RECORDED; IMPLEMENTATION NOT STARTED
+
+### Problems / Limitations
+
+A7 and C7 still require their gated implementation/review/merge sequence and real J16 evidence.
+The PostgreSQL connection test was not run locally. B4 remains free of implementation changes.
+
+### Next Step
+
+Resume B4 independently. Complete A3–A6 and C4–C6 through their existing gates before creating the
+A7 and C7 phase branches.

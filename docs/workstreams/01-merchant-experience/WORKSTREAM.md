@@ -15,10 +15,11 @@ The dashboard is a human interface over shared application services. Keeping it 
 - Merchant policy editor and manual-review queue.
 - Orders view, simplified status labels and audit timeline presentation.
 - Client validation, accessibility and loading/error states.
+- Explicit human publication confirmation/step-up handoff for merchant MCP publication.
 
 ## Explicit non-ownership
 
-No financial state transitions, trusted price calculations, buyer authorization, merchant-policy algorithm, durable idempotency, Razorpay calls, provider verification or reconciliation.
+No financial state transitions, trusted price calculations, buyer authorization, merchant-policy algorithm, durable idempotency, confirmation-token cryptography, Razorpay calls, provider verification or reconciliation.
 
 ## Inputs / dependencies
 
@@ -38,7 +39,7 @@ Reads the corresponding catalog, policy, transaction and event tables only throu
 
 ## Relevant API/application services
 
-Merchant product CRUD/publish routes, image upload/delete routes, policy read/update, review list/decision, transaction status and audit reads.
+Merchant product CRUD/publish routes, dashboard-only publication-confirmation route, image upload/delete routes, policy read/update, review list/decision, transaction status and audit reads.
 
 ## Relevant UI surfaces
 
@@ -67,6 +68,8 @@ Never trust route merchant IDs without server enforcement. Never accept/display 
 3. Build ordered 1–3 image upload/delete experience with validation feedback.
 4. Build policy configuration and manual-review decision screens.
 5. Build orders and audit views using simplified labels without collapsing backend states.
+6. In A7, add the explicit human confirmation/step-up handoff that requests a short-lived
+   publication token without exposing that token to logs or persistent client storage.
 
 ## Lane phase ownership
 
@@ -78,6 +81,9 @@ missing backend behavior in UI code.
 A6 exits only when component/contract tests, accessibility states, merchant-scope handling and the
 M1 dashboard journey pass review. Stop at `READY_FOR_REVIEW`; do not start buyer or transaction UI
 work outside the approved phase.
+
+The narrow confirmation handoff is an A7 integration contribution after A6; it does not reopen the
+dashboard phase or move catalog idempotency/token verification into UI code.
 
 ## Required tests
 

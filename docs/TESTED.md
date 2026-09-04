@@ -59,6 +59,7 @@ Never record credentials, webhook secrets, payment instrument data or unredacted
 | J13 Tenant isolation | NOT RUN | — | — |
 | J14 Audit reconstruction | NOT RUN | — | — |
 | J15 External MCP interoperability | NOT RUN | — | — |
+| J16 External merchant MCP catalog management | NOT RUN | — | — |
 
 ## Judge smoke-test procedure
 
@@ -73,7 +74,15 @@ Never record credentials, webhook secrets, payment instrument data or unredacted
 9. Repeat execution with the same idempotency key and confirm the same provider order.
 10. Open the audit timeline and identify buyer consent, merchant policy, revalidation, provider action and verification.
 
-Run the external MCP interoperability scenario separately: connect the documented compatible client, discover the same product and create a proposal, then prove it reached the same backend services.
+Run external MCP interoperability separately from the primary demo:
+
+1. Connect a buyer client to `/mcp/buyer`, record its isolated discovery, discover the product and
+   create a proposal, then prove it reached the same backend services.
+2. Connect a merchant client to `/mcp/merchant`, record role-scoped discovery, list products, create
+   and update a draft, obtain human dashboard confirmation, publish it, and prove the buyer surface
+   observes the same canonical product.
+3. Record redacted confirmation evidence, product/version database evidence and denial of
+   cross-surface tool discovery. Never record the confirmation token itself.
 
 ## Graceful-failure procedure
 
@@ -91,7 +100,7 @@ Verify that the platform queries provider truth before allowing any new provider
 ```text
 PASS: 0
 FAIL: 0
-NOT RUN: 15
+NOT RUN: 16
 BLOCKED: 0
 ```
 

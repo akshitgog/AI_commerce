@@ -7,7 +7,7 @@
 - Money: `{ "amount_minor": 50000, "currency": "INR" }`.
 - Authenticated actor context comes from the server-validated session/token, never a trusted body field.
 - All responses include `correlation_id`.
-- Mutating creation/execution operations require `Idempotency-Key`.
+- Mutating operations require `Idempotency-Key` at the HTTP or MCP transport boundary.
 - Client-supplied totals, provider states and merchant ownership are never authoritative.
 
 ## Stable error envelope
@@ -32,6 +32,7 @@ Core codes: `UNAUTHENTICATED`, `FORBIDDEN`, `NOT_FOUND`, `VALIDATION_ERROR`, `PR
 | `POST /merchants` | Platform/demo onboarding | Create merchant |
 | `GET /merchants/{merchant_id}` | Merchant member | Read own merchant profile |
 | `POST /merchants/{merchant_id}/products` | Merchant editor | Create draft product |
+| `GET /merchants/{merchant_id}/products` | Merchant member | List own products, including draft state |
 | `GET /merchants/{merchant_id}/products/{product_id}` | Merchant member | Read product including draft state |
 | `PATCH /merchants/{merchant_id}/products/{product_id}` | Merchant editor | Update product and increment version |
 | `POST /merchants/{merchant_id}/products/{product_id}/publish` | Merchant editor | Publish reviewed version |
@@ -46,6 +47,28 @@ Core codes: `UNAUTHENTICATED`, `FORBIDDEN`, `NOT_FOUND`, `VALIDATION_ERROR`, `PR
 | `POST /merchants/{merchant_id}/reviews/{proposal_id}/decide` | Merchant approver | Record allow/deny decision |
 
 Every route verifies the authenticated user's membership and role for the path merchant.
+
+### Dashboard publication confirmation
+
+`POST /merchants/{merchant_id}/products/{product_id}/publication-confirmations`
+
+This dashboard-only route is available after explicit human confirmation or configured step-up
+authentication. Merchant MCP credentials are not valid for this route.
+
+```json
+{
+  "action": "PUBLISH",
+  "expected_version": 3
+}
+```
+
+The response contains an opaque signed confirmation token and its five-minute expiry. Its HS256
+claims bind issuer, audience `merchant-mcp-publication`, merchant user, merchant, product, expected
+version, action (`PUBLISH` or `UNPUBLISH`), issued/expiry times and a unique token ID. The signing
+secret remains server-side and the token is never logged.
+
+The merchant MCP adapter verifies every bound claim before calling the canonical catalog service,
+then strips the token. It never adds the token to the frozen `SetProductPublicationCommand`.
 
 ## Buyer catalog routes
 
@@ -111,6 +134,8 @@ Exact required fields are finalized from the Razorpay Test Mode spike and isolat
 
 ## MCP tools
 
+### Buyer MCP — `/mcp/buyer`
+
 | Tool | Maps to | Financial effect |
 |---|---|---|
 | `search_catalog` | Catalog search | None |
@@ -121,4 +146,25 @@ Exact required fields are finalized from the Razorpay Test Mode spike and isolat
 | `get_transaction_status` | Transaction read | None |
 | `get_transaction_audit` | Event read | None |
 
-MCP schemas accept business identifiers and quantities only. They never accept provider credentials, arbitrary trusted prices, forced states or a flag that bypasses approval.
+Buyer MCP schemas accept business identifiers and quantities only. They never accept provider
+credentials, arbitrary trusted prices, forced states or a flag that bypasses approval.
+
+### Merchant MCP — `/mcp/merchant`
+
+| Tool | Maps to | Minimum role | Tool input |
+|---|---|---|---|
+| `get_product` | `MerchantCatalogService.get_product` | Merchant member | `product_id` |
+| `list_products` | `MerchantCatalogService.list_products` | Merchant member | Optional `cursor` |
+| `create_product_draft` | `MerchantCatalogService.create_product` | `ADMIN` or `EDITOR` | SKU, title, description, category, money and quantity |
+| `update_product` | `MerchantCatalogService.update_product` | `ADMIN` or `EDITOR` | Product ID, expected version and allowed changed fields |
+| `publish_product` | `MerchantCatalogService.publish_product` | `ADMIN` or `EDITOR` | Product ID, expected version and confirmation token |
+| `unpublish_product` | `MerchantCatalogService.unpublish_product` | `ADMIN` or `EDITOR` | Product ID, expected version and confirmation token |
+
+The authenticated server context selects one active merchant and constructs `ActorContext`; no
+merchant tool accepts `merchant_id`, actor identity or roles. Unknown/extra fields are forbidden.
+For mutations, `Idempotency-Key` is required as MCP transport metadata and is not part of the tool
+schema. The adapter injects the selected merchant and idempotency key into the existing frozen
+commands. Draft creation and update cannot publish implicitly.
+
+The buyer and merchant registries are disjoint. Merchant sessions expose no proposal, transaction,
+provider, webhook or Razorpay capability, and buyer sessions expose no merchant mutation capability.

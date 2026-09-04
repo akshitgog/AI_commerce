@@ -74,7 +74,7 @@ MCP Adapter                            │
                                                 Verify / Reconcile / Audit
 ```
 
-The reference chat is the guaranteed buyer-facing demo surface. MCP is a separate interoperability adapter for compatible external AI applications. Both paths converge on the same application services **before** any financial business logic.
+The reference chat is the guaranteed buyer-facing demo surface. MCP is a separate interoperability adapter for compatible external AI applications. Buyer and merchant MCP sessions use separate permission surfaces, and every adapter converges on the same application services **before** any trusted business logic.
 
 There is one trusted transaction system, not separate logic for chat and MCP.
 
@@ -88,7 +88,40 @@ The reference chat owns conversational presentation and tool orchestration only.
 
 ### Remote MCP server
 
-The remote MCP server exposes the same narrow commerce operations to MCP-capable external AI applications. The MCP adapter translates protocol/tool calls into the same application-service commands used by the reference chat and HTTP API.
+The remote MCP server exposes two disjoint endpoints:
+
+- `/mcp/buyer` exposes buyer catalog, proposal, authorization-request, transaction-status and audit capabilities.
+- `/mcp/merchant` exposes only `create_product_draft`, `update_product`, `get_product`,
+  `list_products`, `publish_product` and `unpublish_product`.
+
+The endpoints have separate tool registries. A buyer session cannot discover or invoke merchant
+tools, and a merchant session cannot discover or invoke buyer proposal, transaction, provider,
+webhook or Razorpay tools. Both adapters translate protocol/tool calls into the same application
+services used by the reference chat and HTTP API.
+
+Merchant authentication selects exactly one active merchant and constructs `ActorContext`
+server-side. Tool input never accepts `merchant_id`, actor identity or roles. All merchant members
+receive catalog reads; only `ADMIN` and `EDITOR` receive catalog mutation tools. Every mutation
+requires transport-level `Idempotency-Key` metadata, which the adapter injects into the frozen
+catalog command without exposing it in the business tool schema.
+
+Publication has an additional human boundary:
+
+```text
+AI creates or updates a draft
+        ↓
+authenticated merchant confirms in the dashboard or completes step-up authentication
+        ↓
+dashboard-only service issues a five-minute signed confirmation token
+        ↓
+merchant MCP verifies token, actor, tenant, product, expected version and action
+        ↓
+MerchantCatalogService publishes or unpublishes and increments the product version
+```
+
+Merchant MCP credentials cannot issue confirmation tokens. The token is stripped at the adapter
+boundary and never enters `SetProductPublicationCommand`. Product versioning invalidates it for a
+later state change; replay with the original idempotency key returns the original logical result.
 
 The MCP layer must never independently:
 
@@ -98,6 +131,7 @@ The MCP layer must never independently:
 - mutate transaction state outside application services;
 - call Razorpay outside the provider adapter/transaction authority;
 - bypass idempotency or reconciliation;
+- mint or bypass merchant publication confirmation;
 - mark a transaction successful.
 
 ### Shared backend
@@ -194,5 +228,5 @@ Every consequential event records actor, action, reason code, merchant, buyer, p
 - Data: PostgreSQL or equivalent transactional relational database.
 - Dashboard: thin React/Next.js or equivalent client.
 - Buyer access: reference chat connected to the same backend application services.
-- External agent interoperability: one remote MCP server connected to those same application services.
+- External agent interoperability: one remote MCP server with isolated buyer and merchant endpoints connected to those same application services.
 - Background work: database-backed worker or safe scheduled reconciliation; Redis is optional and not correctness-critical.

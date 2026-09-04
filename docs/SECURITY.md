@@ -8,7 +8,11 @@ An AI client may reason about commerce but cannot manufacture identity, consent,
 
 - Merchant dashboard actions require an authenticated merchant member and role check.
 - Human buyer approval requires an authenticated buyer-controlled surface.
-- MCP clients act for a bound buyer identity; body parameters cannot switch that identity.
+- Buyer MCP clients act for a bound buyer identity; tool parameters cannot switch that identity.
+- Merchant MCP clients use a separate audience and endpoint bound server-side to exactly one active
+  merchant. Tool parameters cannot supply merchant identity, actor identity or roles.
+- Merchant MCP discovery grants reads to merchant members and catalog mutations only to `ADMIN` or
+  `EDITOR`; it exposes no buyer financial or provider operations.
 - Every merchant-scoped query checks ownership, including indirect product, proposal, transaction and audit lookups.
 - The second merchant fixture exists specifically to test denial of cross-tenant access.
 
@@ -53,6 +57,26 @@ Structured financial inputs are loaded from server records and passed directly t
 - Lock or atomically transition the transaction before provider dispatch.
 - Enforce uniqueness in the database.
 - Deduplicate provider events by verified provider event identity.
+
+Merchant MCP catalog mutations also require transport-level idempotency metadata. The adapter
+injects it into the canonical command only after authentication; the service rejects a reused key
+with a different fingerprint.
+
+## Merchant MCP publication confirmation
+
+Draft creation and update never publish implicitly. Publishing and unpublishing require a signed
+confirmation issued only through the dashboard after explicit human confirmation or step-up
+authentication; merchant MCP credentials cannot call the issuer.
+
+The five-minute HS256 token uses a dedicated server-side secret and binds issuer, audience
+`merchant-mcp-publication`, merchant user, merchant, product, expected version, action, issued and
+expiry times, and unique token ID. Before invoking the catalog service, the merchant adapter verifies
+the signature, expiry, audience, actor, tenant, product, version and action. The token is never logged
+and is stripped before constructing the frozen publication command.
+
+Publication increments product version, so the token cannot authorize a later state change. A replay
+with the original idempotency key returns the stored logical result; a changed fingerprint is
+rejected.
 
 ## Provider security
 

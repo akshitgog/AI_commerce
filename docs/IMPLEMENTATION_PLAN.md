@@ -41,13 +41,26 @@ Implement checkout verification, webhook verification/deduplication, provider lo
 
 Exit: verified payments reach `SUCCEEDED`; failed/abandoned payments do not; ambiguous requests reconcile without blind retry.
 
-## Phase 6 — reference chat, MCP and dashboard
+## Phase 6 — reference chat, buyer MCP and dashboard
 
-Build the reference buyer chat over the shared application layer as the guaranteed buyer demo. Expose the seven canonical tools through a separate remote MCP adapter over that same layer. Build merchant product, policy, review, transaction and audit views. Configure one compatible external MCP client for interoperability proof.
+Build the reference buyer chat over the shared application layer as the guaranteed buyer demo.
+Expose the seven canonical buyer tools through a separate buyer-only MCP adapter over that same
+layer. Build merchant product, policy, review, transaction and audit views. Configure one compatible
+external buyer MCP client for interoperability proof.
 
 Exit: the full judge journey works without direct API manipulation.
 
-## Phase 7 — evidence and submission
+## Phase 7 — merchant MCP extension
+
+After C6 and the A7 catalog-readiness phase, expose the six approved catalog tools through the
+isolated merchant MCP endpoint. Require durable canonical mutation idempotency and dashboard-issued
+human confirmation for publish/unpublish. This phase is required for release but does not block the
+transaction/provider lane or replace the dashboard and reference chat as primary surfaces.
+
+Exit: role/tenant isolation, disjoint discovery, restart-safe idempotency and human-confirmed
+publication pass C7 review, and an external merchant client observes canonical service parity.
+
+## Phase 8 — evidence and submission
 
 Run every `EVALUATION.md` scenario, update `TESTED.md`, publish redacted provider evidence and record the five-minute demo. State remaining limitations honestly.
 
@@ -58,6 +71,8 @@ Cut in this order if constrained:
 1. AI catalog enrichment.
 2. CSV polish and advanced search.
 3. Dashboard animation and visual extras.
-4. Nonessential MCP convenience tools.
+4. Nonessential MCP convenience tools beyond the required buyer and merchant registries.
 
-Do not cut merchant publication, the reference buyer-chat flow, independent buyer/merchant gates, provider verification, durable idempotency, reconciliation, tenant isolation or audit evidence. If constrained, reduce MCP proof breadth but preserve at least catalog discovery and proposal creation over the same backend.
+Do not cut merchant publication, the reference buyer-chat flow, independent buyer/merchant gates,
+provider verification, durable idempotency, reconciliation, tenant isolation, the required C7
+merchant catalog surface or audit evidence. Keep buyer C4 and merchant C7 separate.

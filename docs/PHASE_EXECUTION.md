@@ -169,3 +169,7 @@ cross-lane scenarios before merging a lane to `main`.
 If an implementation discovers that a frozen contract must change, stop the phase and use the
 contract-change process in `SHARED_CONTRACTS.md`. A phase branch never silently repairs another
 lane's contract.
+
+The required merchant MCP extension follows the same gates: A7 starts only after approved A6/auth
+seams, and C7 starts only after approved C6 and A7. C4 remains buyer-only. A7/C7 approval and J16
+evidence are release prerequisites, but neither phase blocks independent B4–B6 provider work.

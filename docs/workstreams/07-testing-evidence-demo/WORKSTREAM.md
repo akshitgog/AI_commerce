@@ -10,7 +10,7 @@ Module tests cannot prove interface seams, concurrency, restart safety or real R
 
 ## Ownership
 
-Cross-module integration, E2E, concurrency/restart, Razorpay evidence, MCP interoperability, tenant isolation, prompt-injection, timeout/reconciliation, audit reconstruction, `TESTED.md`, `evidence/` artifacts and pitch/demo validation.
+Cross-module integration, E2E, concurrency/restart, Razorpay evidence, buyer and merchant MCP interoperability, tenant isolation, prompt-injection, timeout/reconciliation, audit reconstruction, `TESTED.md`, `evidence/` artifacts and pitch/demo validation.
 
 ## Explicit non-ownership
 
@@ -61,9 +61,9 @@ Redact secrets/PII/payment data; isolate Test Mode; verify tenant denial and pro
 1. Map EVALUATION scenario IDs to fixtures, steps and assertions.
 2. Build cross-module/E2E harness and deterministic seed data.
 3. Build concurrency/restart/duplicate and timeout/reconciliation tests.
-4. Run real Razorpay and external MCP cases where required.
+4. Run real Razorpay and separate external buyer/merchant MCP cases where required.
 5. Capture redacted evidence and update `TESTED.md` from actual results.
-6. Validate/rehearse the five-minute primary chat demo plus separate MCP proof.
+6. Validate/rehearse the five-minute primary chat demo plus separate buyer and merchant MCP proofs.
 
 ## Phase and integration role
 
@@ -76,6 +76,7 @@ scenarios only when their real dependencies exist.
 - Run transaction-to-provider reliability checks after B3–B6 integrate.
 - Run primary Reference Buyer Chat E2E after C2/C3/C5 connect to real services.
 - Run MCP interoperability separately after C4/C6.
+- Run merchant MCP scenario J16 only after approved A7 and C7 integrations.
 - Record `TESTED.md` results only from reproducible assembled runs.
 
 A second-agent audit may identify findings but must send fixes back to the owning phase/lane. This
@@ -83,7 +84,7 @@ workstream must not patch feature code merely to make an E2E test pass.
 
 ## Required tests
 
-All scenarios in `EVALUATION.md`: publication, buyer chat journey, MCP interoperability, gates, verified payment, drift, retry/concurrency/restart, unknown recovery, failed checkout, webhook verification/deduplication, prompt injection, tenant isolation and audit reconstruction.
+All scenarios in `EVALUATION.md`: publication, buyer chat journey, buyer and merchant MCP interoperability, human publication confirmation, gates, verified payment, drift, retry/concurrency/restart, unknown recovery, failed checkout, webhook verification/deduplication, prompt injection, tenant isolation and audit reconstruction.
 
 ## Evidence required
 

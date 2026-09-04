@@ -81,7 +81,10 @@ Creating a Razorpay order is only payment initiation. It does not mean the purch
 
 ## Scope boundary
 
-V1 demonstrates one merchant through the reference buyer chat and separately proves one external MCP client integration. A second merchant fixture proves tenant isolation. The system is not a marketplace and does not scrape, compare or route across open-web merchants.
+V1 demonstrates one merchant through the reference buyer chat and separately proves isolated buyer
+and merchant external MCP integrations over the same services. A second merchant fixture proves
+tenant isolation. The system is not a marketplace and does not scrape, compare or route across
+open-web merchants.
 
 AI-assisted catalog enrichment is optional and may suggest descriptive metadata only. Price, currency, stock and publication status remain merchant-controlled structured fields.
 

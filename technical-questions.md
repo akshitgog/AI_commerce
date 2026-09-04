@@ -64,29 +64,38 @@ Catalog service, ProductImage, storage adapter, merchant dashboard, reference bu
 
 ---
 
-## Q: How should MCP mutating calls obtain stable buyer-bound idempotency keys?
+## Q: How should MCP mutating calls obtain stable actor-bound idempotency keys?
 
-Status: OPEN
+Status: ANSWERED
 Branch-raised: main
 Last-updated-by: Codex architecture/documentation agent
 
 Context:
-MCP retries must map to durable backend idempotency without permitting an external client to substitute buyer identity or accidentally reuse a key across different requests.
+Buyer and merchant MCP retries must map to durable backend idempotency without permitting an
+external client to substitute identity/tenant or accidentally reuse a key across different
+requests.
 
 Current Answer:
-Not yet defined. Actor identity must come from the authenticated server context, and the key remains scoped by actor and operation with a request fingerprint.
+The client supplies a stable `Idempotency-Key` through authenticated MCP transport metadata, not a
+business tool argument. The adapter derives actor and, for merchant MCP, the single active merchant
+from server context, then injects the key into the frozen command. The canonical service scopes the
+record by actor and operation and persists a request fingerprint and logical result.
 
 Evidence:
-Existing API, architecture and security contracts; no MCP implementation evidence yet.
+Human-approved two-sided MCP architecture decision D-007 and aligned API/security/workstream
+contracts. Implementation and restart/concurrency evidence remain not run until A7/C4/C7.
 
 Decision:
-Freeze key propagation/derivation before implementing `execute_transaction` through MCP.
+Use required transport metadata for all MCP mutations. Never accept identity, tenant, roles or the
+idempotency key in merchant business tool schemas. Same key/same fingerprint replays the original
+logical result; same key/different fingerprint is rejected.
 
 Confidence:
-MEDIUM
+HIGH for the interface decision; implementation evidence pending.
 
 Last updated:
 2026-09-04
 
 Related modules:
-Remote MCP adapter, buyer identity, transaction authority, IdempotencyRecord.
+Remote buyer/merchant MCP adapters, authenticated actor context, catalog/transaction services,
+IdempotencyRecord.

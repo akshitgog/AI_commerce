@@ -10,7 +10,7 @@ Transaction correctness depends on durable constraints and storage. Infrastructu
 
 ## Ownership
 
-PostgreSQL connection/migrations; DB constraints implementation with domain owners; authentication infrastructure; environment/configuration; deployment; product-image object storage; observability foundations; optional worker scheduling.
+PostgreSQL connection/migrations; DB constraints implementation with domain owners; authentication infrastructure; merchant MCP audience/session binding; publication-confirmation signing configuration; environment/configuration; deployment; product-image object storage; observability foundations; optional worker scheduling.
 
 ## Explicit non-ownership
 
@@ -34,7 +34,7 @@ Supports all tables. Logical ownership remains: catalog tables 02, transaction/a
 
 ## Relevant API/application services
 
-`storage.upload_product_image`, `storage.delete_product_image`, `storage.get_public_url`, auth/session middleware, database unit-of-work and worker scheduling.
+`storage.upload_product_image`, `storage.delete_product_image`, `storage.get_public_url`, auth/session middleware, merchant MCP audience/credential mapping, confirmation signing primitives, database unit-of-work and worker scheduling.
 
 ## Relevant UI surfaces
 
@@ -54,7 +54,7 @@ DB transaction/unit-of-work primitives, authenticated actor context, storage int
 
 ## Security/trust rules
 
-Keep secrets out of source/logs; least-privilege storage and DB access; validate upload type/size; preserve tenant context; use durable uniqueness; redact provider/user data; separate Test Mode configuration.
+Keep secrets and confirmation tokens out of source/logs; least-privilege storage and DB access; validate upload type/size; preserve tenant context; isolate buyer and merchant MCP audiences; use durable uniqueness; redact provider/user data; separate Test Mode configuration.
 
 ## Required implementation tasks
 
@@ -63,12 +63,14 @@ Keep secrets out of source/logs; least-privilege storage and DB access; validate
 3. Implement auth/tenant context infrastructure.
 4. Implement Supabase Storage or equivalent behind the storage abstraction.
 5. Provide environment template, local/deployed setup, health checks and correlation-ready logging.
+6. Contribute the dedicated HS256 secret/configuration and authenticated merchant-session binding to
+   A7/C7 without owning confirmation policy or MCP tool behavior.
 
 ## Phase participation
 
 M0 infrastructure is frozen. Subsequent infrastructure work is a bounded contribution to the active
 owning phase, not an independent catch-all lane: A1–A5 may request reviewed catalog migrations,
-identity or storage work; B1–B6 may request reviewed transaction/provider migrations, locking,
+identity or storage work, including A7 confirmation/auth primitives; B1–B6 may request reviewed transaction/provider migrations, locking,
 worker or configuration work. Infrastructure changes use the requesting phase branch and are
 co-reviewed by this workstream and the logical domain owner.
 
@@ -102,7 +104,9 @@ Choose domain semantics unilaterally, weaken constraints to satisfy tests, store
 
 ## Questions/escalation triggers
 
-Escalate schema/constraint conflicts, auth identity-model changes, public-vs-signed URL choice, migration ownership collisions or infrastructure requiring domain/API changes.
+Escalate schema/constraint conflicts, auth identity-model or MCP-audience changes,
+confirmation-secret handling, public-vs-signed URL choice, migration ownership collisions or
+infrastructure requiring domain/API changes.
 
 See `../../MASTER_DEVELOPMENT_PLAN.md`, `../../PHASE_EXECUTION.md`, `../../DATA_MODEL.md`,
 `../../API.md` and `../../SECURITY.md`.
