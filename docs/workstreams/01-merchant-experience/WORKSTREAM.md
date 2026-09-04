@@ -39,7 +39,7 @@ Reads the corresponding catalog, policy, transaction and event tables only throu
 
 ## Relevant API/application services
 
-Merchant product CRUD/publish routes, dashboard-only publication-confirmation route, image upload/delete routes, policy read/update, review list/decision, transaction status and audit reads, and the AI-assisted product-draft extraction route (D-012).
+Merchant product CRUD/publish routes, dashboard-only publication-confirmation route, image upload/delete routes, policy read/update, review list/decision, transaction status and audit reads, and the AI-assisted product-draft extraction route (D-013).
 
 ## Relevant UI surfaces
 
@@ -70,7 +70,7 @@ Never trust route merchant IDs without server enforcement. Never accept/display 
 5. Build orders and audit views using simplified labels without collapsing backend states.
 6. In A7, add the explicit human confirmation/step-up handoff that requests a short-lived
    publication token without exposing that token to logs or persistent client storage.
-7. In A6, build the AI-assisted catalog creation flow (D-012): "Add with AI" as the primary
+7. In A6, build the AI-assisted catalog creation flow (D-013): "Add with AI" as the primary
    creation experience (conversational extraction → structured draft → merchant review →
    publish) with the manual form kept as secondary. The LLM proposes a DRAFT only through
    the frozen catalog services; it never writes to or publishes into the trusted catalog.
@@ -80,7 +80,7 @@ Never trust route merchant IDs without server enforcement. Never accept/display 
 This workstream is delivered primarily in `phase/a6-merchant-dashboard`, based on
 `feature/merchant-catalog`. UI shells or contract mocks may be prepared earlier only when explicitly
 included in the active phase scope. A6 must integrate the completed A2–A5 seams and must not repair
-missing backend behavior in UI code. Per D-012, A6 also delivers the AI-assisted catalog creation
+missing backend behavior in UI code. Per D-013, A6 also delivers the AI-assisted catalog creation
 flow ("Add with AI" primary, manual secondary); its extraction endpoint may be prepared as part of
 A6 and must produce DRAFT-only output through the frozen catalog services.
 

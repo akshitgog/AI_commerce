@@ -451,40 +451,116 @@ Resolves the open question in technical-questions.md about the exact SUCCEEDED c
 
 ---
 
-## D-012 � Merchant AI-assisted catalog creation in A6
+## D-012 — Execute A7 before A6 in the merchant lane
 
 Status: ACTIVE
 Date: 2026-09-04
-Branch: main (docs commit 928409f)
+Branch: phase/a7-merchant-mcp-readiness
+Owner: Human direction, recorded by Agent A
+
+### Decision
+
+Execute Phase A7 (`phase/a7-merchant-mcp-readiness`) immediately after A5 and before A6
+(`phase/a6-merchant-dashboard`), producing the ordering A5 → A7 → A6. All backend domain logic
+(catalog idempotency, publication-confirmation issuer/verifier) is completed before the merchant
+dashboard UI is built, so A6 consumes finalized, idempotent APIs.
+
+### Why
+
+A7 is pure backend domain logic: wrapping `create_product`, `update_product`, `publish_product`
+and `unpublish_product` with durable fingerprinted idempotency on the existing
+`idempotency_records` table, plus the 5-minute signed publication-confirmation token issuer and
+verification seam. A6 is the frontend dashboard. Building the UI against already-frozen idempotent
+services avoids rework when the confirmation handoff and idempotent semantics land.
+
+### Alternatives Considered
+
+- Follow the default WORKSTREAM 02 ordering (A6 then A7): rejected because the confirmation
+  claims' interactive dashboard button is an A7 integration contribution that does not depend on
+  A6 being built first, while A6 benefits from building against final A7 seams.
+
+### Consequences
+
+WORKSTREAM 02 line 80 ("A7 begins after the A6 dashboard and approved auth seam are available")
+is deliberately deviated from. A6 still owns the dashboard UI for the confirmation handoff; A7
+provides only the backend issuer/verifier services. MCP transport remains Workstream 05 (C7).
+No frozen contracts, DTOs, enums or DB schema change.
+
+### Evidence / Trigger
+
+Human direction during Phase A5 review (2026-09-04): "architecturally it is actually much better
+to do A7 before A6 … we can record this deliberate ordering in decisions.md and execute:
+A5 → A7 → A6."
+
+### Supersedes
+
+Refines D-006 and D-007; does not change their ownership boundaries.
+
+---
+
+## D-013 — Merchant AI-assisted catalog creation (draft-until-confirmed)
+
+Status: ACTIVE
+Date: 2026-09-04
+Branch: phase/a7-merchant-mcp-readiness (recorded); applies to A6
+
 Owner: Project team
 
 ### Decision
 
-Phase A6 includes an AI-assisted catalog creation flow: 'Add with AI' is the primary merchant path
-for product creation. The extraction endpoint (POST /merchants/{id}/products/extract-draft) returns
-a proposed ProductDraft only � it never persists; the human merchant reviews, edits, saves the
-draft, and publishes through the normal confirmation flow.
+Add merchant AI-assisted catalog creation to the product with a symmetric trust model:
+**AI proposes; the responsible principal authorizes.**
+
+- Primary UX: "✨ Add with AI" — a conversational flow where the merchant describes the
+  product in natural language (including price, stock and images) and an LLM extracts a
+  structured product draft.
+- Secondary UX: the manual product form remains fully functional — the LLM is an
+  enhancement, not a dependency of the catalog system.
+- The LLM output is a `CreateProductCommand`-shaped **draft** that must flow through the
+  frozen `MerchantCatalogService.create_product` (status DRAFT) and standard merchant
+  review before `publish_product`. The LLM never writes to the catalog directly and never
+  publishes.
+- AI-initiated publication via external AI/MCP clients additionally requires the A7
+  five-minute human-issued publication-confirmation token (D-007/D-009).
+
+The LLM may extract/propose: title, description, category, attributes, features, tags and
+AI-readable metadata (the latter lands via `ProductMetadata` enrichment only after merchant
+review, per WORKSTREAM 02). Sensitive merchant facts (price, currency, stock) may be
+extracted from what the merchant said, but do not become authoritative until the merchant
+confirms them in the review step.
 
 ### Why
 
-AI-assisted catalog creation demonstrates the merchant side of agentic commerce while keeping the
-AI propose-only: it cannot set trusted price, stock, currency, or publication state on its own.
+A merchant should not have to fill fifteen technical fields to become "AI-readable".
+Conversational extraction with a human confirmation gate gives the strongest
+agent-readable-catalog story while preserving the same philosophy as the buyer side:
+the buyer AI cannot self-authorize money; the merchant AI cannot self-publish facts.
+LLM extraction is input shaping, never a second catalog authority (D-002).
 
 ### Alternatives Considered
 
-- Manual form only.
-- Let the AI write directly to the catalog (rejected: no trusted-field mutation by AI).
+- Manual form only: rejected as the primary experience; kept as the secondary path.
+- LLM auto-publish to the trusted catalog: rejected — violates D-002 and the WORKSTREAM 02
+  rule that AI enrichment applies only after merchant review.
 
 ### Consequences
 
-The workstream 01 references to 'D-010' now point here (renumbered during the three-lane merge to
-avoid collision with transaction-lane decision numbering).
+- A6 scope grows: "Add with AI" as the primary creation flow (conversational screen,
+  structured draft card with Edit/Publish, 1–3 image upload within the conversation), with
+  a backend extraction endpoint (LLM → draft command shape; not persisted, or persisted as
+  DRAFT only). The buyer lane's `llm_client.py` pattern is reused/generalized for extraction.
+- Frozen contracts are unchanged: the extraction endpoint returns standard DTO shapes and
+  the publish path uses the existing frozen services. No database schema change.
+- WORKSTREAM 01 (A6) owns the UX and routes; WORKSTREAM 02 principles govern the trust
+  boundary; WORKSTREAM 05 (C7) is unaffected.
 
 ### Evidence / Trigger
 
-Docs commit 928409f added the A6 scope; the merge into an integrated ledger required a unique ID.
+Human direction, 2026-09-04, confirming merchant AI-assisted catalog creation as part of
+the project ("merchant AI-assisted catalog creation should be part of the project… its
+output is a draft until merchant confirmation").
 
 ### Supersedes
 
-None.
+None. Extends D-002; refines the A6 scope within D-006 boundaries.
 

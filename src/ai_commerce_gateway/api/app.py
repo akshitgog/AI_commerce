@@ -8,6 +8,7 @@ from uuid import uuid4
 from fastapi import FastAPI, Request
 from sqlalchemy import text
 
+from ai_commerce_gateway.api.merchant import merchant_router
 from ai_commerce_gateway.api.provider_callbacks import (
     ProviderVerificationService,
     create_provider_callback_router,
@@ -15,7 +16,10 @@ from ai_commerce_gateway.api.provider_callbacks import (
 from ai_commerce_gateway.application.composition import TransactionCompositionRoot
 from ai_commerce_gateway.core.config import get_settings
 from ai_commerce_gateway.core.errors import AppError, ErrorCode, install_error_handlers
-from ai_commerce_gateway.infrastructure.database.session import create_engine
+from ai_commerce_gateway.infrastructure.database.session import (
+    create_engine,
+    create_session_factory,
+)
 
 logger = logging.getLogger(__name__)
 _CORRELATION_ID_PATTERN = re.compile(r"^[A-Za-z0-9._:-]{1,128}$")
@@ -51,6 +55,13 @@ def create_app(
 
     app = FastAPI(title=settings.app_name, version="0.1.0", lifespan=lifespan)
     install_error_handlers(app)
+    app.include_router(merchant_router)
+
+    # Durable stores: sessions and confirmation JTIs persist in the database
+    # (per-request SQLAlchemy services built in the merchant router deps).
+    engine = create_engine(settings)
+    app.state.session_factory = create_session_factory(engine)
+
     callback_service = provider_verification_service
     if owned_composition_root is not None:
         callback_service = owned_composition_root.provider_verification

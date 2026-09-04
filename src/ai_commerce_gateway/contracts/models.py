@@ -23,8 +23,14 @@ class ContractModel(BaseModel):
 
 
 class Money(ContractModel):
+    """Trusted money: integer minor units plus explicit uppercase ISO currency.
+
+    Strictly rejects bools, floats (incl. NaN/Infinity), numeric strings and
+    any implicit/loose currency representation (P0-3).
+    """
+
     amount_minor: int = Field(ge=0, strict=True)
-    currency: str = Field(pattern=r"^[A-Z]{3}$")
+    currency: str = Field(pattern=r"^[A-Z]{3}$", strict=True)
 
 
 class ErrorBody(ContractModel):

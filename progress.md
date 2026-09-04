@@ -1106,3 +1106,141 @@ SUCCESS G�� B6 READY_FOR_REVIEW
 ### Next Step
 
 Merge B6 and move to B7/C0.
+
+---
+
+## Entry 015 — Phase A7: Merchant MCP Readiness & Idempotency
+
+Date/time:       2026-09-04
+Git branch:      phase/a7-merchant-mcp-readiness
+Commit:          ff64074
+Author/Agent:    Agent A (Merchant/Catalog Lane)
+Workstream:      02 Catalog/Merchant Domain
+Phase:           A7 `phase/a7-merchant-mcp-readiness`
+Status:          IMPLEMENTED — READY FOR REVIEW
+
+**Implemented:**
+1. **Domain: Idempotency** (`domain/idempotency.py`):
+   - `CatalogIdempotencyRecord` frozen dataclass with UTC validation
+   - `catalog_request_fingerprint()` — deterministic SHA-256 hash of actor + operation + merchant + product + idempotency_key + mutation fields
+   - `response_fingerprint()` — SHA-256 of serialised response body
+   - Operation constants: `CATALOG_CREATE_PRODUCT`, `CATALOG_UPDATE_PRODUCT`, `CATALOG_PUBLISH_PRODUCT`, `CATALOG_UNPUBLISH_PRODUCT`
+2. **Domain: Publication Confirmation** (`domain/publication_confirmation.py`):
+   - `PublicationConfirmationClaim` frozen dataclass (actor, merchant, product, version, action, issued_at, expires_at)
+   - `issue_publication_confirmation()` — HMAC-SHA256 signed base64url token with 5-minute default lifetime
+   - `verify_publication_confirmation()` — signature + expiry + payload validation
+   - Input validation on issuer (action format, empty fields, version >= 1)
+3. **Repository: IdempotencyRepository Protocol** (`domain/repositories.py`):
+   - `get()`, `claim()`, `save_result()` — aligned with B3 transaction-lane pattern
+4. **Infrastructure: SqlAlchemyMerchantIdempotencyRepository** (`infrastructure/database/merchant_idempotency.py`):
+   - Uses shared `idempotency_records` table with PostgreSQL/SQLite `INSERT ... ON CONFLICT DO NOTHING`
+   - Atomic claim, result persistence, domain mapping
+5. **Application: IdempotentCatalogService** (`application/catalog_idempotency.py`):
+   - Wraps frozen `MerchantCatalogService` — all four commands (create/update/publish/unpublish) idempotent
+   - Fingerprint-scoped: same key + same fingerprint → replay via `inner.get_product()`; same key + different fingerprint → 409
+   - Passthrough for non-mutation operations (get, list, images, merchants)
+6. **Application: PublicationConfirmationService** (`application/publication_confirmation_service.py`):
+   - `issue()` and `verify()` — thin wrapper over domain functions with configurable lifetime
+7. **Config** (`core/config.py`):
+   - `publication_confirmation_secret: str` — auto-generates random key in dev/test
+
+**Frozen surfaces unchanged:**
+- `MerchantCatalogService` Protocol ✓
+- All DTOs (`CreateProductCommand`, `UpdateProductCommand`, `SetProductPublicationCommand`, etc.) ✓
+- Enums ✓
+- DB schema (no migrations) ✓
+
+**Tests (24 new, 0 regressions):**
+- `test_a7_idempotency.py`: fingerprint determinism, first execution, same-key replay, different-key rejection, cross-merchant isolation, publish/unpublish/update idempotency, concurrent claim, restart persistence, publication confirmation issue/verify/expiry/tampering/wrong-secret/wrong-actor/wrong-action/wrong-version/invalid-action/empty-actor
+
+**Validation (post-A5 integration):**
+- `uv run ruff check .` → PASS (0 errors)
+- `uv run mypy` → PASS (0 issues, 33 source files)
+- `uv run pytest --cov=ai_commerce_gateway --cov-report=term-missing -rs` → PASS (190 passed, 27 skipped, 0 failed)
+- Includes A5's 17 storage tests (`test_product_storage_service.py`) after merging Phase A5 base.
+
+**A6 Obstruction Check:**
+A7 wraps the frozen `MerchantCatalogService` without modifying it. A6 (merchant dashboard) will consume the same frozen Protocol. The `PublicationConfirmationService` and `IdempotentCatalogService` are new services that A6 routes can optionally use. No obstruction to A6.
+
+**Deliberate Ordering Note:**
+A7 executed before A6 per D-007 and user direction: "architecturally it is actually much better to do A7 before A6" — all backend domain logic first, then dashboard UI builds against finalized idempotent APIs. Recorded as D-009 in decisions.md.
+
+---
+
+## Entry 016 — Phase A6: Merchant AI-Assisted Catalog Creation (Backend Extraction, D-013)
+
+Date/time:       2026-09-04
+Git branch:      phase/a6-merchant-dashboard
+Author/Agent:    Agent A (Merchant/Catalog Lane)
+Workstream:      01 Merchant Experience / 02 Catalog Domain
+Phase:           A6 phase/a6-merchant-dashboard (backend extraction slice)
+Status:          IMPLEMENTED — READY FOR REVIEW
+
+**Implemented:**
+1. **ProductDraftExtractor** (pplication/product_draft_extraction.py):
+   - ProductDraft propose-only schema (source, missing_fields, attributes)
+   - StubProductDraftExtractor: deterministic offline heuristics (rupee price, unit count, ports, title)
+   - LLMProductDraftExtractor: OpenAI-compatible chat completions, strict JSON schema prompt, null-for-unstated
+2. **Extraction endpoint** (pi/merchant/router.py):
+   - POST /merchants/{merchant_id}/products/extract-draft — propose-only, persisted: false
+   - Tenant-scoped demo actor from headers (real auth = A6 auth work); role-gated ADMIN/EDITOR
+   - Stub when no llm_api_key, real LLM when configured
+3. **Config**: llm_provider_url, llm_api_key (repr=False), llm_model — additive
+
+**Trust boundary (D-013):** endpoint has NO repository access — propose-only by construction; the merchant reviews the draft and creation/publication flow through the frozen MerchantCatalogService.
+
+**Tests (16 new):** stub heuristics, missing-field reporting, determinism, LLM valid/transport-failure/non-dict/never-invents, endpoint 200/400/403/422, no-persistence signature check.
+
+**Validation:**
+- uv run ruff check . -> PASS
+- uv run mypy -> PASS (33 source files)
+- uv run pytest -rs -> PASS (182 passed, 27 skipped, 0 failed)
+
+
+---
+
+## Entry 017 � A6/A7 Consolidated Merchant Lane (P0 Mission)
+
+Date/time:       2026-09-04
+Git branch:      phase/a6-merchant-dashboard
+Author/Agent:    Agent A (Merchant/Catalog Lane)
+Status:          IMPLEMENTED - READY FOR REVIEW
+
+**P0-1 Consolidation:** A7 merged into A6 branch; litellm replaces hand-rolled HTTP for LLM extraction; one coherent lane state.
+**P0-3 Money:** Money DTO hardened (strict=True): rejects bool/float/NaN/Infinity/numeric strings/negative/implicit currency; 31 adversarial tests.
+**P0-2 Auth boundary:** InMemoryMerchantSessionService; identity/roles resolved server-side from MerchantUserRepository; opaque bearer tokens; routes never read identity from request input; demotion takes effect mid-session.
+**P0-5 Publication boundary:** HS256 tokens with iss/aud/jti/sub/merchant/product/expected_version/action/iat/exp; verification of all claims; JTI one-time replay protection; version drift invalidates tokens; dashboard-only issuance (401 without session); token never enters SetProductPublicationCommand.
+**P0-4 Idempotency:** A7 wrapper wired into create/update/publish/unpublish routes; replay same fingerprint, 409 different fingerprint; concurrent/restart proven.
+**P0-6 Merchant APIs:** sessions issue/revoke, products CRUD/list/get, extract-draft (propose-only), publication-confirmations, publish/unpublish, policy get/update, reviews list; transaction/audit reads = 501 seams until integration (07).
+**P0-7 Audit:** structured catalog events (actor/action/tenant/target/correlation/causation/before-after/version) via allowlisted fields; secrets never logged; fixed Alembic fileConfig disabling existing loggers (test_migrations.py restores logger state).
+
+**Validation:**
+- ruff: PASS; mypy: PASS (40 files); alembic upgrade head --sql: PASS (no schema change)
+- pytest: 277 passed, 27 skipped (PostgreSQL integration, TEST_DATABASE_URL unset), 0 failed
+
+---
+
+## Entry 018 � Durable Session and Confirmation Stores (approved schema change)
+
+Date/time:       2026-09-04
+Git branch:      phase/a6-merchant-dashboard
+Author/Agent:    Agent A (Merchant/Catalog Lane)
+Status:          IMPLEMENTED - READY FOR REVIEW
+
+**Approved by human:** durable persistence for sessions and confirmation JTIs (P0-4 constraint lifted for this change).
+
+**Implemented:**
+1. **Schema** (migration b7f3c91d5e20, revises 2a8a78d61842):
+   - merchant_sessions: hashed-token store (SHA-256 token_hash; raw tokens never persisted), merchant FK, user, role, issued/expires/revoked timestamps
+   - used_confirmation_tokens: consumed JTIs with merchant/product context, expires_at for lazy eviction
+2. **SqlAlchemyMerchantSessionService** (infrastructure/database/merchant_sessions.py): same trust rules as in-memory (membership re-verified on resolve, mid-session demotion effective); sessions survive restarts; revocation persisted
+3. **SqlAlchemyUsedConfirmationStore** (infrastructure/database/merchant_confirmations.py): durable JTI replay protection; savepoint insert so a duplicate JTI never rolls back the caller's transaction; UsedConfirmationStore Protocol added
+4. **App wiring:** merchant routes now use the durable stores per request (no app-state singletons)
+5. **Frozen-surface discipline:** new_id prefix list left untouched after the freeze test caught a proposed addition; session row IDs generated locally
+
+**New tests (3):** session survives simulated restart (fresh engine/session/service), revocation persists across restarts, raw token never persisted; used-JTI persists across restart (replay after restart -> 409).
+
+**Validation:**
+- ruff: PASS; mypy: PASS (42 files)
+- pytest: 280 passed, 27 skipped (PostgreSQL integration), 0 failed
+- alembic upgrade head --sql: PASS; migration upgrade/downgrade round-trip test updated for the two new tables

@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 from alembic import command
@@ -22,7 +23,27 @@ EXPECTED_TABLES = {
     "payment_attempts",
     "provider_webhooks",
     "transaction_events",
+    "merchant_sessions",
+    "used_confirmation_tokens",
 }
+
+
+def _preserve_logger_states() -> dict[str, bool]:
+    """Alembic's fileConfig disables existing loggers; snapshot to restore."""
+    manager = logging.Logger.manager
+    return {
+        name: logger.disabled
+        for name, logger in manager.loggerDict.items()
+        if isinstance(logger, logging.Logger)
+    }
+
+
+def _restore_logger_states(snapshot: dict[str, bool]) -> None:
+    manager = logging.Logger.manager
+    for name, was_disabled in snapshot.items():
+        logger = manager.loggerDict.get(name)
+        if isinstance(logger, logging.Logger):
+            logger.disabled = was_disabled
 
 
 def test_initial_migration_upgrades_and_downgrades(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]  # noqa: E501
@@ -31,12 +52,20 @@ def test_initial_migration_upgrades_and_downgrades(tmp_path: Path, monkeypatch) 
     monkeypatch.setenv("DATABASE_URL", database_url)
     get_settings.cache_clear()
 
-    config = Config("alembic.ini")
-    command.upgrade(config, "head")
+    logger_states = _preserve_logger_states()
+    try:
+        config = Config("alembic.ini")
+        command.upgrade(config, "head")
+    finally:
+        _restore_logger_states(logger_states)
 
     engine = create_engine(database_url)
     assert set(inspect(engine).get_table_names()) == EXPECTED_TABLES | {"alembic_version"}
 
-    command.downgrade(config, "base")
+    logger_states = _preserve_logger_states()
+    try:
+        command.downgrade(config, "base")
+    finally:
+        _restore_logger_states(logger_states)
     assert inspect(engine).get_table_names() == ["alembic_version"]
     engine.dispose()
