@@ -25,6 +25,8 @@ export default defineConfig({
       timeout: 120000,
       env: {
         APP_ENV: "test",
+        FIREWORKS_API_KEY: "",
+        LLM_API_KEY: "",
         DATABASE_URL: "sqlite:///e2e_test.db",
         BUYER_SESSIONS_ISSUER_KEY: "dev-issuer-key",
         BUYER_SESSIONS_SECRET: "test-session-secret",
@@ -39,6 +41,8 @@ export default defineConfig({
       timeout: 120000,
       env: {
         APP_ENV: "test",
+        FIREWORKS_API_KEY: "",
+        LLM_API_KEY: "",
         BACKEND_ORIGIN: "http://127.0.0.1:8000",
         BUYER_SESSIONS_ISSUER_KEY: "dev-issuer-key",
         E2E_BUYER_ID: "buyer_1",

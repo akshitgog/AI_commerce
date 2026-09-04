@@ -10,6 +10,7 @@ import {
   ScrollText,
   Settings,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -17,6 +18,7 @@ import { cn } from "@/lib/utils";
 export const merchantNavItems = [
   { href: "/merchant", label: "Overview", icon: LayoutDashboard },
   { href: "/merchant/products", label: "Products", icon: Package },
+  { href: "/merchant/ai-catalog", label: "AI Assistant", icon: Sparkles },
   { href: "/merchant/policy", label: "Policy", icon: ShieldCheck },
   { href: "/merchant/review", label: "Review Queue", icon: Inbox },
   { href: "/merchant/transactions", label: "Transactions", icon: ReceiptText },

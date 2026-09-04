@@ -25,6 +25,9 @@ class TransactionQueryRepository(Protocol):
     def list_transactions(
         self, merchant_id: str, cursor: str | None
     ) -> tuple[tuple[Transaction, ...], str | None]: ...
+    def list_transactions_for_buyer(
+        self, buyer_id: str, cursor: str | None
+    ) -> tuple[tuple[Transaction, ...], str | None]: ...
     def list_events(
         self, transaction_id: str, cursor: str | None
     ) -> tuple[tuple[TransactionEventView, ...], str | None]: ...
@@ -142,6 +145,25 @@ class TransactionApplicationService:
         self, merchant_id: str, actor: ActorContext, cursor: str | None = None
     ) -> TransactionPage:
         return self._queries.list_for_merchant(merchant_id, actor, cursor)
+
+    def list_for_buyer(
+        self, buyer_id: str, actor: ActorContext, cursor: str | None = None
+    ) -> TransactionPage:
+        if actor.buyer_id != buyer_id:
+            from ai_commerce_gateway.core.errors import AppError, ErrorCode
+            raise AppError(ErrorCode.FORBIDDEN, "Not authorized.")
+        with self._unit_of_work_factory() as unit_of_work:
+            transactions, next_cursor = unit_of_work.repository.list_transactions_for_buyer(
+                buyer_id, cursor
+            )
+            items = tuple(
+                _transaction_view(
+                    transaction,
+                    unit_of_work.repository.get_payment_attempt(transaction.id),
+                )
+                for transaction in transactions
+            )
+            return TransactionPage(items=items, next_cursor=next_cursor)
 
     def reconcile(
         self, command: ReconcileTransactionCommand, actor: ActorContext

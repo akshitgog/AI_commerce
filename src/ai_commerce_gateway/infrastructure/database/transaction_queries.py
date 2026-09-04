@@ -17,6 +17,37 @@ _PAGE_SIZE = 50
 class SqlAlchemyTransactionQueryRepository(SqlAlchemyExecutionRepository):
     """Stable, cursor-paginated read model over canonical transaction records."""
 
+    def list_transactions_for_buyer(
+        self, buyer_id: str, cursor: str | None
+    ) -> tuple[tuple[Transaction, ...], str | None]:
+        statement = select(models.Transaction).join(models.Proposal, models.Transaction.proposal_id == models.Proposal.id).where(
+            models.Proposal.buyer_id == buyer_id
+        )
+        if cursor is not None:
+            anchor = self._session.get(models.Transaction, cursor)
+            if anchor is None:
+                raise _invalid_cursor()
+            statement = statement.where(
+                or_(
+                    models.Transaction.created_at < anchor.created_at,
+                    and_(
+                        models.Transaction.created_at == anchor.created_at,
+                        models.Transaction.id < anchor.id,
+                    ),
+                )
+            )
+        records = list(
+            self._session.scalars(
+                statement.order_by(
+                    models.Transaction.created_at.desc(), models.Transaction.id.desc()
+                ).limit(_PAGE_SIZE + 1)
+            )
+        )
+        has_more = len(records) > _PAGE_SIZE
+        page = records[:_PAGE_SIZE]
+        next_cursor = page[-1].id if has_more else None
+        return tuple(_transaction_to_domain(record) for record in page), next_cursor
+
     def list_transactions(
         self, merchant_id: str, cursor: str | None
     ) -> tuple[tuple[Transaction, ...], str | None]:

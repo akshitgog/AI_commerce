@@ -450,6 +450,8 @@ def test_proposal_gate_flow_in_postgresql_when_configured() -> None:
     database_url = get_settings().test_database_url
     if not database_url:
         pytest.skip("database.test_url is not configured")
+    if "postgresql" not in database_url:
+        pass
     engine = create_engine(database_url, pool_pre_ping=True)
     connection = engine.connect()
     outer_transaction = connection.begin()

@@ -8,7 +8,7 @@ from secrets import token_urlsafe
 from typing import Any, Literal
 
 import yaml
-from pydantic import Field, SecretStr, model_validator
+from pydantic import Field, SecretStr, AliasChoices, model_validator
 from pydantic_settings import (
     BaseSettings,
     InitSettingsSource,
@@ -92,7 +92,7 @@ class Settings(BaseSettings):
 
     llm_provider: str = "openai"
     llm_model: str = "gpt-5.4-mini"
-    llm_api_key: SecretStr | None = None
+    llm_api_key: SecretStr | None = Field(default=None, validation_alias=AliasChoices("llm_api_key", "LLM_API_KEY", "FIREWORKS_API_KEY"))
     llm_base_url: str | None = None
     llm_temperature: float = Field(default=0.2, ge=0, le=2)
     llm_max_tool_steps: int = Field(default=8, ge=1, le=32)

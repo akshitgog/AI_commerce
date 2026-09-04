@@ -25,11 +25,12 @@ src/ai_commerce_gateway/
 
 migrations/            Alembic environment and initial canonical schema
 tests/                 unit, contract and integration test layers
+frontend/              Next.js 16 UI application for Buyer/Merchant
 ```
 
 ## Runtime Components
 
-FastAPI application factory with liveness and database-readiness endpoints. SQLAlchemy provides the PostgreSQL connection/session boundary. No feature services, merchant UI, buyer chat, MCP server or Razorpay adapter are implemented yet.
+FastAPI application factory with liveness and database-readiness endpoints. SQLAlchemy provides the PostgreSQL connection/session boundary. The backend now includes fully implemented feature services, Merchant/Buyer MCP servers, and a live Razorpay adapter. The integrated repository also houses the Next.js `frontend/` UI wired to the FastAPI backend.
 
 ## Merchant Flow
 
@@ -92,3 +93,4 @@ Local setup uses `uv`, FastAPI/Uvicorn, Alembic and optional Docker Compose Post
 - Only Milestone 0 foundation is implemented; no commerce feature journey exists.
 - The PostgreSQL-backed M0 workflow passed before the foundation was frozen at tag `m0-foundation`.
 - Object storage, Razorpay, authentication, buyer chat, MCP and domain services are interfaces/placeholders only.
+

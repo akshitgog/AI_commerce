@@ -7,9 +7,9 @@ wrapper (A7); publication additionally requires a dashboard-issued
 confirmation token (P0-5) that is verified and stripped here before the
 frozen ``MerchantCatalogService`` command is invoked.
 
-Transaction/audit read seams depend on the frozen ``TransactionService``,
-whose implementation is owned by the transaction lane and becomes available
-at integration (07); until then they answer 501 instead of fake data.
+Transaction and audit reads use the canonical, tenant-safe transaction query
+service over the same application database.  No payment-provider dependency is
+required for these read-only dashboard routes.
 """
 
 from __future__ import annotations
@@ -35,8 +35,12 @@ from ai_commerce_gateway.application.proposal_gates import MerchantGateApplicati
 from ai_commerce_gateway.application.publication_confirmation_service import (
     PublicationConfirmationService,
 )
+from ai_commerce_gateway.application.transaction_service import (
+    TransactionQueryApplicationService,
+)
 from ai_commerce_gateway.contracts.models import (
     ActorContext,
+    AuditPage,
     CreateProductCommand,
     MerchantDecisionView,
     MerchantPolicyView,
@@ -46,6 +50,8 @@ from ai_commerce_gateway.contracts.models import (
     ProductView,
     RecordMerchantDecisionCommand,
     SetProductPublicationCommand,
+    TransactionPage,
+    TransactionView,
     UpdateMerchantPolicyCommand,
     UpdateProductCommand,
 )
@@ -80,6 +86,9 @@ from ai_commerce_gateway.infrastructure.database.merchant_sessions import (
 )
 from ai_commerce_gateway.infrastructure.database.proposal_gates import (
     SqlAlchemyProposalGateRepository,
+)
+from ai_commerce_gateway.infrastructure.database.transaction_queries import (
+    SqlAlchemyTransactionQueryUnitOfWork,
 )
 
 router = APIRouter(prefix="/merchants", tags=["merchant"])
@@ -387,6 +396,19 @@ def update_product(
 # AI-assisted draft extraction (D-010) — propose-only
 # ---------------------------------------------------------------------------
 
+from ai_commerce_gateway.contracts.models import AddProductImageCommand
+@router.post("/{merchant_id}/products/{product_id}/images", status_code=201)
+def add_product_image(
+    merchant_id: str,
+    product_id: str,
+    body: AddProductImageCommand,
+    catalog: CatalogService,
+    actor: Annotated[ActorContext, Depends(get_merchant_actor)],
+) -> dict[str, Any]:
+    # Ensure URL is passed. The command is meant for a filename, but we will hack it to accept URL in filename for now.
+    res = catalog.add_product_image(body, actor)
+    return res.model_dump()
+
 @router.post("/{merchant_id}/products/extract-draft")
 def extract_product_draft(
     merchant_id: str, body: ExtractDraftBody, actor: MerchantActor, extractor: Extractor
@@ -580,28 +602,31 @@ def record_manual_decision(
 
 
 # ---------------------------------------------------------------------------
-# Transaction / audit read seams (owned by the transaction lane; 501 until 07)
+# Transaction / audit reads
 # ---------------------------------------------------------------------------
 
-def _transaction_not_wired() -> None:
-    raise AppError(
-        ErrorCode.INTERNAL_ERROR,
-        "Transaction reads are wired at integration (07).",
-        status_code=501,
+def get_transaction_query_service(request: Request) -> TransactionQueryApplicationService:
+    factory = request.app.state.session_factory
+    return TransactionQueryApplicationService(
+        lambda: SqlAlchemyTransactionQueryUnitOfWork(factory)
     )
 
 
-_TransactionSvc = Annotated[None, Depends(_transaction_not_wired)]
+TransactionQuerySvc = Annotated[
+    TransactionQueryApplicationService,
+    Depends(get_transaction_query_service),
+]
 
 
 @router.get("/{merchant_id}/transactions")
 def list_transactions(
     merchant_id: str,
     actor: MerchantActor,
+    service: TransactionQuerySvc,
     cursor: str | None = None,
-    _svc: _TransactionSvc = None,
-) -> None:
-    """Will return the merchant's transactions via TransactionService."""
+) -> TransactionPage:
+    """Return the authenticated merchant's persisted transactions."""
+    return service.list_for_merchant(merchant_id, actor, cursor)
 
 
 @router.get("/{merchant_id}/transactions/{transaction_id}")
@@ -609,9 +634,10 @@ def get_transaction(
     merchant_id: str,
     transaction_id: str,
     actor: MerchantActor,
-    _svc: _TransactionSvc = None,
-) -> None:
-    """Will return a transaction status via TransactionService."""
+    service: TransactionQuerySvc,
+) -> TransactionView:
+    """Return one tenant-authorized transaction status."""
+    return service.get_status(transaction_id, actor)
 
 
 @router.get("/{merchant_id}/transactions/{transaction_id}/audit")
@@ -619,7 +645,8 @@ def get_transaction_audit(
     merchant_id: str,
     transaction_id: str,
     actor: MerchantActor,
+    service: TransactionQuerySvc,
     cursor: str | None = None,
-    _svc: _TransactionSvc = None,
-) -> None:
-    """Will return the audit trail via TransactionService."""
+) -> AuditPage:
+    """Return the persisted causal event history for one transaction."""
+    return service.get_audit(transaction_id, actor, cursor)

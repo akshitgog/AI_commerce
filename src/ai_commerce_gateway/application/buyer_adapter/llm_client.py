@@ -1,11 +1,14 @@
 """LLM client abstraction for chat orchestration (P0-2).
 
-The production client is selected from YAML configuration:
+The production client is selected from runtime configuration:
 
-* ``llm.api_key`` configured -> litellm-backed provider client
+* ``LLM_API_KEY`` configured in the environment -> litellm-backed provider client
   (``OpenAILLMClient``).
 * not configured -> deterministic local fallback (``StubLLMClient``) so the
   chat surface stays exercisable in development and tests without a provider.
+
+Non-secret provider, model, base URL, temperature, and step-bound settings
+remain in YAML. API keys are environment/secret-manager values only.
 
 Both clients implement the same ``LLMClient`` protocol and receive only the
 bounded tool surface from the orchestrator.
@@ -91,12 +94,13 @@ class StubLLMClient:
             "search" in last_user_message
             or "find" in last_user_message
             or "catalog" in last_user_message
+            or "coffee" in last_user_message
         ):
             return LLMResponse(
                 tool_calls=[
                     ToolCall(
                         name="search_catalog",
-                        arguments={"merchant_id": "mer_demo_001", "query": last_user_message},
+                        arguments={"merchant_id": "mer_demo"},
                     )
                 ]
             )
@@ -111,8 +115,8 @@ class StubLLMClient:
                     ToolCall(
                         name="create_purchase_proposal",
                         arguments={
-                            "merchant_id": "mer_demo_001",
-                            "product_id": "prod_demo_001",
+                            "merchant_id": "mer_demo",
+                            "product_id": "prod_001",
                             "quantity": 1,
                         },
                     )
@@ -206,6 +210,7 @@ class OpenAILLMClient:
             }
             if self.settings.llm_base_url:
                 completion_kwargs["base_url"] = self.settings.llm_base_url
+            litellm.drop_params = True
             response = litellm.completion(**completion_kwargs)
 
             message = response.choices[0].message

@@ -13,12 +13,12 @@ from ai_commerce_gateway.infrastructure.database.models import (
     Product,
 )
 
-database_url = os.getenv("DATABASE_URL", "sqlite:///e2e_test.db")
+database_url = os.getenv("DATABASE_URL", "sqlite:///commerce_dev.db")
 parsed_url = make_url(database_url)
 if parsed_url.drivername != "sqlite" or parsed_url.database is None:
     raise RuntimeError("The E2E seed script only accepts a dedicated SQLite database.")
-if os.path.basename(parsed_url.database) != "e2e_test.db":
-    raise RuntimeError("Refusing to reset a SQLite database not named e2e_test.db.")
+if os.path.basename(parsed_url.database) != "commerce_dev.db":
+    raise RuntimeError("Refusing to reset a SQLite database not named commerce_dev.db.")
 
 engine = create_engine(database_url)
 Base.metadata.drop_all(engine)  # Start fresh every time.
@@ -67,4 +67,4 @@ with Session(engine) as session:
     session.add_all([merchant, merchant_user, buyer, policy, product])
     session.commit()
 
-print("E2E database seeded successfully at e2e_test.db")
+print("E2E database seeded successfully at commerce_dev.db")

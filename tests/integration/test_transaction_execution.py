@@ -566,6 +566,8 @@ def test_postgresql_concurrent_execution_creates_one_attempt_when_configured() -
     database_url = get_settings().test_database_url
     if not database_url:
         pytest.skip("database.test_url is not configured")
+    if "postgresql" not in database_url:
+        pass
 
     schema = f"b3_execution_{uuid4().hex}"
     administration_engine = create_engine(database_url, pool_pre_ping=True)

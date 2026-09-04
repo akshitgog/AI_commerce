@@ -6,6 +6,7 @@ with tenant/role, money, stale-version, idempotency and token defenses.
 """
 
 from collections.abc import Iterator
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
@@ -21,6 +22,7 @@ from ai_commerce_gateway.infrastructure.database.merchant_repositories import (
     SqlAlchemyMerchantRepository,
     SqlAlchemyMerchantUserRepository,
 )
+from ai_commerce_gateway.infrastructure.database import models
 from ai_commerce_gateway.infrastructure.database.models import Base
 
 
@@ -46,6 +48,7 @@ def client() -> Iterator[TestClient]:
             session.close()
 
     app = create_app()
+    app.state.session_factory = factory
     app.dependency_overrides[get_db_session] = override_db
 
     seed = factory()
@@ -81,6 +84,73 @@ def _token(client: TestClient, user_id: str, merchant_id: str = "mer_1") -> str:
 
 def _auth(token: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"}
+
+
+def _seed_transaction(client: TestClient) -> None:
+    now = datetime.now(UTC)
+    factory = client.app.state.session_factory
+    with factory() as session:
+        session.add_all(
+            [
+                models.Buyer(
+                    id="buyer_1",
+                    external_identity="buyer-one",
+                    status="ACTIVE",
+                ),
+                models.Product(
+                    id="prod_txn",
+                    merchant_id="mer_1",
+                    sku="TXN-SKU",
+                    title="Audited product",
+                    description="Used by merchant transaction route tests",
+                    category="Tests",
+                    price_minor=120000,
+                    currency="INR",
+                    available_quantity=5,
+                    status="PUBLISHED",
+                    version=1,
+                ),
+                models.PurchaseProposal(
+                    id="prop_txn",
+                    buyer_id="buyer_1",
+                    merchant_id="mer_1",
+                    product_id="prod_txn",
+                    product_version=1,
+                    quantity=1,
+                    unit_price_minor=120000,
+                    total_minor=120000,
+                    currency="INR",
+                    proposal_hash="proposal-hash-txn",
+                    status="ACCEPTED",
+                    expires_at=now + timedelta(minutes=10),
+                ),
+                models.Transaction(
+                    id="txn_1",
+                    proposal_id="prop_txn",
+                    buyer_authorization_id=None,
+                    merchant_decision_id=None,
+                    merchant_id="mer_1",
+                    buyer_id="buyer_1",
+                    amount_minor=120000,
+                    currency="INR",
+                    state="UNKNOWN",
+                ),
+                models.TransactionEvent(
+                    id="evt_1",
+                    transaction_id="txn_1",
+                    event_type="PROVIDER_OUTCOME_UNKNOWN",
+                    actor_type="SYSTEM",
+                    actor_id="payment-worker",
+                    reason_code="PROVIDER_TIMEOUT",
+                    previous_state="EXECUTING",
+                    new_state="UNKNOWN",
+                    correlation_id="corr_merchant_audit",
+                    provider_reference_redacted="order_***1234",
+                    metadata_json={"safe": "visible"},
+                ),
+            ]
+        )
+        session.commit()
 
 
 def _create_product(
@@ -407,16 +477,53 @@ class TestPolicyAndReviewRoutes:
         assert res.status_code == 200
 
 
-class TestTransactionReadSeams:
-    def test_transactions_not_wired_yet(self, client: TestClient):
+class TestTransactionReads:
+    def test_list_detail_and_audit_return_persisted_records(self, client: TestClient):
+        _seed_transaction(client)
         token = _token(client, "user_admin")
-        res = client.get("/merchants/mer_1/transactions", headers=_auth(token))
-        assert res.status_code == 501
 
-    def test_transaction_audit_not_wired_yet(self, client: TestClient):
-        token = _token(client, "user_admin")
+        res = client.get("/merchants/mer_1/transactions", headers=_auth(token))
+        assert res.status_code == 200, res.text
+        assert [item["id"] for item in res.json()["items"]] == ["txn_1"]
+        assert res.json()["items"][0]["state"] == "UNKNOWN"
+        assert res.json()["items"][0]["amount"] == {
+            "amount_minor": 120000,
+            "currency": "INR",
+        }
+
+        res = client.get("/merchants/mer_1/transactions/txn_1", headers=_auth(token))
+        assert res.status_code == 200, res.text
+        assert res.json()["proposal_id"] == "prop_txn"
+        assert res.json()["merchant_id"] == "mer_1"
+
         res = client.get("/merchants/mer_1/transactions/txn_1/audit", headers=_auth(token))
-        assert res.status_code == 501
+        assert res.status_code == 200, res.text
+        assert res.json()["items"] == [
+            {
+                "id": "evt_1",
+                "transaction_id": "txn_1",
+                "event_type": "PROVIDER_OUTCOME_UNKNOWN",
+                "actor_type": "SYSTEM",
+                "actor_id": "payment-worker",
+                "reason_code": "PROVIDER_TIMEOUT",
+                "previous_state": "EXECUTING",
+                "new_state": "UNKNOWN",
+                "correlation_id": "corr_merchant_audit",
+                "provider_reference_redacted": "order_***1234",
+                "metadata": {"safe": "visible"},
+                "created_at": res.json()["items"][0]["created_at"],
+            }
+        ]
+
+    def test_unknown_transaction_is_not_found(self, client: TestClient):
+        token = _token(client, "user_admin")
+        res = client.get("/merchants/mer_1/transactions/missing", headers=_auth(token))
+        assert res.status_code == 404
+
+    def test_cross_tenant_list_is_denied(self, client: TestClient):
+        token = _token(client, "user_admin")
+        res = client.get("/merchants/mer_2/transactions", headers=_auth(token))
+        assert res.status_code == 403
 
     def test_transactions_require_session(self, client: TestClient):
         res = client.get("/merchants/mer_1/transactions")

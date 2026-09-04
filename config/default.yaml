@@ -4,7 +4,7 @@ app:
   log_level: INFO
 
 database:
-  url: postgresql+psycopg://postgres:postgres@localhost:5432/ai_commerce_gateway
+  url: sqlite:///commerce_dev.db
   test_url: null
   pool_size: 5
   max_overflow: 10

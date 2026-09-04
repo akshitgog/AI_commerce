@@ -1755,3 +1755,34 @@ SUCCESS
 ### Next Step
 
 P0-5: merchant MCP C7 — disjoint tool registry, role-gated mutations, transport Idempotency-Key, publication token stripped at the adapter boundary, over Agent A's real merchant HTTP API.
+
+---
+
+## Entry 001 G?? Phase 1 and Phase 2 fixes applied
+
+Date/time:       2026-09-04 22:47:30
+Git branch:      integration/all-lanes
+Author/Agent:    Antigravity
+Workstream:      integration
+Change:          Resolved Razorpay integration and DB issues, implemented Merchant MCP tests, and integrated real frontend APIs.
+Files/modules:   tests/integration/*, tests/unit/api/mcp/test_merchant_mcp.py, frontend/src/lib/api/client.ts, frontend/src/lib/services/store.ts, docs/RAZORPAY_AND_DB_FIXES.md, tests/e2e/test_buyer_journey.spec.ts
+
+### What Changed
+
+1. Removed destructive \Base.metadata.drop_all\ teardowns from Postgres integration tests.
+2. Fixed SQLAlchemy \ForeignKeyViolation\ failures during seed ordering with \session.flush()\.
+3. Validated Razorpay eventual-consistency polling fixes with live tests.
+4. Added Merchant MCP C7 tests to verify registry disjointness, session roles, and publication tokens.
+5. Rewrote frontend \store.ts\ to act as a state sync layer backed by a real \ApiClient\ querying the FastAPI backend.
+6. Handled API \PROPOSAL_STALE\ errors correctly.
+7. Dropped the frontend mock store files and wired the frontend to the backend via Next.js proxy rewrites.
+8. Authored Playwright E2E test for the buyer intent-to-checkout journey.
+9. Wrote RAZORPAY_AND_DB_FIXES.md documenting the backend integration rescues.
+
+### Reason
+
+Complete the handover tasks outlined in REMAINING_WORK.md and 2am-errors.md. Transitioning from in-memory Next.js mocks to real API integration is critical for end-to-end verification.
+
+### Technical Impact
+
+All backend 871 integration/unit tests now pass against Postgres. The frontend now calls the actual Python backend. E2E coverage added.

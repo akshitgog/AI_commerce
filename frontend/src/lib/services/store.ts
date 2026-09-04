@@ -60,11 +60,13 @@ export interface CommerceActions {
   refreshTransaction(transactionId: string): Promise<Transaction>;
   getTransaction(id: string): Transaction | undefined;
   listTransactions(): Transaction[];
-  getAudit(transactionId: string): AuditEvent[];
+  loadAudit(transactionId: string): Promise<void>;
+    getAudit(transactionId: string): AuditEvent[];
   setDemoOutcome(o: DemoOutcome): void;
   playDemo(): void;
   demoReset(): void;
-  init(): Promise<void>;
+  chat(messages: { role: string; content: string }[]): Promise<any>;
+    init(): Promise<void>;
 }
 
 export function createCommerceStore() {
@@ -97,8 +99,35 @@ export function createCommerceStore() {
   }
 
   async function doInit(): Promise<void> {
-    await apiClient.loginBuyer();
-    await apiClient.loginMerchant("mer_demo", "user_1");
+    // 1. Cold Start Waiter (Poll Health)
+    let isAwake = false;
+    while (!isAwake) {
+      try {
+        const res = await fetch("/api/health/live", { cache: "no-store", signal: AbortSignal.timeout(2000) });
+        if (res.ok) {
+           isAwake = true;
+        } else {
+           setState({ _coldStartOverlay: true } as any);
+           await new Promise(r => setTimeout(r, 3000));
+        }
+      } catch (e) {
+        setState({ _coldStartOverlay: true } as any);
+        await new Promise(r => setTimeout(r, 3000));
+      }
+    }
+    setState({ _coldStartOverlay: false } as any);
+
+    // 2. Safe Logins
+    try {
+      await apiClient.loginBuyer();
+    } catch (e) {
+      console.warn("Failed to login buyer:", e);
+    }
+    try {
+      await apiClient.loginMerchant("mer_demo", "user_1");
+    } catch (e) {
+      console.warn("Failed to login merchant:", e);
+    }
 
     const [productsResult, policyResult, reviewsResult, txsResult] = await Promise.allSettled([
       apiClient.listProducts("mer_demo"),
@@ -147,6 +176,15 @@ export function createCommerceStore() {
   }
 
   const actions: CommerceActions = {
+    async chat(messages) {
+      const response = await apiClient.chat(messages);
+      if (response.ingestedProposals?.length) {
+        const newProposals = { ...state.proposals };
+        response.ingestedProposals.forEach((p: any) => { newProposals[p.id] = p; });
+        setState({ proposals: newProposals });
+      }
+      return response;
+    },
     async init() {
       await ensureInitialized();
     },
@@ -290,6 +328,11 @@ export function createCommerceStore() {
     },
     listTransactions() {
       return Object.values(state.transactions).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    },
+    async loadAudit(transactionId: string) {
+      if (state.audit[transactionId]) return;
+      const events = await apiClient.getMerchantTransactionEvents("mer_demo", transactionId);
+      setState({ audit: { ...state.audit, [transactionId]: events } });
     },
     getAudit(transactionId) {
       return state.audit[transactionId] ?? [];

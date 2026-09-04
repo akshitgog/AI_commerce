@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { ColdStartOverlay } from "@/components/cold-start-overlay";
 import { CommerceProvider } from "@/lib/services/provider";
 import "./globals.css";
 
@@ -28,6 +29,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         <CommerceProvider>
           {children}
+          <ColdStartOverlay />
         </CommerceProvider>
       </body>
     </html>

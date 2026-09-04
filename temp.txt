@@ -1,0 +1,111 @@
+Created At: 2026-09-04T18:22:16Z
+Completed At: 2026-09-04T18:22:16Z
+File Path: `file:///c:/Users/Galactus/OneDrive/Desktop/commerce-integrated/frontend/src/lib/services/store.ts`
+Total Lines: 244
+Total Bytes: 8808
+Showing lines 1 to 244
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: 
+2: import {
+3:   type ActorType,
+4:   type AuditEvent,
+5:   type Authorization,
+6:   type Merchant,
+7:   type MerchantDecision,
+8:   type Money,
+9:   type Policy,
+10:   type PolicyMode,
+11:   type Product,
+12:   type ProductImage,
+13:   type Proposal,
+14:   type ReviewItem,
+15:   type Transaction,
+16:   type TransactionState,
+17: } from "../types";
+18: 
+19: import { ApiClient } from "../api/client";
+20: 
+21: export type DemoOutcome =
+22:   | "auto_success"
+23:   | "manual_review"
+24:   | "recovery_success"
+25:   | "payment_failed";
+26: 
+27: export interface CommerceState {
+28:   merchant: Merchant;
+29:   buyerName: string;
+30:   products: Product[];
+31:   policy: Policy;
+32:   proposals: Record<string, Proposal>;
+33:   authorizations: Record<string, Authorization>;
+34:   decisions: Record<string, MerchantDecision>;
+35:   transactions: Record<string, Transaction>;
+36:   audit: Record<string, AuditEvent[]>;
+37:   reviews: ReviewItem[];
+38:   demoOutcome: DemoOutcome;
+39:   initialized: boolean;
+40: }
+41: 
+42: export interface CommerceActions {
+43:     searchCatalog(input: { query?: string; category?: string; maxPriceMinor?: number; }): Promise<Product[]>;
+44:     getProduct(productId: string): Promise<Product | undefined>;
+45:     createProduct(input: any): Promise<Product>;
+46:     updateProduct(productId: string, input: any): Promise<Product>;
+47:     publishProduct(productId: string): Promise<Product>;
+48:     unpublishProduct(productId: string): Promise<Product>;
+49:     deleteDraft(product
+<truncated 6386 bytes>
+ews;
+193:     },
+194:     async approveReview(proposalId) {
+195:         // Not implemented in API yet for merchant approval?
+196:         // Wait, "MERCHANT_REVIEW_REQUIRED" is handled? The API might have an endpoint for this.
+197:     },
+198:     async denyReview(proposalId, reason) {
+199:     },
+200:     async executeTransaction(proposalId) {
+201:         const t = await apiClient.executeTransaction(proposalId);
+202:         const p = state.proposals[proposalId];
+203:         if (p) t.productId = p.productId;
+204:         setState({ transactions: { ...state.transactions, [t.id]: t } });
+205:         return t;
+206:     },
+207:     async refreshTransaction(transactionId) {
+208:         const t = await apiClient.getTransaction(transactionId);
+209:         const p = state.proposals[t.proposalId];
+210:         if (p) t.productId = p.productId;
+211:         setState({ transactions: { ...state.transactions, [t.id]: t } });
+212:         
+213:         // Also fetch audit events
+214:         const events = await apiClient.getTransactionEvents(transactionId);
+215:         setState({ audit: { ...state.audit, [transactionId]: events } });
+216:         return t;
+217:     },
+218:     getTransaction(id) {
+219:         return state.transactions[id];
+220:     },
+221:     listTransactions() {
+222:         return Object.values(state.transactions).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+223:     },
+224:     getAudit(transactionId) {
+225:         return state.audit[transactionId] ?? [];
+226:     },
+227:     setDemoOutcome(o) {
+228:         setState({ demoOutcome: o });
+229:     },
+230:     playDemo() {},
+231:     demoReset() {},
+232:   };
+233:   
+234:   return {
+235:     getState: () => state,
+236:     subscribe: (listener: () => void) => {
+237:       listeners.add(listener);
+238:       return () => listeners.delete(listener);
+239:     },
+240:     actions
+241:   };
+242: }
+243: 
+244: 
+The above content shows the entire, complete file contents of the requested file.

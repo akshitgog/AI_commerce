@@ -89,17 +89,16 @@ def get_buyer_adapter(
 
 
 def get_tool_orchestrator(
+    request: Request,
     adapter: Annotated[BuyerAdapter, Depends(get_buyer_adapter)],
 ) -> ToolOrchestrator:
     """Build the bounded orchestrator with the configured LLM client.
 
-    The client comes from YAML configuration (``llm.*``); the step bound comes
-    from ``llm.max_tool_steps``. The deterministic fallback is used only when
+    Non-secret client settings and the step bound come from YAML; the API key
+    comes from the environment. The deterministic fallback is used only when
     no API key is configured and is logged loudly.
     """
-    from ai_commerce_gateway.core.config import get_settings
-
-    settings = get_settings()
+    settings = request.app.state.settings
     return ToolOrchestrator(
         llm_client=create_llm_client(settings),
         adapter=adapter,
@@ -358,6 +357,17 @@ def execute_transaction(
     txn = adapter.execute_transaction(actor, invocation, req)
     return {**txn.model_dump(), "correlation_id": invocation.correlation_id}
 
+
+@router.get("/transactions")
+def list_buyer_transactions(
+    actor: Annotated[ActorContext, Depends(get_buyer_actor)],
+    request: Request,
+    cursor: str | None = None,
+) -> dict[str, Any]:
+    root = request.app.state.transaction_composition_root
+    queries = root.transaction_query_service
+    page = queries.list_for_buyer(actor.buyer_id, actor, cursor)
+    return page.model_dump()
 
 @router.get("/transactions/{transaction_id}")
 def get_transaction_status(

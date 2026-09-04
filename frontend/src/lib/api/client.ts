@@ -293,6 +293,13 @@ export class ApiClient {
     return this.mapTransaction(data);
   }
 
+  async getMerchantTransactionEvents(merchantId: string, transactionId: string): Promise<AuditEvent[]> {
+    const data = await this.request("/merchants/" + merchantId + "/transactions/" + transactionId + "/audit", {
+        headers: this.merchantHeaders()
+    });
+    return data.items.map((item: any) => this.mapAuditEvent(item));
+  }
+
   async getTransactionEvents(transactionId: string): Promise<AuditEvent[]> {
     const data = await this.request("/v1/buyer/transactions/" + transactionId + "/events", {
         headers: this.buyerHeaders()
@@ -325,6 +332,18 @@ export class ApiClient {
         if (e?.error?.code === "NOT_IMPLEMENTED") return [];
         throw e;
     }
+  }
+
+  async chat(messages: { role: string; content: string }[]): Promise<any> {
+    const data = await this.request("/v1/buyer/chat", {
+        method: "POST",
+        headers: { ...this.buyerHeaders(), "Idempotency-Key": crypto.randomUUID() },
+        body: JSON.stringify({ messages })
+    });
+    const ingestedProposals = data.tool_results
+        ?.filter((tr: any) => tr.tool === "create_purchase_proposal" && tr.result)
+        ?.map((tr: any) => this.mapProposal(tr.result)) || [];
+    return { ...data, ingestedProposals };
   }
 
   // --- Mappers (snake_case -> camelCase) ---

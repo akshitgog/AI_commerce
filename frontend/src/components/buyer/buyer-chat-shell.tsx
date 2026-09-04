@@ -37,20 +37,6 @@ function newId(): string {
     ? crypto.randomUUID()
     : `chat-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
-// Lightweight intent parse for the demo. Never interprets financial
-// authorization from natural language — approval is a bounded button only.
-function parseIntent(text: string): { query: string; maxPriceMinor?: number } {
-  if (/charg|usb-c/i.test(text)) return { query: "charger", maxPriceMinor: 100000 };
-  if (/keyboard/i.test(text)) return { query: "keyboard" };
-  return { query: text };
-}
-
-function isRepeatBuyIntent(text: string): boolean {
-  // "buy it" (and similar) re-buys the most recently shown product.
-  // Product-specific requests ("buy the mechanical keyboard") still search.
-  return /^buy\b/i.test(text) && !/charg|usb-c|keyboard/i.test(text);
-}
-
 export function BuyerChatShell() {
   const { state, actions } = useCommerce();
 
@@ -74,46 +60,6 @@ export function BuyerChatShell() {
   }, [items.length, activeTransaction?.state]);
 
   const push = (item: ChatItem) => setItems((prev) => [...prev, item]);
-
-  const handleSearch = async (text: string) => {
-    const searchId = newId();
-    setBusy(true);
-    push({ id: searchId, kind: "searching" });
-    try {
-      const results = await actions.searchCatalog(parseIntent(text));
-      setItems((prev) => prev.filter((item) => item.id !== searchId));
-      if (results.length === 0) {
-        push({
-          id: newId(),
-          kind: "assistant-message",
-          text: "No matching published products found. Try changing your request.",
-        });
-        return;
-      }
-      push({
-        id: newId(),
-        kind: "assistant-message",
-        text:
-          results.length === 1
-            ? `I found a matching product from ${state.merchant.name}.`
-            : `I found ${results.length} matching products from ${state.merchant.name}.`,
-      });
-      for (const product of results) {
-        push({ id: newId(), kind: "product-result", productId: product.id });
-      }
-      setLastProductId(results[results.length - 1].id);
-    } catch {
-      setItems((prev) =>
-        prev.map((item) =>
-          item.id === searchId
-            ? { id: searchId, kind: "search-error", query: text }
-            : item,
-        ),
-      );
-    } finally {
-      setBusy(false);
-    }
-  };
 
   // Creates a purchase proposal only. This never authorizes or pays.
   const handleBuy = async (productId: string) => {
@@ -140,17 +86,67 @@ export function BuyerChatShell() {
     }
   };
 
-  const send = (text: string) => {
+  const send = async (text: string) => {
     const trimmed = text.trim();
-    // Never search before the catalog has loaded — init() populates
-    // state.products, and searching earlier would always report zero matches.
     if (!trimmed || busy || !state.initialized) return;
+
+    const searchId = newId();
     push({ id: newId(), kind: "buyer-message", text: trimmed });
-    if (isRepeatBuyIntent(trimmed) && lastProductId) {
-      void handleBuy(lastProductId);
-      return;
+    push({ id: searchId, kind: "searching" });
+    setBusy(true);
+
+    try {
+      const history = items
+        .filter((i) => i.kind === "buyer-message" || i.kind === "assistant-message")
+        .map((i) => ({
+          role: i.kind === "buyer-message" ? "user" : "assistant",
+          content: i.text,
+        }));
+      if (history.length === 0) {
+        history.push({ role: "system", content: `You are assisting a customer shopping at merchant ID: ${state.merchant.id}. Always use this merchant_id for tool calls.` });
+      }
+      history.push({ role: "user", content: trimmed });
+
+      const response = await actions.chat(history);
+      
+      setItems((prev) => prev.filter((item) => item.id !== searchId));
+
+      if (response.text) {
+        push({ id: newId(), kind: "assistant-message", text: response.text });
+      }
+
+      const toolCalls = response.tool_calls || [];
+
+      if (toolCalls.includes("search_catalog")) {
+        const results = response.tool_results?.find((tr: any) => tr.tool === "search_catalog")?.result?.items || [];
+        for (const product of results) {
+          push({ id: newId(), kind: "product-result", productId: product.id });
+        }
+        if (results.length > 0) {
+          setLastProductId(results[results.length - 1].id);
+        }
+      }
+
+      if (toolCalls.includes("create_purchase_proposal")) {
+        const proposal = response.tool_results?.find((tr: any) => tr.tool === "create_purchase_proposal")?.result;
+        if (proposal) {
+          push({ id: newId(), kind: "proposal", proposalId: proposal.id });
+          setActiveProposalId(proposal.id);
+          setLastProductId(proposal.product_id);
+        }
+      }
+
+    } catch (error) {
+      setItems((prev) =>
+        prev.map((item) =>
+          item.id === searchId
+            ? { id: searchId, kind: "search-error", query: trimmed }
+            : item,
+        ),
+      );
+    } finally {
+      setBusy(false);
     }
-    void handleSearch(trimmed);
   };
 
   const handleCancel = async (proposalId: string) => {
@@ -257,7 +253,7 @@ export function BuyerChatShell() {
             key={item.id}
             state="error"
             merchantName={state.merchant.name}
-            onRetry={() => void handleSearch(item.query)}
+            onRetry={() => void send(item.query)}
           />
         );
       case "product-result":

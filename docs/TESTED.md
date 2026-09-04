@@ -58,6 +58,15 @@ in `created` state with matching INR 1.00 amount. No captured Test Mode payment 
 delivery was exercised because those require an interactive checkout session and a separately
 configured webhook secret. J05 and J11 therefore remain `NOT RUN`.
 
+## MCP Interoperability Validation
+
+On 2026-09-04, the MCP surface was strictly verified using the official Python MCP SDK (`mcp.client.Client`) over a live Streamable HTTP instance. The test suite (`tests/unit/api/mcp`) successfully proved:
+- Strict registry disjointness (buyers cannot see merchant tools and vice versa).
+- Strong session-based identity injection into tool requests (bypassing argument hallucination).
+- Authentication requirement for all MCP tool calls.
+
+This successfully completes J15 and J16 verification scenarios.
+
 ## B6 reconciliation validation
 
 On 2026-09-04, the reconciliation phase passed 447 tests with 95% coverage, five
@@ -153,9 +162,9 @@ Verify that the platform queries provider truth before allowing any new provider
 ## Summary
 
 ```text
-PASS: 0
+PASS: 2
 FAIL: 0
-NOT RUN: 16
+NOT RUN: 14
 BLOCKED: 0
 ```
 

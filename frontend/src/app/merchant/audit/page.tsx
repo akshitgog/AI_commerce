@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ScrollText } from "lucide-react";
 
 import { useCommerce } from "@/lib/services/provider";
@@ -23,7 +23,7 @@ import { AuditTimeline } from "@/components/shared/audit-timeline";
 import { EmptyState } from "@/components/merchant/empty-state";
 
 export default function AuditPage() {
-  const { state } = useCommerce();
+  const { state, actions } = useCommerce();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const transactions = Object.values(state.transactions).sort((a, b) =>
@@ -32,6 +32,12 @@ export default function AuditPage() {
 
   const currentId = selectedId ?? transactions[0]?.id ?? null;
   const events = currentId ? (state.audit[currentId] ?? []) : [];
+
+  useEffect(() => {
+    if (currentId && !state.audit[currentId]) {
+      actions.loadAudit(currentId).catch(console.error);
+    }
+  }, [currentId, state.audit, actions]);
 
   const productTitle = (id: string) =>
     state.products.find((p) => p.id === id)?.title ?? id;

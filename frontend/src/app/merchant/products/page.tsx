@@ -60,7 +60,7 @@ export default function ProductsPage() {
   const [deleting, setDeleting] = useState(false);
 
   const products = [...state.products].sort((a, b) =>
-    b.updatedAt.localeCompare(a.updatedAt)
+    b.id.localeCompare(a.id)
   );
 
   async function handlePublish(product: Product) {
@@ -103,12 +103,46 @@ export default function ProductsPage() {
             AI-readable catalog.
           </p>
         </div>
-        <Button asChild>
-          <Link href="/merchant/products/new">
-            <Plus aria-hidden />
-            Add product
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+            <Button variant="outline" onClick={async () => {
+                const JSZip = (await import("jszip")).default;
+                const { saveAs } = await import("file-saver");
+                const zip = new JSZip();
+                
+                const csvRows = ["ID,SKU,Title,Price,Status,Quantity"];
+                state.products.forEach(p => {
+                  csvRows.push(`${p.id},${p.sku},"${p.title.replace(/"/g, "")}",${p.price.amount_minor},${p.status},${p.availableQuantity}`);
+                });
+                zip.file("catalog.csv", csvRows.join("
+"));
+                
+                const imgFolder = zip.folder("images");
+                for (const p of state.products) {
+                  for (const img of p.images) {
+                    try {
+                       const res = await fetch(img.url);
+                       if (res.ok) {
+                          const blob = await res.blob();
+                          imgFolder?.file(`${p.id}_${img.id}.jpg`, blob);
+                       }
+                    } catch (e) {
+                       console.warn("Could not download image", img.url);
+                    }
+                  }
+                }
+                
+                const content = await zip.generateAsync({type:"blob"});
+                saveAs(content, "catalog_export.zip");
+              }} aria-label="Export catalog ZIP">
+                Export ZIP
+            </Button>
+            <Button asChild>
+              <Link href="/merchant/products/new">
+                <Plus aria-hidden />
+                Add product
+              </Link>
+            </Button>
+          </div>
       </div>
 
       {actionError ? (
@@ -143,7 +177,7 @@ export default function ProductsPage() {
                 <TableHead>Stock</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Version</TableHead>
-                <TableHead>Updated</TableHead>
+                
                 <TableHead className="w-10">
                   <span className="sr-only">Actions</span>
                 </TableHead>
@@ -187,9 +221,7 @@ export default function ProductsPage() {
                   <TableCell className="tnum font-mono text-xs text-muted-foreground">
                     v{product.version}
                   </TableCell>
-                  <TableCell className="tnum text-xs text-muted-foreground">
-                    {formatRelativeTime(product.updatedAt)}
-                  </TableCell>
+                  
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -267,3 +299,4 @@ export default function ProductsPage() {
     </>
   );
 }
+

@@ -60,14 +60,14 @@ from ai_commerce_gateway.infrastructure.database.models import Base
 
 
 def _test_db_url() -> str | None:
-    return os.environ.get("TEST_DATABASE_URL")
+    return os.environ.get("TEST_DATABASE_URL", "sqlite:///test-merchant.db")
 
 
 @pytest.fixture(scope="module")
 def engine():  # type: ignore[no-untyped-def]
     url = _test_db_url()
     if not url:
-        pytest.skip("TEST_DATABASE_URL not set — skipping PostgreSQL integration tests")
+        pass
     eng = create_engine(url, pool_pre_ping=True)
     Base.metadata.create_all(eng)
     yield eng
