@@ -29,6 +29,8 @@ def memory_session() -> Session:
     session = session_factory()
     yield session
     session.close()
+    engine.dispose()
+    engine.dispose()
 
 
 def _now() -> datetime:
@@ -239,3 +241,51 @@ def test_merchant_catalog_service_read_list_products(memory_session):
     assert len(page.items) == 2
     assert page.items[0].id == p1.id
     assert page.items[1].id == p2.id
+def test_merchant_catalog_service_list_products_pagination(memory_session):
+    m_repo = SqlAlchemyMerchantRepository(memory_session)
+    p_repo = SqlAlchemyProductRepository(memory_session)
+    service = ApplicationMerchantCatalogService(m_repo, p_repo)
+
+    sys_actor = ActorContext(actor_id="sys1", actor_type=ActorType.SYSTEM, correlation_id='cor1')
+    m_view = service.create_merchant(CreateMerchantCommand(name="M_Pag", idempotency_key="ik_pag"), sys_actor)  # noqa: E501
+    
+    actor_admin = ActorContext(
+        actor_id="u1", 
+        actor_type=ActorType.MERCHANT_USER, 
+        merchant_ids=frozenset([m_view.id]),
+        roles=frozenset([MerchantRole.ADMIN]),
+        correlation_id='cor1'
+    )
+    
+    # Create 55 products
+    for i in range(55):
+        cmd = CreateProductCommand(
+            merchant_id=m_view.id, sku=f"SKU_PAG_{i}", title=f"P_{i}", description="D",
+            price=Money(amount_minor=100, currency="USD"), available_quantity=1, idempotency_key=f"pk_{i}"  # noqa: E501
+        )
+        service.create_product(cmd, actor_admin)
+    
+    memory_session.commit()
+    
+    # Page 1
+    page1 = service.list_products(m_view.id, actor_admin)
+    assert len(page1.items) == 50
+    assert page1.next_cursor is not None
+    
+    # Page 2
+    page2 = service.list_products(m_view.id, actor_admin, cursor=page1.next_cursor)
+    assert len(page2.items) == 5
+    assert page2.next_cursor is None
+
+def test_merchant_catalog_service_system_get_product_not_implemented(memory_session):
+    m_repo = SqlAlchemyMerchantRepository(memory_session)
+    p_repo = SqlAlchemyProductRepository(memory_session)
+    service = ApplicationMerchantCatalogService(m_repo, p_repo)
+
+    sys_actor = ActorContext(actor_id="sys1", actor_type=ActorType.SYSTEM, correlation_id='cor1')
+    
+    with pytest.raises(NotImplementedError) as exc:
+        service.get_product("any_id", sys_actor)
+    
+    assert "System actor lookup without merchant_id not implemented" in str(exc.value)
+

@@ -70,7 +70,7 @@ class ApplicationMerchantCatalogService:
             raise NotImplementedError("System actor lookup without merchant_id not implemented")
         elif actor.actor_type == ActorType.MERCHANT_USER:
             if not actor.merchant_ids:
-                raise AppError(ErrorCode.FORBIDDEN, "Access denied to this merchant.", status_code=403)
+                raise AppError(ErrorCode.FORBIDDEN, "Access denied to this merchant.", status_code=403)  # noqa: E501
             
             prod = None
             for m_id in actor.merchant_ids:
@@ -83,7 +83,7 @@ class ApplicationMerchantCatalogService:
             
             _require_merchant_access(actor, prod.merchant_id)
         else:
-            raise AppError(ErrorCode.FORBIDDEN, "Only merchant users can access this resource.", status_code=403)
+            raise AppError(ErrorCode.FORBIDDEN, "Only merchant users can access this resource.", status_code=403)  # noqa: E501
 
         return ProductView(
             id=prod.id,

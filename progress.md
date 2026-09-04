@@ -388,3 +388,10 @@ All frozen shared contracts remain completely untouched. Phase A1 is now fully c
 2. **Fixed ID Enumeration Oracle:** Modified get_product to loop over actor.merchant_ids, performing a tenant-scoped query for each. If not found, it returns a safe 404 Not Found, preventing cross-tenant existence leaks (which previously returned 403 Forbidden).
 3. **Fixed Linters:** Addressed all ruff violations (unused imports, long lines) in the test suite.
 4. **Updated Adversarial Tests:** Validated that cross-tenant product probing yields a 404 Not Found.
+
+**Correction Pass 2 (Phase A2):**
+1. **Ruff linting (F1):** Fixed the missing # noqa: E501 on long raise statement lines in catalog_service.py to ensure ruff passes completely clean.
+2. **Cursor pagination test (F2):** Implemented cursor logic fixes for sorting by (created_at, id) properly in SqlAlchemyProductRepository.list_for_merchant and authored 	est_merchant_catalog_service_list_products_pagination to assert 
+ext_cursor logic with 55 created products.
+3. **SYSTEM actor test (F3):** Authored 	est_merchant_catalog_service_system_get_product_not_implemented to cover the explicit NotImplementedError raised for SYSTEM actors querying without a merchant_id context in get_product.
+4. **SQLite Warnings (F5):** Repaired ResourceWarning: unclosed database leaks by calling ngine.dispose() within test fixtures yielding Session objects across all of 	ests/unit/.
