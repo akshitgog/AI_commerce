@@ -49,6 +49,5 @@ def test_real_razorpay_test_mode_order_creation_and_lookup_when_configured() -> 
     assert lookup.provider_order_state == "created"
     assert lookup.provider_amount == order_command.amount
     print(
-        "Razorpay Test Mode order created and looked up: "
-        f"...{observation.provider_order_id[-6:]}"
+        f"Razorpay Test Mode order created and looked up: ...{observation.provider_order_id[-6:]}"
     )

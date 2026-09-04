@@ -48,9 +48,7 @@ class ExecutionRepository(Protocol):
         self, *, actor_id: str, operation: str, idempotency_key: str
     ) -> IdempotencyRecord | None: ...
 
-    def claim_idempotency(
-        self, record: IdempotencyRecord
-    ) -> tuple[IdempotencyRecord, bool]: ...
+    def claim_idempotency(self, record: IdempotencyRecord) -> tuple[IdempotencyRecord, bool]: ...
 
     def save_idempotency_result(
         self,
@@ -118,9 +116,7 @@ class TransactionExecutionApplicationService:
         self._clock = clock or (lambda: datetime.now(UTC))
         self._id_factory = id_factory
 
-    def execute(
-        self, command: ExecuteTransactionCommand, actor: ActorContext
-    ) -> TransactionView:
+    def execute(self, command: ExecuteTransactionCommand, actor: ActorContext) -> TransactionView:
         _require_buyer_actor(actor)
         request_hash = execution_request_fingerprint(
             actor_id=actor.actor_id,
@@ -346,9 +342,7 @@ class TransactionExecutionApplicationService:
             )
 
 
-def _get_locked_transaction(
-    repository: ExecutionRepository, transaction_id: str
-) -> Transaction:
+def _get_locked_transaction(repository: ExecutionRepository, transaction_id: str) -> Transaction:
     transaction = repository.lock_transaction(transaction_id)
     if transaction is None:
         raise AppError(ErrorCode.NOT_FOUND, "Transaction was not found.", status_code=404)
@@ -431,9 +425,7 @@ def _require_transaction_owner(actor: ActorContext, transaction: Transaction) ->
         raise AppError(ErrorCode.FORBIDDEN, "Buyer does not own this transaction.", status_code=403)
 
 
-def _transaction_view(
-    transaction: Transaction, attempt: PaymentAttempt | None
-) -> TransactionView:
+def _transaction_view(transaction: Transaction, attempt: PaymentAttempt | None) -> TransactionView:
     provider_phase = None
     if attempt is not None:
         provider_phase = ProviderPhase(

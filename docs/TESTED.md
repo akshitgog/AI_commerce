@@ -58,6 +58,19 @@ in `created` state with matching INR 1.00 amount. No captured Test Mode payment 
 delivery was exercised because those require an interactive checkout session and a separately
 configured webhook secret. J05 and J11 therefore remain `NOT RUN`.
 
+## B6 reconciliation validation
+
+On 2026-09-04, the reconciliation phase passed 447 tests with 95% coverage, five
+credential/PostgreSQL tests skipped. Ruff, mypy and offline Alembic validation passed.
+
+8 new B6 tests exercise: strict state-machine bounds for RECONCILING transitions;
+failing fast on missing payment attempts (no blind retry);
+restoring stuck transactions with paid order + captured payment to SUCCEEDED;
+gracefully falling back to PAYMENT_PENDING if order exists but payment is incomplete;
+preserving UNKNOWN if the provider lookup fails, allowing safe retry.
+All logic relies only on the verified provider lookup operations from B5, satisfying
+the timeout-after-dispatch safety guarantees without breaking B1-B3 idempotency rules.
+J05 and J11 remain `NOT RUN`.
 ## Allowed statuses
 
 - `PASS`: executed, matched expected behavior and evidence is linked.

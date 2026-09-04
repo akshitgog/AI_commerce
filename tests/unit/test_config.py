@@ -31,9 +31,7 @@ llm:
     )
 
 
-def test_default_and_local_yaml_deep_merge(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_default_and_local_yaml_deep_merge(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     _isolate(monkeypatch, tmp_path)
     _write(
         tmp_path / "config/local.yaml",

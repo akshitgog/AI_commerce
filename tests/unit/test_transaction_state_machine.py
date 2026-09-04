@@ -70,6 +70,7 @@ EXPECTED_TRANSITIONS = {
     TransactionState.EXECUTING: {
         TransactionState.PAYMENT_PENDING,
         TransactionState.UNKNOWN,
+        TransactionState.RECONCILING,
     },
     TransactionState.PAYMENT_PENDING: {TransactionState.VERIFYING},
     TransactionState.VERIFYING: {TransactionState.SUCCEEDED, TransactionState.FAILED},
@@ -78,6 +79,7 @@ EXPECTED_TRANSITIONS = {
         TransactionState.PAYMENT_PENDING,
         TransactionState.SUCCEEDED,
         TransactionState.FAILED,
+        TransactionState.UNKNOWN,
     },
     TransactionState.SUCCEEDED: set(),
     TransactionState.FAILED: set(),

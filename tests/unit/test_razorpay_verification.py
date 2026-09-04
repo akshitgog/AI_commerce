@@ -287,9 +287,7 @@ def test_order_lookup_maps_paid_truth() -> None:
 def test_order_lookup_mismatch_fails_closed(payload: dict[str, object]) -> None:
     with client_for(lambda _: httpx.Response(200, json=payload)) as client:
         with pytest.raises(RazorpayProtocolError):
-            adapter(client=client).lookup_order(
-                ProviderLookupCommand(provider_order_id=ORDER_ID)
-            )
+            adapter(client=client).lookup_order(ProviderLookupCommand(provider_order_id=ORDER_ID))
 
 
 @pytest.mark.parametrize(

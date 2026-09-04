@@ -42,9 +42,7 @@ class SqlAlchemyExecutionRepository(SqlAlchemyProposalGateRepository):
             clock=self._clock,
         )
 
-    def claim_idempotency(
-        self, record: IdempotencyRecord
-    ) -> tuple[IdempotencyRecord, bool]:
+    def claim_idempotency(self, record: IdempotencyRecord) -> tuple[IdempotencyRecord, bool]:
         existing = self.get_idempotency(
             actor_id=record.actor_id,
             operation=record.operation,
@@ -70,18 +68,14 @@ class SqlAlchemyExecutionRepository(SqlAlchemyProposalGateRepository):
             statement = (
                 postgresql_insert(models.IdempotencyRecord)
                 .values(**values)
-                .on_conflict_do_nothing(
-                    index_elements=["actor_id", "operation", "idempotency_key"]
-                )
+                .on_conflict_do_nothing(index_elements=["actor_id", "operation", "idempotency_key"])
                 .returning(models.IdempotencyRecord.id)
             )
         elif dialect_name == "sqlite":
             statement = (
                 sqlite_insert(models.IdempotencyRecord)
                 .values(**values)
-                .on_conflict_do_nothing(
-                    index_elements=["actor_id", "operation", "idempotency_key"]
-                )
+                .on_conflict_do_nothing(index_elements=["actor_id", "operation", "idempotency_key"])
                 .returning(models.IdempotencyRecord.id)
             )
         else:
@@ -245,9 +239,7 @@ class SqlAlchemyExecutionRepository(SqlAlchemyProposalGateRepository):
             provider_payment_state=record.provider_payment_state,
             capture_state=record.capture_state,
             last_verified_at=(
-                _as_utc(record.last_verified_at)
-                if record.last_verified_at is not None
-                else None
+                _as_utc(record.last_verified_at) if record.last_verified_at is not None else None
             ),
             created_at=_as_utc(record.created_at),
             updated_at=_as_utc(record.updated_at),

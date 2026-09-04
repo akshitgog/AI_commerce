@@ -19,10 +19,10 @@ import textwrap
 from datetime import UTC, datetime, timedelta
 
 import uvicorn
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, JSONResponse
-from sqlalchemy import create_engine, event, select, text
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy import create_engine, event, select
+from sqlalchemy.orm import sessionmaker
 
 # Adjust path so we can import from the project
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
@@ -56,6 +56,7 @@ KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET")
 if not KEY_ID or not KEY_SECRET:
     try:
         from ai_commerce_gateway.core.config import get_settings
+
         settings = get_settings()
         KEY_ID = settings.razorpay_key_id
         KEY_SECRET = (
@@ -119,9 +120,7 @@ def _seed() -> None:
 
         with session2:
             session2.add(models.Merchant(id=MERCHANT_ID, name="B5 Evidence Merchant"))
-            session2.add(
-                models.Buyer(id=BUYER_ID, external_identity="b5-evidence-buyer")
-            )
+            session2.add(models.Buyer(id=BUYER_ID, external_identity="b5-evidence-buyer"))
             session2.add(
                 models.Product(
                     id=PRODUCT_ID,
@@ -209,7 +208,9 @@ with SessionFactory() as session:
     )
     session.commit()
 
-print(f"✓ Transaction {TRANSACTION_ID} seeded in PAYMENT_PENDING with order ...{observation.provider_order_id[-6:]}")
+print(
+    f"✓ Transaction {TRANSACTION_ID} seeded in PAYMENT_PENDING with order ...{observation.provider_order_id[-6:]}"
+)
 
 # ---------------------------------------------------------------------------
 # Wire the real verification service
@@ -356,7 +357,9 @@ def verify_checkout(request_data: dict) -> dict:  # type: ignore[type-arg]
             print(f"  Last verified:   {result.provider_phase.last_verified_at}")
         print(f"  Order ID:        ...{request_data['razorpay_order_id'][-6:]}")
         print(f"  Payment ID:      ...{request_data['razorpay_payment_id'][-6:]}")
-        print(f"  Signature:       {request_data['razorpay_signature'][:8]}...{request_data['razorpay_signature'][-4:]}")
+        print(
+            f"  Signature:       {request_data['razorpay_signature'][:8]}...{request_data['razorpay_signature'][-4:]}"
+        )
         print("=" * 60)
 
         # Query and print audit events
@@ -370,7 +373,9 @@ def verify_checkout(request_data: dict) -> dict:  # type: ignore[type-arg]
             )
             print(f"\n  Audit trail ({len(events)} events):")
             for evt in events:
-                print(f"    {evt.previous_state} → {evt.new_state}  [{evt.reason_code}]  ref={evt.provider_reference_redacted}")
+                print(
+                    f"    {evt.previous_state} → {evt.new_state}  [{evt.reason_code}]  ref={evt.provider_reference_redacted}"
+                )
 
         print("\n✓ B5 evidence complete. Copy the above to docs/RAZORPAY_TEST_MODE.md")
         print("  Remember: do NOT commit credentials, full order/payment IDs, or raw signatures.\n")

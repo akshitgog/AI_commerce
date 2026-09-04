@@ -26,9 +26,7 @@ KEY_ID = "rzp_test_unit_key"
 KEY_SECRET = "unit-secret-never-log"
 
 
-def command(
-    *, amount_minor: int = 50_000, receipt: str = "txn_test"
-) -> CreateProviderOrderCommand:
+def command(*, amount_minor: int = 50_000, receipt: str = "txn_test") -> CreateProviderOrderCommand:
     return CreateProviderOrderCommand(
         transaction_id="txn_test",
         attempt_id="pay_test",
@@ -262,9 +260,7 @@ def test_checkout_requires_created_order_and_valid_description() -> None:
 
 def test_from_settings_requires_credentials_and_unwraps_secret_only_in_adapter() -> None:
     with pytest.raises(RazorpayConfigurationError):
-        RazorpayAdapter.from_settings(
-            Settings(razorpay_key_id=None, razorpay_key_secret=None)
-        )
+        RazorpayAdapter.from_settings(Settings(razorpay_key_id=None, razorpay_key_secret=None))
 
     settings = Settings(
         razorpay_key_id=KEY_ID,
