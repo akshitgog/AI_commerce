@@ -83,6 +83,9 @@ class FakeProposalService:
 
 
 class FakeAuthorizationService:
+    def __init__(self) -> None:
+        self.approve_calls: list[Any] = []
+
     def request(
         self, command: RequestAuthorizationCommand, actor: ActorContext
     ) -> BuyerAuthorizationView:
@@ -102,7 +105,22 @@ class FakeAuthorizationService:
         )
 
     def approve(self, command: Any, actor: ActorContext) -> BuyerAuthorizationView:
-        raise NotImplementedError()
+        """Record the approval and return an APPROVED view bound to the actor."""
+        self.approve_calls.append(command)
+        return BuyerAuthorizationView(
+            id="auth_123",
+            buyer_id=actor.actor_id,
+            proposal_id=command.proposal_id,
+            proposal_hash=command.proposal_hash,
+            merchant_id="mer_123",
+            product_id="prod_123",
+            max_quantity=command.max_quantity,
+            max_amount=command.max_amount,
+            authorized_by=actor.actor_id,
+            status=AuthorizationStatus.APPROVED,
+            expires_at=command.expires_at,
+            created_at=datetime.now(UTC),
+        )
 
 
 class FakeTransactionService:

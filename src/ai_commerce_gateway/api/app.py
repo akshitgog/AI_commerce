@@ -12,12 +12,17 @@ from ai_commerce_gateway.api.composition import (
     compose_default_buyer_services_factory,
 )
 from ai_commerce_gateway.api.mcp.buyer_server import create_buyer_mcp_server
-from ai_commerce_gateway.core.config import get_settings
+from ai_commerce_gateway.api.session_auth import BuyerSessionService
+from ai_commerce_gateway.core.config import Settings, get_settings
 from ai_commerce_gateway.core.errors import AppError, ErrorCode, install_error_handlers
 from ai_commerce_gateway.infrastructure.database.session import create_engine
 
 
-def create_app(services_factory: BuyerServicesFactory | None = None) -> FastAPI:
+def create_app(
+    services_factory: BuyerServicesFactory | None = None,
+    *,
+    settings: Settings | None = None,
+) -> FastAPI:
     """Build the buyer application.
 
     ``services_factory`` is the composition seam: every request (buyer chat,
@@ -26,10 +31,14 @@ def create_app(services_factory: BuyerServicesFactory | None = None) -> FastAPI:
     never falls back to stub services — it fails fast with remediation
     guidance when neither the integrated in-process services nor the remote
     trusted service URLs are available.
+
+    Buyer identity comes only from HMAC-signed session tokens verified by the
+    middleware below; ``X-Buyer-ID`` and request bodies are never trusted.
     """
 
-    settings = get_settings()
+    settings = settings or get_settings()
     factory = services_factory or compose_default_buyer_services_factory(settings)
+    session_service = BuyerSessionService.from_settings(settings)
 
     # Create the MCP server and its Streamable HTTP ASGI app.
     # streamable_http_path="/" so the mount path IS the endpoint
@@ -57,6 +66,8 @@ def create_app(services_factory: BuyerServicesFactory | None = None) -> FastAPI:
     # The composition seam is shared by the HTTP API and the MCP adapter so
     # both surfaces reach exactly the same application services.
     app.state.buyer_services_factory = factory
+    app.state.buyer_session_service = session_service
+    app.state.settings = settings
 
     # Mount MCP Streamable HTTP at /mcp/buyer.
     # The official SDK owns HTTP method/session/protocol behavior.
@@ -87,24 +98,28 @@ def create_app(services_factory: BuyerServicesFactory | None = None) -> FastAPI:
         return response
 
     @app.middleware("http")
-    async def auth_middleware(request: Request, call_next):  # type: ignore[no-untyped-def]
-        auth_header = request.headers.get("Authorization")
-        if auth_header and auth_header.startswith("Bearer "):
-            token = auth_header[7:]
-            # Simple simulation of trusted session middleware:
-            # In a real app, this would verify a JWT or session cookie against a provider.
-            # Here, we accept test tokens like "Bearer test_buyer_xyz" for tests.
-            if token.startswith("test_buyer_"):
-                from ai_commerce_gateway.contracts.models import ActorContext
-                from ai_commerce_gateway.domain.enums import ActorType
-                buyer_id = token[5:] # 'buyer_xyz'
-                request.state.actor_context = ActorContext(
-                    actor_id=buyer_id,
-                    actor_type=ActorType.BUYER,
-                    correlation_id=getattr(request.state, "correlation_id", "unknown")
-                )
-        return await call_next(request)
+    async def buyer_session_auth(request: Request, call_next):  # type: ignore[no-untyped-def]
+        """Resolve the buyer session token to a server-trusted ActorContext.
 
+        Identity comes only from the verified session token. Without a
+        configured session secret the gateway is fail-closed: no actor is
+        ever attached and buyer endpoints answer 401.
+        """
+        auth_header = request.headers.get("Authorization")
+        if session_service is not None and auth_header:
+            scheme, _, token = auth_header.partition(" ")
+            if scheme.lower() == "bearer" and token.strip():
+                actor = session_service.actor_context(
+                    token.strip(),
+                    correlation_id=getattr(
+                        request.state,
+                        "correlation_id",
+                        request.headers.get("X-Correlation-ID", "unknown"),
+                    ),
+                )
+                if actor is not None:
+                    request.state.actor_context = actor
+        return await call_next(request)
 
     @app.get("/health/live", tags=["health"])
     def live() -> dict[str, str]:

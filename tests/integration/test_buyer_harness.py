@@ -17,6 +17,7 @@ from ai_commerce_gateway.api.composition import (
     BuyerServicesFactory,
     static_bundle_factory,
 )
+from tests.conftest import buyer_headers, test_settings
 from tests.unit.application.buyer_adapter.fakes import (
     FakeAuthorizationService,
     FakeCatalogService,
@@ -55,7 +56,7 @@ async def running_server(harness_factory: BuyerServicesFactory) -> AsyncIterator
 
     port = _find_free_port()
     # Inject our harness factory into the app
-    app = create_app(services_factory=harness_factory)
+    app = create_app(services_factory=harness_factory, settings=test_settings())
 
     config = uvicorn.Config(app, host="127.0.0.1", port=port, log_level="error")
     server = uvicorn.Server(config)
@@ -85,10 +86,9 @@ async def test_buyer_harness_chat_parity(running_server: tuple[str, str]) -> Non
     """
     base_url, _ = running_server
 
-    auth_headers = {
-        "Authorization": "Bearer test_buyer_harness_test_001",
-        "X-Correlation-ID": "corr_chat_001",
-    }
+    auth_headers = buyer_headers(
+        "buyer_harness_001", correlation_id="corr_chat_001"
+    )
 
     async with httpx.AsyncClient(base_url=base_url) as client:
         # 1. Search Catalog

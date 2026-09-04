@@ -639,3 +639,59 @@ SUCCESS
 ### Next Step
 
 P0-3: buyer identity/security — replace the test-token middleware with server-trusted session authentication and verify buyer ownership enforcement end to end (including the human approve path).
+
+---
+
+## Entry 013 — P0-3 Server-trusted buyer sessions and human-only approval endpoint
+
+Date/time:       2026-09-04 (Asia/Calcutta)
+Git branch:      feature/buyer-ai-lane
+Commit:          <this commit>
+Author/Agent:    opencode buyer-lane agent (GLM)
+Workstream:      05-buyer-ai-mcp
+Change:          Replaced the test_buyer_* token simulation with HMAC-signed buyer session tokens, removed all trust of X-Buyer-ID/body identity, and added the human-only authorization approval endpoint
+Files/modules:   src/ai_commerce_gateway/api/session_auth.py (new), src/ai_commerce_gateway/api/app.py, src/ai_commerce_gateway/api/buyer_chat/router.py, src/ai_commerce_gateway/api/buyer_chat/dependencies.py, src/ai_commerce_gateway/core/config.py, config/default.yaml, config/local.example.yaml, pyproject.toml (itsdangerous), uv.lock, tests/conftest.py, tests/unit/api/test_buyer_sessions.py (new), tests/unit/application/buyer_adapter/test_chat_routes.py, tests/unit/application/buyer_adapter/fakes.py, tests/integration/test_buyer_harness.py
+
+### What Changed
+
+- New `BuyerSessionService` (api/session_auth.py): HMAC-signed, expiring buyer session tokens via itsdangerous URLSafeTimedSerializer (SHA-256). `issue()` mints server-side; `resolve()` verifies signature+expiry; `actor_context()` returns a server-trusted ActorContext or None. Without a configured secret the gateway is fail-closed (every buyer endpoint 401s).
+- `auth_middleware` replaced entirely: only `Authorization: Bearer <signed token>` is accepted; `X-Buyer-ID`, request bodies and query parameters can never set identity. The old `test_buyer_*` prefix acceptance is deleted from production code.
+- `POST /v1/buyer/sessions` mints tokens but is guarded by the configured issuer key (`buyer_sessions.issuer_key`, X-Session-Issuer-Key header); disabled (503) when unconfigured. This is the identity bootstrap seam a real identity provider would hold.
+- `POST /v1/buyer/purchase-proposals/{id}/approvals` is the human authorization handoff: the buyer UI replays exactly the terms shown (proposal_hash, max_quantity, max_amount, expiry); Idempotency-Key required. It is deliberately NOT exposed via BuyerAdapter, the AI tool surface or MCP — the approve capability is structurally absent there (asserted by test).
+- `create_app(..., settings=...)` is now an explicit DI seam; app.state carries settings + session service so routes never fall back to global config lookup.
+- 401s now use the canonical error envelope (AppError UNAUTHENTICATED) instead of bare HTTPException.
+- FakeAuthorizationService (tests only) now records approve calls and returns an APPROVED view bound to the session actor.
+
+### Reason
+
+P0-3 of the buyer-lane brief: production identity must come from server-trusted session middleware, never from client-supplied buyer IDs; ownership enforced on every call by passing the verified actor to the services (the transaction lane additionally re-checks proposal ownership server-side).
+
+### Technical Impact
+
+- All existing tests were migrated from opaque test tokens to real HMAC session tokens minted in conftest (`issue_buyer_token`), so the HTTP surface now always exercises the real session path.
+- New config section `buyer_sessions` (secret/issuer_key/ttl_seconds), strict-validated.
+- Security boundary confirmed: AI/MCP surfaces expose search/inspect/propose/request/execute/status/audit only; approval is human-UI-only.
+
+### Validation
+
+- `uv run ruff check .` — PASS
+- `uv run mypy` — PASS (37 files, 0 errors)
+- `uv run pytest` — 122 passed, 1 skipped (PostgreSQL-only test)
+- tests/unit/api/test_buyer_sessions.py covers: issuance issuer-key guards, no-token/arbitrary/tampered/foreign-secret/expired rejection (401), missing-secret fail-closed, X-Buyer-ID never trusted (unauthenticated and no override), body buyer-spoofing ignored, per-buyer identity scoping, human approve binding to the session actor with idempotency, and approve's structural absence from the AI/MCP adapter.
+
+### Evidence
+
+Test run above; issue/resolve flow exercised through the real TestClient surface.
+
+### Result
+
+SUCCESS
+
+### Problems / Limitations
+
+- The issuer-key issuance endpoint is the prototype identity bootstrap (explicitly documented as such); a production identity provider integration replaces it without touching the session token mechanism.
+- The MCP surface still uses the demo actor; wiring MCP to the same session identity is P0-4.
+
+### Next Step
+
+P0-4: finish buyer MCP — authenticated actor from the session layer inside MCP tools, buyer-only isolation checks, and real HTTP interop tests.

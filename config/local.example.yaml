@@ -32,5 +32,10 @@ buyer_services:
   transaction_base_url: null
   timeout_seconds: 10.0
 
+buyer_sessions:
+  secret: replace-with-a-dedicated-random-secret
+  issuer_key: replace-with-a-dedicated-random-issuer-key
+  ttl_seconds: 3600
+
 merchant_mcp:
   publication_secret: replace-with-a-dedicated-random-secret

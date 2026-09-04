@@ -14,9 +14,10 @@ No financial logic lives here. No provider calls. No authorization grants.
 """
 
 from collections.abc import Iterator
+from datetime import datetime
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Header, Query, Request
 from pydantic import BaseModel, Field
 
 from ai_commerce_gateway.api.buyer_chat.dependencies import (
@@ -133,9 +134,76 @@ class ChatRequestBody(BaseModel):
     messages: list[ChatMessage]
 
 
+class CreateBuyerSessionBody(BaseModel):
+    """Session issuance request. Identity minting is server-side only and
+    requires the configured issuer key — it is never open to end users."""
+
+    buyer_id: str = Field(min_length=1, max_length=255)
+
+
+class ApproveAuthorizationBody(BaseModel):
+    """Exact human buyer approval, replaying the terms the buyer reviewed.
+
+    The buyer UI must display exactly these values and the human must send
+    them back unchanged; the trusted service re-validates them against the
+    proposal hash. The AI has no equivalent tool.
+    """
+
+    proposal_hash: str = Field(min_length=1, max_length=255)
+    max_quantity: int = Field(ge=1)
+    max_amount_minor: int = Field(ge=1)
+    currency: str = Field(pattern=r"^[A-Z]{3}$")
+    expires_at: datetime
+
+
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
+
+
+@router.post("/sessions", status_code=201)
+def create_buyer_session(
+    body: CreateBuyerSessionBody,
+    request: Request,
+    invocation: Annotated[InvocationContext, Depends(get_invocation_context)],
+    issuer_key: Annotated[str | None, Header(alias="X-Session-Issuer-Key")] = None,
+) -> dict[str, Any]:
+    """Mint a buyer session token. Guarded by the configured issuer key.
+
+    In a real deployment the identity provider/backoffice calls this with the
+    issuer key; it is disabled entirely when no issuer key is configured.
+    The token is the only accepted buyer identity for all buyer routes.
+    """
+    from ai_commerce_gateway.core.errors import AppError, ErrorCode
+
+    settings = request.app.state.settings
+    configured = settings.buyer_sessions_issuer_key
+    if configured is None:
+        raise AppError(
+            ErrorCode.UNAUTHENTICATED,
+            "Buyer session issuance is not configured on this deployment.",
+            status_code=503,
+        )
+    if not issuer_key or issuer_key != configured.get_secret_value():
+        raise AppError(
+            ErrorCode.FORBIDDEN,
+            "Invalid session issuer key.",
+            status_code=403,
+        )
+    session_service = getattr(request.app.state, "buyer_session_service", None)
+    if session_service is None:
+        raise AppError(
+            ErrorCode.UNAUTHENTICATED,
+            "Buyer session authentication is not configured on this deployment.",
+            status_code=503,
+        )
+    token, claims = session_service.issue(body.buyer_id)
+    return {
+        "session_token": token,
+        "buyer_id": claims.buyer_id,
+        "expires_at": claims.expires_at.isoformat(),
+        "correlation_id": invocation.correlation_id,
+    }
 
 
 @router.post("/catalog/search")
@@ -198,6 +266,48 @@ def request_authorization(
 ) -> dict[str, Any]:
     req = RequestAuthorizationRequest(proposal_id=proposal_id)
     auth = adapter.request_authorization(actor, invocation, req)
+    return {**auth.model_dump(), "correlation_id": invocation.correlation_id}
+
+
+@router.post("/purchase-proposals/{proposal_id}/approvals")
+def approve_authorization(
+    proposal_id: str,
+    body: ApproveAuthorizationBody,
+    actor: Annotated[ActorContext, Depends(get_buyer_actor)],
+    invocation: Annotated[InvocationContext, Depends(get_invocation_context)],
+    services: Annotated[BuyerServiceBundle, Depends(get_buyer_services)],
+) -> dict[str, Any]:
+    """Human buyer approval of a proposal authorization.
+
+    This endpoint is the human authorization handoff: it is deliberately NOT
+    exposed to the AI or the MCP adapter (no tool exists for it). The actor
+    comes from the server-trusted session; the terms must match exactly what
+    the buyer reviewed in the UI.
+    """
+    from ai_commerce_gateway.contracts.models import (
+        ApproveAuthorizationCommand,
+        Money,
+    )
+    from ai_commerce_gateway.core.errors import AppError, ErrorCode
+
+    if not invocation.idempotency_key:
+        raise AppError(
+            ErrorCode.VALIDATION_ERROR,
+            "Idempotency-Key is required for approvals.",
+            status_code=422,
+        )
+    command = ApproveAuthorizationCommand(
+        proposal_id=proposal_id,
+        proposal_hash=body.proposal_hash,
+        max_quantity=body.max_quantity,
+        max_amount=Money(
+            amount_minor=body.max_amount_minor,
+            currency=body.currency,
+        ),
+        expires_at=body.expires_at,
+        idempotency_key=invocation.idempotency_key,
+    )
+    auth = services.auth.approve(command, actor)
     return {**auth.model_dump(), "correlation_id": invocation.correlation_id}
 
 

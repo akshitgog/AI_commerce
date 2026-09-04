@@ -40,6 +40,16 @@ buyer_services:
   transaction_base_url: null
   timeout_seconds: 10.0
 
+buyer_sessions:
+  # HMAC secret for buyer session tokens. Without it the gateway is
+  # fail-closed: no buyer endpoint can authenticate.
+  secret: null
+  # Key required by POST /v1/buyer/sessions to mint buyer sessions. In a real
+  # deployment the identity provider/backoffice holds this; without it session
+  # issuance is disabled.
+  issuer_key: null
+  ttl_seconds: 3600
+
 merchant_mcp:
   publication_secret: null
   publication_audience: merchant-mcp-publication

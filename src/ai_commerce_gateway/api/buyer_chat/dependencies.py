@@ -2,15 +2,18 @@
 
 The transport layer is responsible for generating Invocation Context from
 request headers. The AI/tool layer never sees idempotency keys or correlation IDs.
+Buyer identity is derived exclusively from the server-trusted session set by
+the application middleware.
 """
 
 from typing import cast
 from uuid import uuid4
 
-from fastapi import Depends, Header, HTTPException, Request
+from fastapi import Depends, Header, Request
 
 from ai_commerce_gateway.application.buyer_adapter.schemas import InvocationContext
 from ai_commerce_gateway.contracts.models import ActorContext
+from ai_commerce_gateway.core.errors import AppError, ErrorCode
 from ai_commerce_gateway.domain.enums import ActorType
 
 
@@ -38,13 +41,17 @@ def get_buyer_actor(
     request: Request,
     correlation_id: str = Depends(get_correlation_id),
 ) -> ActorContext:
-    """Derive buyer actor from server-validated session/token.
+    """Derive the buyer actor exclusively from the server-trusted session.
 
-    In C2, actor_id comes from a header for demo purposes.
-    C3/C6 will replace with real authentication middleware.
-    The actor is never derived from body fields.
+    The session middleware populates ``request.state.actor_context`` only
+    after verifying the HMAC session token. Identity is never taken from
+    request bodies, query parameters or arbitrary headers.
     """
     actor_context = getattr(request.state, "actor_context", None)
     if not actor_context or actor_context.actor_type != ActorType.BUYER:
-        raise HTTPException(status_code=401, detail="Unauthorized: Buyer session required")
+        raise AppError(
+            ErrorCode.UNAUTHENTICATED,
+            "A valid buyer session is required.",
+            status_code=401,
+        )
     return cast(ActorContext, actor_context)

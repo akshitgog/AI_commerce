@@ -48,6 +48,11 @@ _CONFIG_SCHEMA: dict[str, dict[str, str]] = {
         "timeout_seconds": "razorpay_timeout_seconds",
         "checkout_name": "razorpay_checkout_name",
     },
+    "buyer_sessions": {
+        "secret": "buyer_sessions_secret",
+        "issuer_key": "buyer_sessions_issuer_key",
+        "ttl_seconds": "buyer_sessions_ttl_seconds",
+    },
     "buyer_services": {
         "mode": "buyer_services_mode",
         "catalog_base_url": "buyer_services_catalog_base_url",
@@ -102,6 +107,10 @@ class Settings(BaseSettings):
     buyer_services_catalog_base_url: str | None = None
     buyer_services_transaction_base_url: str | None = None
     buyer_services_timeout_seconds: float = Field(default=10.0, gt=0)
+
+    buyer_sessions_secret: SecretStr | None = None
+    buyer_sessions_issuer_key: SecretStr | None = None
+    buyer_sessions_ttl_seconds: int = Field(default=3600, ge=60, le=86400)
 
     merchant_mcp_publication_secret: SecretStr | None = None
     merchant_mcp_publication_audience: str = "merchant-mcp-publication"
