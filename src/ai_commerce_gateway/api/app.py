@@ -7,37 +7,34 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from ai_commerce_gateway.api.buyer_chat.router import router as buyer_chat_router
-from ai_commerce_gateway.api.buyer_chat.stubs import (
-    get_auth_service,
-    get_catalog_service,
-    get_proposal_service,
-    get_transaction_service,
+from ai_commerce_gateway.api.composition import (
+    BuyerServicesFactory,
+    compose_default_buyer_services_factory,
 )
 from ai_commerce_gateway.api.mcp.buyer_server import create_buyer_mcp_server
-from ai_commerce_gateway.application.buyer_adapter.adapter import BuyerAdapter
 from ai_commerce_gateway.core.config import get_settings
 from ai_commerce_gateway.core.errors import AppError, ErrorCode, install_error_handlers
 from ai_commerce_gateway.infrastructure.database.session import create_engine
 
 
-def _build_buyer_adapter() -> BuyerAdapter:
-    """Build a BuyerAdapter wired to the current stub services."""
-    return BuyerAdapter(
-        catalog=get_catalog_service(),
-        proposal=get_proposal_service(),
-        auth=get_auth_service(),
-        transaction=get_transaction_service(),
-    )
+def create_app(services_factory: BuyerServicesFactory | None = None) -> FastAPI:
+    """Build the buyer application.
 
+    ``services_factory`` is the composition seam: every request (buyer chat,
+    buyer UI API, buyer MCP) obtains the real application services through it.
+    When omitted, the default composition is selected from configuration and
+    never falls back to stub services — it fails fast with remediation
+    guidance when neither the integrated in-process services nor the remote
+    trusted service URLs are available.
+    """
 
-def create_app(buyer_adapter: BuyerAdapter | None = None) -> FastAPI:
     settings = get_settings()
+    factory = services_factory or compose_default_buyer_services_factory(settings)
 
     # Create the MCP server and its Streamable HTTP ASGI app.
     # streamable_http_path="/" so the mount path IS the endpoint
     # (avoids /mcp/buyer/mcp doubling).
-    adapter = buyer_adapter or _build_buyer_adapter()
-    buyer_mcp = create_buyer_mcp_server(adapter)
+    buyer_mcp = create_buyer_mcp_server(factory)
     mcp_asgi_app = buyer_mcp.streamable_http_app(
         streamable_http_path="/",
     )
@@ -57,11 +54,9 @@ def create_app(buyer_adapter: BuyerAdapter | None = None) -> FastAPI:
     install_error_handlers(app)
     app.include_router(buyer_chat_router, prefix="/v1")
 
-    # Override the adapter dependency in the router if one was provided
-    if buyer_adapter is not None:
-        from ai_commerce_gateway.api.buyer_chat.router import get_buyer_adapter
-
-        app.dependency_overrides[get_buyer_adapter] = lambda: buyer_adapter
+    # The composition seam is shared by the HTTP API and the MCP adapter so
+    # both surfaces reach exactly the same application services.
+    app.state.buyer_services_factory = factory
 
     # Mount MCP Streamable HTTP at /mcp/buyer.
     # The official SDK owns HTTP method/session/protocol behavior.
@@ -91,6 +86,26 @@ def create_app(buyer_adapter: BuyerAdapter | None = None) -> FastAPI:
         response.headers["X-Correlation-ID"] = request.state.correlation_id
         return response
 
+    @app.middleware("http")
+    async def auth_middleware(request: Request, call_next):  # type: ignore[no-untyped-def]
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+            # Simple simulation of trusted session middleware:
+            # In a real app, this would verify a JWT or session cookie against a provider.
+            # Here, we accept test tokens like "Bearer test_buyer_xyz" for tests.
+            if token.startswith("test_buyer_"):
+                from ai_commerce_gateway.contracts.models import ActorContext
+                from ai_commerce_gateway.domain.enums import ActorType
+                buyer_id = token[5:] # 'buyer_xyz'
+                request.state.actor_context = ActorContext(
+                    actor_id=buyer_id,
+                    actor_type=ActorType.BUYER,
+                    correlation_id=getattr(request.state, "correlation_id", "unknown")
+                )
+        return await call_next(request)
+
+
     @app.get("/health/live", tags=["health"])
     def live() -> dict[str, str]:
         return {"status": "ok"}
@@ -111,4 +126,21 @@ def create_app(buyer_adapter: BuyerAdapter | None = None) -> FastAPI:
     return app
 
 
-app = create_app()
+#: Lazily built ASGI entrypoint. ``uvicorn ai_commerce_gateway.api.app:app``
+#: resolves this attribute at server start, so the default composition (and
+#: its fail-fast guard against missing real services) runs at startup, not at
+#: import time. Tests import :func:`create_app` and inject their own seam.
+_APP: FastAPI | None = None
+
+
+def _get_or_build_app() -> FastAPI:
+    global _APP
+    if _APP is None:
+        _APP = create_app()
+    return _APP
+
+
+def __getattr__(name: str) -> object:
+    if name == "app":
+        return _get_or_build_app()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

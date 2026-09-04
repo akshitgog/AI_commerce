@@ -12,13 +12,17 @@ from mcp.client import Client
 from mcp.types import TextContent
 
 from ai_commerce_gateway.api.app import create_app
-from ai_commerce_gateway.api.buyer_chat.stubs import (
-    get_auth_service,
-    get_catalog_service,
-    get_proposal_service,
-    get_transaction_service,
+from ai_commerce_gateway.api.composition import (
+    BuyerServiceBundle,
+    BuyerServicesFactory,
+    static_bundle_factory,
 )
-from ai_commerce_gateway.application.buyer_adapter.adapter import BuyerAdapter
+from tests.unit.application.buyer_adapter.fakes import (
+    FakeAuthorizationService,
+    FakeCatalogService,
+    FakeProposalService,
+    FakeTransactionService,
+)
 
 
 def _find_free_port() -> int:
@@ -28,27 +32,30 @@ def _find_free_port() -> int:
 
 
 @pytest.fixture(scope="module")
-def harness_adapter() -> BuyerAdapter:
-    """Create a real BuyerAdapter (using stubs for now) for the integration tests.
+def harness_factory() -> BuyerServicesFactory:
+    """Create the composition seam with test fakes for the integration tests.
 
-    This fulfills the 'dependency replacement' requirement: in a real full-system E2E,
-    we would inject a database-backed adapter here.
+    This fulfills the 'dependency replacement' requirement through the same
+    seam production uses; a real full-system run injects the real services
+    here instead.
     """
-    return BuyerAdapter(
-        catalog=get_catalog_service(),
-        proposal=get_proposal_service(),
-        auth=get_auth_service(),
-        transaction=get_transaction_service(),
+    return static_bundle_factory(
+        BuyerServiceBundle(
+            catalog=FakeCatalogService(),
+            proposal=FakeProposalService(),
+            auth=FakeAuthorizationService(),
+            transaction=FakeTransactionService(),
+        )
     )
 
 
 @pytest.fixture
-async def running_server(harness_adapter: BuyerAdapter) -> AsyncIterator[tuple[str, str]]:
+async def running_server(harness_factory: BuyerServicesFactory) -> AsyncIterator[tuple[str, str]]:
     """Start the FastAPI app on a free port and yield the base URL and MCP URL."""
 
     port = _find_free_port()
-    # Inject our harness_adapter into the app
-    app = create_app(buyer_adapter=harness_adapter)
+    # Inject our harness factory into the app
+    app = create_app(services_factory=harness_factory)
 
     config = uvicorn.Config(app, host="127.0.0.1", port=port, log_level="error")
     server = uvicorn.Server(config)
@@ -78,8 +85,8 @@ async def test_buyer_harness_chat_parity(running_server: tuple[str, str]) -> Non
     """
     base_url, _ = running_server
 
-    headers = {
-        "X-Buyer-ID": "buyer_harness_test_001",
+    auth_headers = {
+        "Authorization": "Bearer test_buyer_harness_test_001",
         "X-Correlation-ID": "corr_chat_001",
     }
 
@@ -88,29 +95,24 @@ async def test_buyer_harness_chat_parity(running_server: tuple[str, str]) -> Non
         res_search = await client.post(
             "/v1/buyer/chat",
             json={"messages": [{"role": "user", "content": "search for demo products"}]},
-            headers=headers,
+            headers=auth_headers,
         )
         assert res_search.status_code == 200
         data = res_search.json()
         assert "search_catalog" in data["tool_calls"]
         assert data["correlation_id"] == "corr_chat_001"
 
-        # Extract product ID from the mock search result
+        # Extract product ID from the fake catalog search result
         tool_results = {r["tool"]: r["result"] for r in data["tool_results"]}
         assert "search_catalog" in tool_results
         product_id = tool_results["search_catalog"]["items"][0]["id"]
 
-        # 2. Create Proposal (Handoff trigger)
-        # Instead of natural language, we mock what the LLM tool orchestration would do
-        # by sending a direct API request since /v1/buyer/chat does not hold
-        # conversation state here.
-        # But wait, we can just test the direct API seams for true parity with MCP.
-        # Let's hit the direct /v1/buyer/ endpoints to test transport parity cleanly.
-
+        # 2. Create Proposal (Handoff trigger).
+        # Hit the direct /v1/buyer/ endpoints to test transport parity with MCP.
         res_prop = await client.post(
             "/v1/buyer/purchase-proposals",
             json={"merchant_id": "mer_demo_1", "product_id": product_id, "quantity": 1},
-            headers={"X-Buyer-ID": "buyer_harness_test_001", "Idempotency-Key": "idem_1"},
+            headers={**auth_headers, "Idempotency-Key": "idem_1"},
         )
         assert res_prop.status_code == 200
         proposal_id = res_prop.json()["id"]
@@ -119,7 +121,7 @@ async def test_buyer_harness_chat_parity(running_server: tuple[str, str]) -> Non
         res_auth = await client.post(
             f"/v1/buyer/purchase-proposals/{proposal_id}/authorization-requests",
             json={"proposal_id": proposal_id},
-            headers={"X-Buyer-ID": "buyer_harness_test_001", "Idempotency-Key": "idem_2"},
+            headers={**auth_headers, "Idempotency-Key": "idem_2"},
         )
         assert res_auth.status_code == 200
 
@@ -127,7 +129,7 @@ async def test_buyer_harness_chat_parity(running_server: tuple[str, str]) -> Non
         res_exec = await client.post(
             "/v1/buyer/transactions",
             json={"proposal_id": proposal_id},
-            headers={"X-Buyer-ID": "buyer_harness_test_001", "Idempotency-Key": "idem_3"},
+            headers={**auth_headers, "Idempotency-Key": "idem_3"},
         )
         assert res_exec.status_code == 200
         txn_id = res_exec.json()["id"]
@@ -135,7 +137,7 @@ async def test_buyer_harness_chat_parity(running_server: tuple[str, str]) -> Non
         # 5. Get Status
         res_status = await client.get(
             f"/v1/buyer/transactions/{txn_id}",
-            headers={"X-Buyer-ID": "buyer_harness_test_001"},
+            headers=auth_headers,
         )
         assert res_status.status_code == 200
         assert res_status.json()["id"] == txn_id

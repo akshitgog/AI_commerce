@@ -2,30 +2,28 @@
 
 Maps the 7 canonical buyer tool operations to FastAPI endpoints.
 Each route:
-  1. Extracts ActorContext from server-validated session (X-Buyer-ID header in demo).
+  1. Extracts ActorContext from server-validated session middleware.
   2. Extracts InvocationContext (correlation_id, idempotency_key) from HTTP headers.
   3. Constructs the typed request schema from the body.
-  4. Delegates to BuyerAdapter — which in turn calls canonical application services.
+  4. Delegates to BuyerAdapter — which in turn calls canonical application
+     services obtained per request from the composition seam on
+     ``app.state.buyer_services_factory``.
   5. Returns the canonical response, always including correlation_id.
 
 No financial logic lives here. No provider calls. No authorization grants.
 """
 
+from collections.abc import Iterator
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel, Field
 
 from ai_commerce_gateway.api.buyer_chat.dependencies import (
     get_buyer_actor,
     get_invocation_context,
 )
-from ai_commerce_gateway.api.buyer_chat.stubs import (
-    get_auth_service,
-    get_catalog_service,
-    get_proposal_service,
-    get_transaction_service,
-)
+from ai_commerce_gateway.api.composition import BuyerServiceBundle
 from ai_commerce_gateway.application.buyer_adapter.adapter import BuyerAdapter
 from ai_commerce_gateway.application.buyer_adapter.llm_client import StubLLMClient
 from ai_commerce_gateway.application.buyer_adapter.orchestrator import ToolOrchestrator
@@ -40,28 +38,42 @@ from ai_commerce_gateway.application.buyer_adapter.schemas import (
     SearchCatalogRequest,
 )
 from ai_commerce_gateway.contracts.models import ActorContext
-from ai_commerce_gateway.contracts.services import (
-    AuthorizationService,
-    CatalogService,
-    ProposalService,
-    TransactionService,
-)
 
 router = APIRouter(prefix="/buyer", tags=["buyer-chat"])
 
 
 # ---------------------------------------------------------------------------
-# Dependency: BuyerAdapter
+# Dependencies: composition seam (real services only; fakes in tests)
 # ---------------------------------------------------------------------------
 
 
+def get_buyer_services(request: Request) -> Iterator[BuyerServiceBundle]:
+    """Open the request-scoped application service bundle.
+
+    The context manager owns the unit of work: in-process composition
+    commits/rolls back the request session here, remote composition is a
+    no-op boundary. There is deliberately no stub fallback.
+    """
+    factory = getattr(request.app.state, "buyer_services_factory", None)
+    if factory is None:
+        raise RuntimeError(
+            "Buyer services factory is not configured on app.state. "
+            "create_app() must receive a BuyerServicesFactory or valid "
+            "buyer_services configuration."
+        )
+    with factory() as bundle:
+        yield bundle
+
+
 def get_buyer_adapter(
-    catalog: Annotated[CatalogService, Depends(get_catalog_service)],
-    proposal: Annotated[ProposalService, Depends(get_proposal_service)],
-    auth: Annotated[AuthorizationService, Depends(get_auth_service)],
-    transaction: Annotated[TransactionService, Depends(get_transaction_service)],
+    services: Annotated[BuyerServiceBundle, Depends(get_buyer_services)],
 ) -> BuyerAdapter:
-    return BuyerAdapter(catalog=catalog, proposal=proposal, auth=auth, transaction=transaction)
+    return BuyerAdapter(
+        catalog=services.catalog,
+        proposal=services.proposal,
+        auth=services.auth,
+        transaction=services.transaction,
+    )
 
 
 def get_tool_orchestrator(

@@ -1,11 +1,12 @@
-"""Buyer MCP Server — thin adapter over BuyerAdapter via the official MCP SDK.
+"""Buyer MCP Server — thin adapter over the composition seam via the official MCP SDK.
 
 Exposes the 7 canonical buyer tools over Streamable HTTP. Each tool maps
-one-to-one to BuyerAdapter methods. No business logic lives here.
+one-to-one to BuyerAdapter methods over the same real application services
+used by buyer chat and the buyer UI API. No business logic lives here.
 
-Identity note: X-Buyer-ID is DEMO IDENTITY PLUMBING only, not trusted
-production authentication. A real deployment would use a server-side
-session/token mechanism.
+Identity note: the current demo actor is temporary plumbing, not trusted
+production authentication; P0 hardening replaces it with the authenticated
+actor context from the server-side session layer.
 """
 
 import hashlib
@@ -15,6 +16,7 @@ from uuid import uuid4
 
 from mcp.server.mcpserver import MCPServer
 
+from ai_commerce_gateway.api.composition import BuyerServiceBundle, BuyerServicesFactory
 from ai_commerce_gateway.application.buyer_adapter.adapter import BuyerAdapter
 from ai_commerce_gateway.application.buyer_adapter.schemas import (
     CreatePurchaseProposalRequest,
@@ -36,7 +38,7 @@ _DEFAULT_DEMO_BUYER = "buyer_demo_001"
 
 
 def _make_actor(buyer_id: str | None = None) -> ActorContext:
-    """Build a demo ActorContext. X-Buyer-ID is demo plumbing only."""
+    """Build a demo ActorContext. Temporary plumbing only."""
     bid = buyer_id or _DEFAULT_DEMO_BUYER
     return ActorContext(
         actor_id=bid,
@@ -72,9 +74,18 @@ def _result_to_text(data: object) -> str:
     return json.dumps(data, default=str)
 
 
-def create_buyer_mcp_server(adapter: BuyerAdapter) -> MCPServer:
-    """Create and configure the Buyer MCP server with 7 tools."""
+def create_buyer_mcp_server(services_factory: BuyerServicesFactory) -> MCPServer:
+    """Create the Buyer MCP server with 7 tools over the composition seam."""
+
     mcp = MCPServer("ai-commerce-buyer")
+
+    def _adapter_from(bundle: BuyerServiceBundle) -> BuyerAdapter:
+        return BuyerAdapter(
+            catalog=bundle.catalog,
+            proposal=bundle.proposal,
+            auth=bundle.auth,
+            transaction=bundle.transaction,
+        )
 
     @mcp.tool()
     def search_catalog(
@@ -96,7 +107,9 @@ def create_buyer_mcp_server(adapter: BuyerAdapter) -> MCPServer:
             max_price_minor=max_price_minor,
             currency=currency,
         )
-        result = adapter.search_catalog(actor, invocation, req)
+        with services_factory() as services:
+            adapter = _adapter_from(services)
+            result = adapter.search_catalog(actor, invocation, req)
         items = [p.model_dump() for p in result.items]
         return json.dumps(
             {"items": items, "next_cursor": result.next_cursor},
@@ -109,7 +122,9 @@ def create_buyer_mcp_server(adapter: BuyerAdapter) -> MCPServer:
         actor = _make_actor()
         invocation = _make_invocation()
         req = GetProductRequest(product_id=product_id)
-        result = adapter.get_product(actor, invocation, req)
+        with services_factory() as services:
+            adapter = _adapter_from(services)
+            result = adapter.get_product(actor, invocation, req)
         return _result_to_text(result)
 
     @mcp.tool()
@@ -133,7 +148,9 @@ def create_buyer_mcp_server(adapter: BuyerAdapter) -> MCPServer:
             product_id=product_id,
             quantity=quantity,
         )
-        result = adapter.create_purchase_proposal(actor, invocation, req)
+        with services_factory() as services:
+            adapter = _adapter_from(services)
+            result = adapter.create_purchase_proposal(actor, invocation, req)
         return _result_to_text(result)
 
     @mcp.tool()
@@ -147,7 +164,9 @@ def create_buyer_mcp_server(adapter: BuyerAdapter) -> MCPServer:
         )
         invocation = _make_invocation(idempotency_key=idem_key)
         req = RequestAuthorizationRequest(proposal_id=proposal_id)
-        result = adapter.request_authorization(actor, invocation, req)
+        with services_factory() as services:
+            adapter = _adapter_from(services)
+            result = adapter.request_authorization(actor, invocation, req)
         return _result_to_text(result)
 
     @mcp.tool()
@@ -161,7 +180,9 @@ def create_buyer_mcp_server(adapter: BuyerAdapter) -> MCPServer:
         )
         invocation = _make_invocation(idempotency_key=idem_key)
         req = ExecuteTransactionRequest(proposal_id=proposal_id)
-        result = adapter.execute_transaction(actor, invocation, req)
+        with services_factory() as services:
+            adapter = _adapter_from(services)
+            result = adapter.execute_transaction(actor, invocation, req)
         return _result_to_text(result)
 
     @mcp.tool()
@@ -170,7 +191,9 @@ def create_buyer_mcp_server(adapter: BuyerAdapter) -> MCPServer:
         actor = _make_actor()
         invocation = _make_invocation()
         req = GetTransactionStatusRequest(transaction_id=transaction_id)
-        result = adapter.get_transaction_status(actor, invocation, req)
+        with services_factory() as services:
+            adapter = _adapter_from(services)
+            result = adapter.get_transaction_status(actor, invocation, req)
         return _result_to_text(result)
 
     @mcp.tool()
@@ -185,7 +208,9 @@ def create_buyer_mcp_server(adapter: BuyerAdapter) -> MCPServer:
             transaction_id=transaction_id,
             cursor=cursor,
         )
-        result = adapter.get_transaction_audit(actor, invocation, req)
+        with services_factory() as services:
+            adapter = _adapter_from(services)
+            result = adapter.get_transaction_audit(actor, invocation, req)
         items = [e.model_dump() for e in result.items]
         return json.dumps(
             {"items": items, "next_cursor": result.next_cursor},

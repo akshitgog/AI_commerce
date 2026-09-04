@@ -18,16 +18,18 @@ import pytest
 from fastapi.testclient import TestClient
 
 from ai_commerce_gateway.api.app import create_app
+from ai_commerce_gateway.api.composition import static_bundle_factory
+from tests.conftest import fake_service_bundle
 
 
 @pytest.fixture
 def client() -> TestClient:
-    app = create_app()
+    app = create_app(services_factory=static_bundle_factory(fake_service_bundle()))
     return TestClient(app, raise_server_exceptions=True)
 
 
 BUYER_HEADERS = {
-    "X-Buyer-ID": "buyer_test_001",
+    "Authorization": "Bearer test_buyer_test_001",
     "X-Correlation-ID": "corr_test_001",
 }
 

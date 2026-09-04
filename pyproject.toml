@@ -10,21 +10,24 @@ requires-python = ">=3.12"
 dependencies = [
   "alembic>=1.14,<2",
   "fastapi>=0.115,<1",
-  "httpx>=0.28,<1",
+  "litellm>=1.99.0",
   "mcp>=2.0,<3",
   "psycopg[binary]>=3.2,<4",
   "pydantic>=2.10,<3",
   "pydantic-settings>=2.7,<3",
+  "pyyaml>=6,<7",
   "sqlalchemy>=2.0.36,<3",
   "uvicorn[standard]>=0.34,<1",
 ]
 
 [dependency-groups]
 dev = [
+  "httpx>=0.28,<1",
   "mypy>=1.14,<2",
   "pytest>=8.3,<9",
   "pytest-cov>=6,<7",
   "ruff>=0.9,<1",
+  "types-pyyaml>=6,<7",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -46,4 +49,20 @@ select = ["E", "F", "I", "B", "UP"]
 python_version = "3.12"
 strict = true
 packages = ["ai_commerce_gateway"]
+
+# The buyer-lane composition root lazily imports the merchant/transaction
+# lane modules, which only exist in the integrated repository. On a
+# single-lane checkout these imports are intentionally absent (the app fails
+# fast instead), so mypy must not treat their absence as an error. The
+# override becomes a no-op once the integrated modules are present.
+[[tool.mypy.overrides]]
+module = [
+    "ai_commerce_gateway.application.buyer_catalog_service",
+    "ai_commerce_gateway.application.composition",
+    "ai_commerce_gateway.application.proposal_gates",
+    "ai_commerce_gateway.infrastructure.database.merchant_repositories",
+    "ai_commerce_gateway.infrastructure.database.proposal_gates",
+    "ai_commerce_gateway.providers.razorpay",
+]
+ignore_missing_imports = true
 

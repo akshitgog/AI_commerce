@@ -5,25 +5,37 @@ to verify:
 - initialize/connection succeeds
 - tools/list exposes exactly 7 tools with correct names
 - Input schemas are complete (derived from function signatures)
-- Valid tool calls reach BuyerAdapter and return results
+- Valid tool calls reach the application services through the composition
+  seam and return results
 - Invalid arguments are rejected
 - Adapter errors map safely to MCP errors
 """
 
 import json
+from dataclasses import dataclass, field
 
 import pytest
 from mcp.client import Client
 from mcp.types import TextContent
 
-from ai_commerce_gateway.api.buyer_chat.stubs import (
-    get_auth_service,
-    get_catalog_service,
-    get_proposal_service,
-    get_transaction_service,
+from ai_commerce_gateway.api.composition import (
+    BuyerServiceBundle,
+    BuyerServicesFactory,
+    static_bundle_factory,
 )
 from ai_commerce_gateway.api.mcp.buyer_server import create_buyer_mcp_server
-from ai_commerce_gateway.application.buyer_adapter.adapter import BuyerAdapter
+from ai_commerce_gateway.contracts.models import (
+    ActorContext,
+    CreateTransactionCommand,
+    ExecuteTransactionCommand,
+    TransactionView,
+)
+from tests.unit.application.buyer_adapter.fakes import (
+    FakeAuthorizationService,
+    FakeCatalogService,
+    FakeProposalService,
+    FakeTransactionService,
+)
 
 EXPECTED_TOOL_NAMES = sorted(
     [
@@ -38,20 +50,42 @@ EXPECTED_TOOL_NAMES = sorted(
 )
 
 
+@dataclass
+class RecordingTransactionService(FakeTransactionService):
+    """Fake transaction service that records commands for assertions."""
+
+    create_commands: list[CreateTransactionCommand] = field(default_factory=list)
+    execute_commands: list[ExecuteTransactionCommand] = field(default_factory=list)
+
+    def create(
+        self, command: CreateTransactionCommand, actor: ActorContext
+    ) -> TransactionView:
+        self.create_commands.append(command)
+        return super().create(command, actor)
+
+    def execute(
+        self, command: ExecuteTransactionCommand, actor: ActorContext
+    ) -> TransactionView:
+        self.execute_commands.append(command)
+        return super().execute(command, actor)
+
+
 @pytest.fixture
-def buyer_adapter() -> BuyerAdapter:
-    return BuyerAdapter(
-        catalog=get_catalog_service(),
-        proposal=get_proposal_service(),
-        auth=get_auth_service(),
-        transaction=get_transaction_service(),
+def services_factory() -> BuyerServicesFactory:
+    return static_bundle_factory(
+        BuyerServiceBundle(
+            catalog=FakeCatalogService(),
+            proposal=FakeProposalService(),
+            auth=FakeAuthorizationService(),
+            transaction=RecordingTransactionService(),
+        )
     )
 
 
 @pytest.mark.anyio
-async def test_initialize_succeeds(buyer_adapter: BuyerAdapter) -> None:
+async def test_initialize_succeeds(services_factory: BuyerServicesFactory) -> None:
     """MCP initialization/connection should succeed."""
-    mcp = create_buyer_mcp_server(buyer_adapter)
+    mcp = create_buyer_mcp_server(services_factory)
     async with Client(mcp) as client:
         # If we get here without exception, initialize succeeded
         tools = await client.list_tools()
@@ -60,10 +94,10 @@ async def test_initialize_succeeds(buyer_adapter: BuyerAdapter) -> None:
 
 @pytest.mark.anyio
 async def test_tools_list_exactly_seven(
-    buyer_adapter: BuyerAdapter,
+    services_factory: BuyerServicesFactory,
 ) -> None:
     """tools/list must expose exactly the 7 buyer tools."""
-    mcp = create_buyer_mcp_server(buyer_adapter)
+    mcp = create_buyer_mcp_server(services_factory)
     async with Client(mcp) as client:
         result = await client.list_tools()
         tool_names = sorted([t.name for t in result.tools])
@@ -73,10 +107,10 @@ async def test_tools_list_exactly_seven(
 
 @pytest.mark.anyio
 async def test_tool_schemas_are_complete(
-    buyer_adapter: BuyerAdapter,
+    services_factory: BuyerServicesFactory,
 ) -> None:
     """Every tool must have a non-empty inputSchema with properties."""
-    mcp = create_buyer_mcp_server(buyer_adapter)
+    mcp = create_buyer_mcp_server(services_factory)
     async with Client(mcp) as client:
         result = await client.list_tools()
         for tool in result.tools:
@@ -86,11 +120,11 @@ async def test_tool_schemas_are_complete(
 
 
 @pytest.mark.anyio
-async def test_search_catalog_reaches_adapter(
-    buyer_adapter: BuyerAdapter,
+async def test_search_catalog_reaches_services(
+    services_factory: BuyerServicesFactory,
 ) -> None:
-    """search_catalog should reach BuyerAdapter and return results."""
-    mcp = create_buyer_mcp_server(buyer_adapter)
+    """search_catalog should reach the catalog service and return results."""
+    mcp = create_buyer_mcp_server(services_factory)
     async with Client(mcp) as client:
         result = await client.call_tool(
             "search_catalog",
@@ -106,11 +140,11 @@ async def test_search_catalog_reaches_adapter(
 
 
 @pytest.mark.anyio
-async def test_get_product_reaches_adapter(
-    buyer_adapter: BuyerAdapter,
+async def test_get_product_reaches_services(
+    services_factory: BuyerServicesFactory,
 ) -> None:
-    """get_product should reach BuyerAdapter and return product."""
-    mcp = create_buyer_mcp_server(buyer_adapter)
+    """get_product should reach the catalog service and return product."""
+    mcp = create_buyer_mcp_server(services_factory)
     async with Client(mcp) as client:
         result = await client.call_tool(
             "get_product",
@@ -124,11 +158,11 @@ async def test_get_product_reaches_adapter(
 
 
 @pytest.mark.anyio
-async def test_create_purchase_proposal_reaches_adapter(
-    buyer_adapter: BuyerAdapter,
+async def test_create_purchase_proposal_reaches_services(
+    services_factory: BuyerServicesFactory,
 ) -> None:
     """create_purchase_proposal should reach ProposalService."""
-    mcp = create_buyer_mcp_server(buyer_adapter)
+    mcp = create_buyer_mcp_server(services_factory)
     async with Client(mcp) as client:
         result = await client.call_tool(
             "create_purchase_proposal",
@@ -147,11 +181,11 @@ async def test_create_purchase_proposal_reaches_adapter(
 
 
 @pytest.mark.anyio
-async def test_request_authorization_reaches_adapter(
-    buyer_adapter: BuyerAdapter,
+async def test_request_authorization_reaches_services(
+    services_factory: BuyerServicesFactory,
 ) -> None:
     """request_authorization maps to AuthorizationService."""
-    mcp = create_buyer_mcp_server(buyer_adapter)
+    mcp = create_buyer_mcp_server(services_factory)
     async with Client(mcp) as client:
         result = await client.call_tool(
             "request_authorization",
@@ -165,11 +199,11 @@ async def test_request_authorization_reaches_adapter(
 
 
 @pytest.mark.anyio
-async def test_execute_transaction_reaches_adapter(
-    buyer_adapter: BuyerAdapter,
+async def test_execute_transaction_reaches_services(
+    services_factory: BuyerServicesFactory,
 ) -> None:
     """execute_transaction maps to TransactionService."""
-    mcp = create_buyer_mcp_server(buyer_adapter)
+    mcp = create_buyer_mcp_server(services_factory)
     async with Client(mcp) as client:
         result = await client.call_tool(
             "execute_transaction",
@@ -183,11 +217,11 @@ async def test_execute_transaction_reaches_adapter(
 
 
 @pytest.mark.anyio
-async def test_get_transaction_status_reaches_adapter(
-    buyer_adapter: BuyerAdapter,
+async def test_get_transaction_status_reaches_services(
+    services_factory: BuyerServicesFactory,
 ) -> None:
     """get_transaction_status maps to TransactionService."""
-    mcp = create_buyer_mcp_server(buyer_adapter)
+    mcp = create_buyer_mcp_server(services_factory)
     async with Client(mcp) as client:
         result = await client.call_tool(
             "get_transaction_status",
@@ -201,11 +235,11 @@ async def test_get_transaction_status_reaches_adapter(
 
 
 @pytest.mark.anyio
-async def test_get_transaction_audit_reaches_adapter(
-    buyer_adapter: BuyerAdapter,
+async def test_get_transaction_audit_reaches_services(
+    services_factory: BuyerServicesFactory,
 ) -> None:
     """get_transaction_audit maps to TransactionService."""
-    mcp = create_buyer_mcp_server(buyer_adapter)
+    mcp = create_buyer_mcp_server(services_factory)
     async with Client(mcp) as client:
         result = await client.call_tool(
             "get_transaction_audit",
@@ -219,15 +253,15 @@ async def test_get_transaction_audit_reaches_adapter(
 
 
 @pytest.mark.anyio
-async def test_mcp_cannot_bypass_adapter(
-    buyer_adapter: BuyerAdapter,
+async def test_mcp_cannot_bypass_services(
+    services_factory: BuyerServicesFactory,
 ) -> None:
     """MCP must not expose any tools beyond the 7 buyer tools.
 
     This ensures an MCP client cannot access admin, merchant-only,
     or provider-level operations.
     """
-    mcp = create_buyer_mcp_server(buyer_adapter)
+    mcp = create_buyer_mcp_server(services_factory)
     async with Client(mcp) as client:
         result = await client.list_tools()
         tool_names = {t.name for t in result.tools}
@@ -243,30 +277,37 @@ async def test_mcp_cannot_bypass_adapter(
 
 
 @pytest.mark.anyio
-async def test_execute_transaction_is_idempotent(
-    buyer_adapter: BuyerAdapter,
-) -> None:
+async def test_execute_transaction_is_idempotent() -> None:
     """Mutating tools must derive deterministic idempotency keys on replay."""
-    from unittest.mock import patch
+    transaction_service = RecordingTransactionService()
+    factory = static_bundle_factory(
+        BuyerServiceBundle(
+            catalog=FakeCatalogService(),
+            proposal=FakeProposalService(),
+            auth=FakeAuthorizationService(),
+            transaction=transaction_service,
+        )
+    )
+    mcp = create_buyer_mcp_server(factory)
 
-    mcp = create_buyer_mcp_server(buyer_adapter)
+    async with Client(mcp) as client:
+        await client.call_tool(
+            "execute_transaction",
+            {"proposal_id": "prop_demo_001"},
+        )
+        await client.call_tool(
+            "execute_transaction",
+            {"proposal_id": "prop_demo_001"},
+        )
 
-    with patch.object(
-        buyer_adapter, "execute_transaction", wraps=buyer_adapter.execute_transaction
-    ) as mock_exec:
-        async with Client(mcp) as client:
-            await client.call_tool(
-                "execute_transaction",
-                {"proposal_id": "prop_demo_001"},
-            )
-            await client.call_tool(
-                "execute_transaction",
-                {"proposal_id": "prop_demo_001"},
-            )
-
-        assert mock_exec.call_count == 2
-        # Verify the same idempotency_key was passed both times
-        inv1 = mock_exec.call_args_list[0][0][1]
-        inv2 = mock_exec.call_args_list[1][0][1]
-        assert inv1.idempotency_key == inv2.idempotency_key
-        assert inv1.idempotency_key.startswith("idem_")
+    assert len(transaction_service.create_commands) == 2
+    assert len(transaction_service.execute_commands) == 2
+    # The derived idempotency key must be identical on replay so the real
+    # transaction service can deduplicate the physical provider order.
+    key_1 = transaction_service.create_commands[0].idempotency_key
+    key_2 = transaction_service.create_commands[1].idempotency_key
+    assert key_1 == key_2
+    assert key_1.startswith("idem_")
+    exec_key_1 = transaction_service.execute_commands[0].idempotency_key
+    exec_key_2 = transaction_service.execute_commands[1].idempotency_key
+    assert exec_key_1 == exec_key_2

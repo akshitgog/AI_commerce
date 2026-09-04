@@ -10,8 +10,6 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Protocol
 
-import httpx
-
 from ai_commerce_gateway.core.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -122,7 +120,7 @@ class StubLLMClient:
 
 
 class OpenAILLMClient:
-    """Real LLM client calling an OpenAI-compatible /v1/chat/completions endpoint."""
+    """Real LLM client calling via litellm."""
 
     def __init__(self) -> None:
         self.settings = get_settings()
@@ -135,14 +133,15 @@ class OpenAILLMClient:
                 "function": {
                     "name": t["name"],
                     "description": t["description"],
-                    # Using a permissive schema for the demo since Pydantic validates it anyway
-                    "parameters": {"type": "object", "properties": {}},
+                    "parameters": t.get("inputSchema", {"type": "object", "properties": {}}),
                 },
             }
             for t in tools
         ]
 
     def generate(self, messages: list[dict[str, Any]], tools: list[dict[str, Any]]) -> LLMResponse:
+        import litellm
+
         if not self.settings.llm_api_key:
             logger.warning("No LLM API key configured. Falling back to simple response.")
             return LLMResponse(text="[Simulation] Please configure LLM_API_KEY to enable AI.")
@@ -159,43 +158,37 @@ class OpenAILLMClient:
             ),
         }
 
-        payload = {
-            "model": self.settings.llm_model,
-            "messages": [system_prompt] + messages,
-            "tools": self._format_tools(tools),
-            "tool_choice": "auto",
-        }
-
-        headers = {
-            "Authorization": f"Bearer {self.settings.llm_api_key}",
-            "Content-Type": "application/json",
-        }
-
         try:
-            with httpx.Client(timeout=10.0) as client:
-                resp = client.post(self.settings.llm_provider_url, json=payload, headers=headers)
-                resp.raise_for_status()
+            completion_kwargs: dict[str, Any] = {
+                "model": self.settings.llm_model,
+                "messages": [system_prompt] + messages,
+                "tools": self._format_tools(tools),
+                "tool_choice": "auto",
+                "api_key": self.settings.llm_api_key.get_secret_value(),
+            }
+            if self.settings.llm_base_url:
+                completion_kwargs["base_url"] = self.settings.llm_base_url
+            response = litellm.completion(**completion_kwargs)
 
-            data = resp.json()
-            message = data["choices"][0]["message"]
+            message = response.choices[0].message
 
             tool_calls = None
-            if "tool_calls" in message and message["tool_calls"]:
+            if hasattr(message, "tool_calls") and message.tool_calls:
                 tool_calls = []
-                for tc in message["tool_calls"]:
+                for tc in message.tool_calls:
                     try:
                         args = (
-                            json.loads(tc["function"]["arguments"])
-                            if tc["function"]["arguments"]
+                            json.loads(tc.function.arguments)
+                            if tc.function.arguments
                             else {}
                         )
                     except json.JSONDecodeError:
                         args = {}
-                    tool_calls.append(ToolCall(name=tc["function"]["name"], arguments=args))
+                    tool_calls.append(ToolCall(name=tc.function.name, arguments=args))
 
-            return LLMResponse(text=message.get("content"), tool_calls=tool_calls)
+            return LLMResponse(text=message.content, tool_calls=tool_calls)
 
-        except httpx.HTTPError as e:
+        except Exception as e:
             logger.error(f"LLM API error: {e}")
             return LLMResponse(
                 text="I'm sorry, I'm having trouble connecting to my brain right now."

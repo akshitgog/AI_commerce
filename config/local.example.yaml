@@ -1,0 +1,36 @@
+# Copy this file to config/local.yaml and edit it for local development.
+# config/local.yaml is ignored by Git. Never commit real credentials.
+
+app:
+  environment: development
+  log_level: DEBUG
+
+database:
+  url: postgresql+psycopg://postgres:postgres@localhost:5432/ai_commerce_gateway
+  test_url: postgresql+psycopg://postgres:postgres@localhost:5432/ai_commerce_gateway_test
+
+llm:
+  provider: openai
+  model: gpt-5.4-mini
+  api_key: replace-locally
+
+storage:
+  provider: unconfigured
+
+razorpay:
+  key_id: replace-locally
+  key_secret: replace-locally
+
+buyer_services:
+  # Leave mode as in_process for the integrated single-process deployment.
+  # To point this gateway at separately deployed trusted services instead:
+  # mode: remote
+  # catalog_base_url: https://merchant-service.internal
+  # transaction_base_url: https://transaction-service.internal
+  mode: in_process
+  catalog_base_url: null
+  transaction_base_url: null
+  timeout_seconds: 10.0
+
+merchant_mcp:
+  publication_secret: replace-with-a-dedicated-random-secret

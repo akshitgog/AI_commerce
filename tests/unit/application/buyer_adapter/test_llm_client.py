@@ -1,7 +1,8 @@
-"""Deterministic tests for OpenAILLMClient (C3 I-1 fix).
+"""Deterministic tests for the litellm-backed LLM client.
 
-Uses unittest.mock to patch httpx.Client so no real HTTP calls are made.
-Verifies tool-call parsing, error handling, and missing API key fallback.
+Uses unittest.mock to patch ``litellm.completion`` so no real HTTP calls are
+made. Verifies tool-call parsing, error handling, and missing API key
+fallback. Tool-schema wiring is covered by the orchestrator tests.
 """
 
 import json
@@ -13,6 +14,12 @@ from ai_commerce_gateway.application.buyer_adapter.llm_client import (
     OpenAILLMClient,
 )
 
+_TEST_ENV = {
+    "LLM_API_KEY": "test-key-123",
+    "LLM_BASE_URL": "http://localhost:9999/v1",
+    "LLM_MODEL": "gpt-4o-mini",
+}
+
 
 @pytest.fixture(autouse=True)
 def _clear_settings_cache() -> None:
@@ -22,36 +29,30 @@ def _clear_settings_cache() -> None:
     get_settings.cache_clear()
 
 
-def _mock_openai_response(
+def _mock_litellm_response(
     content: str | None = None,
-    tool_calls: list[dict] | None = None,  # type: ignore[type-arg]
+    tool_calls: list[MagicMock] | None = None,
 ) -> MagicMock:
-    """Build a mock httpx Response matching OpenAI's chat completion shape."""
-    message: dict = {}  # type: ignore[type-arg]
-    if content is not None:
-        message["content"] = content
-    if tool_calls is not None:
-        message["tool_calls"] = tool_calls
-    else:
-        message["tool_calls"] = None
+    """Build a mock litellm completion response."""
+    message = MagicMock()
+    message.content = content
+    message.tool_calls = tool_calls
+    response = MagicMock()
+    response.choices = [MagicMock(message=message)]
+    return response
 
-    resp = MagicMock()
-    resp.status_code = 200
-    resp.raise_for_status = MagicMock()
-    resp.json.return_value = {
-        "choices": [{"message": message}],
-    }
-    return resp
+
+def _mock_tool_call(name: str, arguments: dict[str, object]) -> MagicMock:
+    tool_call = MagicMock()
+    tool_call.function.name = name
+    tool_call.function.arguments = json.dumps(arguments)
+    return tool_call
 
 
 class TestOpenAILLMClientMissingKey:
     """When LLM_API_KEY is not set, the client should fall back gracefully."""
 
-    @patch.dict(
-        "os.environ",
-        {"LLM_API_KEY": "", "LLM_PROVIDER_URL": "http://x"},
-        clear=False,
-    )
+    @patch.dict("os.environ", {"LLM_API_KEY": ""}, clear=False)
     def test_missing_key_returns_simulation_message(self) -> None:
         client = OpenAILLMClient()
         result = client.generate(
@@ -66,66 +67,38 @@ class TestOpenAILLMClientMissingKey:
 class TestOpenAILLMClientToolParsing:
     """When the LLM returns tool_calls, they should be parsed correctly."""
 
-    @patch.dict(
-        "os.environ",
-        {
-            "LLM_API_KEY": "test-key-123",
-            "LLM_PROVIDER_URL": "http://localhost:9999/v1/chat/completions",
-            "LLM_MODEL": "gpt-4o-mini",
-        },
-        clear=False,
-    )
-    @patch("ai_commerce_gateway.application.buyer_adapter.llm_client.httpx.Client")
-    def test_tool_call_parsing(self, mock_client_cls: MagicMock) -> None:
-        mock_resp = _mock_openai_response(
+    @patch.dict("os.environ", _TEST_ENV, clear=False)
+    @patch("litellm.completion")
+    def test_tool_call_parsing(self, mock_completion: MagicMock) -> None:
+        mock_completion.return_value = _mock_litellm_response(
             tool_calls=[
-                {
-                    "id": "call_1",
-                    "type": "function",
-                    "function": {
-                        "name": "search_catalog",
-                        "arguments": json.dumps({"merchant_id": "mer_123"}),
-                    },
-                }
+                _mock_tool_call("search_catalog", {"merchant_id": "mer_123"}),
             ]
         )
-        mock_http = MagicMock()
-        mock_http.__enter__ = MagicMock(return_value=mock_http)
-        mock_http.__exit__ = MagicMock(return_value=False)
-        mock_http.post.return_value = mock_resp
-        mock_client_cls.return_value = mock_http
-
         client = OpenAILLMClient()
         result = client.generate(
             [{"role": "user", "content": "find phones"}],
             tools=[
-                {"name": "search_catalog", "description": "Search"},
+                {
+                    "name": "search_catalog",
+                    "description": "Search",
+                    "inputSchema": {"type": "object", "properties": {}},
+                },
             ],
         )
         assert result.tool_calls is not None
         assert len(result.tool_calls) == 1
         assert result.tool_calls[0].name == "search_catalog"
-        assert result.tool_calls[0].arguments == {
-            "merchant_id": "mer_123",
-        }
+        assert result.tool_calls[0].arguments == {"merchant_id": "mer_123"}
+        # The system prompt hard boundary must be part of the request.
+        sent_messages = mock_completion.call_args.kwargs["messages"]
+        assert sent_messages[0]["role"] == "system"
+        assert "CANNOT approve" in sent_messages[0]["content"]
 
-    @patch.dict(
-        "os.environ",
-        {
-            "LLM_API_KEY": "test-key-123",
-            "LLM_PROVIDER_URL": "http://localhost:9999/v1/chat/completions",
-        },
-        clear=False,
-    )
-    @patch("ai_commerce_gateway.application.buyer_adapter.llm_client.httpx.Client")
-    def test_text_only_response(self, mock_client_cls: MagicMock) -> None:
-        mock_resp = _mock_openai_response(content="Hello!")
-        mock_http = MagicMock()
-        mock_http.__enter__ = MagicMock(return_value=mock_http)
-        mock_http.__exit__ = MagicMock(return_value=False)
-        mock_http.post.return_value = mock_resp
-        mock_client_cls.return_value = mock_http
-
+    @patch.dict("os.environ", _TEST_ENV, clear=False)
+    @patch("litellm.completion")
+    def test_text_only_response(self, mock_completion: MagicMock) -> None:
+        mock_completion.return_value = _mock_litellm_response(content="Hello!")
         client = OpenAILLMClient()
         result = client.generate(
             [{"role": "user", "content": "hi"}],
@@ -136,26 +109,12 @@ class TestOpenAILLMClientToolParsing:
 
 
 class TestOpenAILLMClientErrors:
-    """HTTP errors should be caught and mapped gracefully."""
+    """Provider errors should be caught and mapped gracefully."""
 
-    @patch.dict(
-        "os.environ",
-        {
-            "LLM_API_KEY": "test-key-123",
-            "LLM_PROVIDER_URL": "http://localhost:9999/v1/chat/completions",
-        },
-        clear=False,
-    )
-    @patch("ai_commerce_gateway.application.buyer_adapter.llm_client.httpx.Client")
-    def test_http_error_returns_graceful_message(self, mock_client_cls: MagicMock) -> None:
-        import httpx
-
-        mock_http = MagicMock()
-        mock_http.__enter__ = MagicMock(return_value=mock_http)
-        mock_http.__exit__ = MagicMock(return_value=False)
-        mock_http.post.side_effect = httpx.HTTPError("503 Service Unavailable")
-        mock_client_cls.return_value = mock_http
-
+    @patch.dict("os.environ", _TEST_ENV, clear=False)
+    @patch("litellm.completion")
+    def test_http_error_returns_graceful_message(self, mock_completion: MagicMock) -> None:
+        mock_completion.side_effect = Exception("503 Service Unavailable")
         client = OpenAILLMClient()
         result = client.generate(
             [{"role": "user", "content": "test"}],

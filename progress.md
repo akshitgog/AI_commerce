@@ -526,3 +526,60 @@ Await human gate review to begin Workstream 05 (C7) or proceed to next lane.
 - **MINOR #2**: `frontend-handoff/` docs from C5 remain bundled in the lineage.
 - **MINOR #3**: Harness correctly uses stubs (no `TEST_DATABASE_URL`), keeping full DB-backed persistence tests deferred to 07.
 - **MINOR #4**: The MCP parity test focuses on happy-path equivalence rather than re-verifying tool schemas/permissions (which is covered by C4's contract tests).
+
+---
+
+## Entry 011 — P0-1 Real service composition seam replaces production stubs
+
+Date/time:       2026-09-04 (Asia/Calcutta)
+Git branch:      feature/buyer-ai-lane
+Commit:          <this commit>
+Author/Agent:    opencode buyer-lane agent (GLM)
+Workstream:      05-buyer-ai-mcp
+Change:          Removed Stub* services from production; added BuyerServiceBundle/BuyerServicesFactory composition seam with in-process and remote strategies and fail-fast default
+Files/modules:   src/ai_commerce_gateway/api/composition.py (new), src/ai_commerce_gateway/infrastructure/http/remote_services.py (new), src/ai_commerce_gateway/api/app.py, src/ai_commerce_gateway/api/buyer_chat/router.py, src/ai_commerce_gateway/api/buyer_chat/stubs.py (deleted), src/ai_commerce_gateway/api/mcp/buyer_server.py, src/ai_commerce_gateway/api/buyer_chat/dependencies.py, src/ai_commerce_gateway/core/config.py, config/default.yaml, config/local.example.yaml, pyproject.toml, uv.lock, tests/* (conftest, harness, mcp, chat routes, llm client, new composition and remote-services tests)
+
+### What Changed
+
+- Deleted `api/buyer_chat/stubs.py` entirely: the default app can no longer construct StubCatalogService/StubProposalService/StubAuthorizationService/StubTransactionService in any environment, and the `app_env == "test"` stub escape hatch was removed.
+- Added `api/composition.py`: `BuyerServiceBundle` (the four frozen buyer-facing service protocols as one unit), `BuyerServicesFactory` (callable returning a request-scoped context-managed bundle owning the unit of work), `static_bundle_factory` (test/embedding seam), `compose_remote_buyer_services_factory` (HTTP-client adapters over deployed trusted services), `compose_in_process_buyer_services_factory` (lazy-imports the approved merchant/transaction lane services: merchant `ApplicationCatalogService`, transaction `ProposalApplicationService`/`AuthorizationApplicationService`/`compose_transaction_services`, `SqlAlchemyProposalGateRepository`, `RazorpayAdapter`), `compose_default_buyer_services_factory` (config-selected, never stubs), and `SessionBuyerApprovalVerifier` (human buyer approval bound to the server-trusted session actor; implements the transaction lane's HumanBuyerApprovalVerifier protocol structurally).
+- Added `infrastructure/http/remote_services.py`: RemoteCatalogService/RemoteProposalService/RemoteAuthorizationService/RemoteTransactionService implementing the frozen protocols over a documented internal wire contract with X-Actor-ID/X-Actor-Type/X-Correlation-ID trusted-context headers, Idempotency-Key forwarding for mutations, DTO round-trips and canonical error-envelope → AppError mapping.
+- `create_app(services_factory=...)` is now the single composition seam; the factory is stored on `app.state.buyer_services_factory`, consumed by the HTTP router (request-scoped dependency with commit/rollback via the context manager) and by every buyer MCP tool (same seam, same real services). The module-level ASGI `app` is built lazily (PEP 562) so the fail-fast guard triggers at server start, not import.
+- New `buyer_services` YAML config section (mode/catalog_base_url/transaction_base_url/timeout_seconds) validated by the strict config schema.
+- Tests: fakes enriched and confined to tests (search now returns a published product for journey tests); all stub imports removed from tests; new `tests/unit/api/test_composition.py` (fail-fast guidance, remote validation, integrated-composition wiring via monkeypatched namespace, approval-verifier positive/negative) and `tests/unit/infrastructure/test_remote_services.py` (wire contract, headers, idempotency forwarding, error mapping via httpx.MockTransport); MCP idempotency test rewritten to spy at the service layer (per-request adapters make instance patching obsolete).
+
+### Reason
+
+P0-1 of the buyer-lane P0 brief: the default buyer FastAPI app must use real injected application services, never stubs; test fakes only in tests; clear composition/DI seams for the integrated application.
+
+### Technical Impact
+
+- Production composition is stub-free by construction; misconfiguration fails fast with actionable remediation text.
+- The buyer chat HTTP API, buyer UI API and buyer MCP now provably reach the same service bundle through one seam.
+- In-process composition mirrors the sibling lanes' reviewed constructors exactly (verified against phase/a6-merchant-dashboard and phase/b7-security-hardening heads on 2026-09-04); runtime validation of that path is deferred to integration because those modules do not exist in a single-lane checkout.
+- Remote adapters define a wire contract that the merchant/transaction lanes do not yet serve (no buyer-facing HTTP API exists in either lane); they are exercised in tests against an in-test stand-in and documented for future separate deployment.
+
+### Validation
+
+- `uv run ruff check .` — PASS
+- `uv run mypy` — PASS (35 files, 0 errors; per-module ignore_missing_imports override added in pyproject for the cross-lane lazy imports)
+- `uv run pytest` — 94 passed, 1 skipped (tests/integration/test_database_connection.py: TEST_DATABASE_URL not configured)
+- Fail-fast verified: `uv run python -c "import ai_commerce_gateway.api.app as m; m.app"` raises the composition guidance RuntimeError on this single-lane checkout.
+
+### Evidence
+
+Command outputs above on branch feature/buyer-ai-lane; test files tests/unit/api/test_composition.py, tests/unit/infrastructure/test_remote_services.py.
+
+### Result
+
+SUCCESS (in-process composition runtime validation deferred to integration by design)
+
+### Problems / Limitations
+
+- The in-process composition path imports modules that only exist in the integrated repository; it is unit-tested via monkeypatched stand-ins and cannot be runtime-validated on this branch.
+- No buyer-facing HTTP API exists yet in the merchant/transaction lanes for the remote adapters to target; the wire contract is documented for coordination.
+- The buyer MCP still uses the temporary demo actor (`buyer_demo_001`); replacement with the authenticated actor context is the P0-4 step.
+
+### Next Step
+
+P0-2: bounded Buyer AI (config-driven LLM client, complete JSON tool schemas from tools.py, bounded tool-result loop with audit events, no self-approval tools).

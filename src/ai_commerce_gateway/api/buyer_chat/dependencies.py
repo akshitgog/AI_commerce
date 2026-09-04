@@ -1,12 +1,13 @@
 """FastAPI dependencies for buyer chat routes.
 
-The transport layer is responsible for generating InvocationContext from
+The transport layer is responsible for generating Invocation Context from
 request headers. The AI/tool layer never sees idempotency keys or correlation IDs.
 """
 
+from typing import cast
 from uuid import uuid4
 
-from fastapi import Depends, Header, Request
+from fastapi import Depends, Header, HTTPException, Request
 
 from ai_commerce_gateway.application.buyer_adapter.schemas import InvocationContext
 from ai_commerce_gateway.contracts.models import ActorContext
@@ -43,10 +44,7 @@ def get_buyer_actor(
     C3/C6 will replace with real authentication middleware.
     The actor is never derived from body fields.
     """
-    # Demo stub: X-Buyer-ID header. Real auth binds actor server-side.
-    buyer_id = request.headers.get("X-Buyer-ID", f"buyer_{uuid4().hex[:8]}")
-    return ActorContext(
-        actor_id=buyer_id,
-        actor_type=ActorType.BUYER,
-        correlation_id=correlation_id,
-    )
+    actor_context = getattr(request.state, "actor_context", None)
+    if not actor_context or actor_context.actor_type != ActorType.BUYER:
+        raise HTTPException(status_code=401, detail="Unauthorized: Buyer session required")
+    return cast(ActorContext, actor_context)

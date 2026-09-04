@@ -5,17 +5,17 @@ an official MCP Client via Streamable HTTP URL. This proves the full
 transport chain:
 
     Official MCP Client
-        ↓ Streamable HTTP
+        → Streamable HTTP
     FastAPI/ASGI test server
-        ↓
+        →
     /mcp/buyer
-        ↓
+        →
     MCPServer (tool dispatch)
-        ↓
-    BuyerAdapter
-        ↓
-    Application Services (stubs)
-        ↓
+        →
+    composition seam (test fakes in tests; real services in production)
+        →
+    Application Services
+        →
     Real response
 """
 
@@ -43,26 +43,13 @@ def _build_fresh_app():  # type: ignore[no-untyped-def]
 
     from fastapi import FastAPI
 
-    from ai_commerce_gateway.api.buyer_chat.stubs import (
-        get_auth_service,
-        get_catalog_service,
-        get_proposal_service,
-        get_transaction_service,
-    )
+    from ai_commerce_gateway.api.composition import static_bundle_factory
     from ai_commerce_gateway.api.mcp.buyer_server import (
         create_buyer_mcp_server,
     )
-    from ai_commerce_gateway.application.buyer_adapter.adapter import (
-        BuyerAdapter,
-    )
+    from tests.conftest import fake_service_bundle
 
-    adapter = BuyerAdapter(
-        catalog=get_catalog_service(),
-        proposal=get_proposal_service(),
-        auth=get_auth_service(),
-        transaction=get_transaction_service(),
-    )
-    buyer_mcp = create_buyer_mcp_server(adapter)
+    buyer_mcp = create_buyer_mcp_server(static_bundle_factory(fake_service_bundle()))
     mcp_app = buyer_mcp.streamable_http_app(
         streamable_http_path="/",
     )
@@ -126,14 +113,14 @@ async def test_interop_full_buyer_journey_over_http() -> None:
             search_data = json.loads(text_content.text)
             assert "items" in search_data
             assert len(search_data["items"]) > 0
-            assert search_data["items"][0]["title"] == "Demo Widget"
+            assert search_data["items"][0]["title"] == "Fake Widget"
 
             # ---- Step 3: create_purchase_proposal ----
             proposal_result = await client.call_tool(
                 "create_purchase_proposal",
                 {
                     "merchant_id": "mer_demo_001",
-                    "product_id": "prod_demo_001",
+                    "product_id": "prod_fake_001",
                     "quantity": 1,
                 },
             )
@@ -142,10 +129,10 @@ async def test_interop_full_buyer_journey_over_http() -> None:
             assert isinstance(text_content, TextContent)
             proposal_data = json.loads(text_content.text)
             assert "id" in proposal_data
-            assert proposal_data["product_id"] == "prod_demo_001"
+            assert proposal_data["product_id"] == "prod_fake_001"
             # Server-derived price, not client-supplied
-            assert proposal_data["unit_price"]["amount_minor"] == 49900
-            assert proposal_data["total"]["amount_minor"] == 49900
+            assert proposal_data["unit_price"]["amount_minor"] == 1000
+            assert proposal_data["total"]["amount_minor"] == 1000
     finally:
         server.should_exit = True
         await task

@@ -14,6 +14,7 @@ from ai_commerce_gateway.contracts.models import (
     ExecuteTransactionCommand,
     Money,
     NextRequiredGate,
+    ProductStatus,
     ProductView,
     ProposalStatus,
     PurchaseProposalView,
@@ -26,7 +27,23 @@ from ai_commerce_gateway.contracts.models import (
 
 class FakeCatalogService:
     def search(self, query: CatalogSearchQuery, actor: ActorContext) -> CatalogSearchResult:
-        return CatalogSearchResult(items=())
+        return CatalogSearchResult(
+            items=(
+                ProductView(
+                    id="prod_fake_001",
+                    merchant_id=query.merchant_id,
+                    sku="FAKE-SKU-001",
+                    title="Fake Widget",
+                    description="A fake product for testing the buyer journey.",
+                    category="Electronics",
+                    price=Money(amount_minor=1000, currency="INR"),
+                    available_quantity=10,
+                    status=ProductStatus.PUBLISHED,
+                    version=1,
+                    images=(),
+                ),
+            )
+        )
 
     def get_product(self, product_id: str, actor: ActorContext) -> ProductView:
         return ProductView(
@@ -37,7 +54,7 @@ class FakeCatalogService:
             description="A fake product for testing",
             price=Money(amount_minor=1000, currency="INR"),
             available_quantity=10,
-            status="PUBLISHED",
+            status=ProductStatus.PUBLISHED,
             version=1,
             images=(),
         )
