@@ -214,6 +214,7 @@ def _transaction_view(transaction: Transaction, attempt: PaymentAttempt | None) 
     if attempt is not None:
         provider_phase = ProviderPhase(
             provider=attempt.provider,
+            provider_order_id=attempt.provider_order_id,
             order_state=attempt.provider_order_state,
             payment_state=attempt.provider_payment_state,
             capture_state=attempt.capture_state,

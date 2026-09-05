@@ -61,6 +61,7 @@ export interface CommerceActions {
   approveReview(proposalId: string): Promise<void>;
   denyReview(proposalId: string, reason: string): Promise<void>;
   executeTransaction(proposalId: string): Promise<Transaction>;
+  verifyCheckout(transactionId: string, razorpayOrderId: string, razorpayPaymentId: string, razorpaySignature: string): Promise<Transaction>;
   refreshTransaction(transactionId: string): Promise<Transaction>;
   getTransaction(id: string): Transaction | undefined;
   listTransactions(): Transaction[];
@@ -330,9 +331,20 @@ export function createCommerceStore() {
     },
     async refreshMerchantDecision(proposalId) {
       const decision = await apiClient.evaluateMerchantPolicy(proposalId);
-      setState({
-        decisions: { ...state.decisions, [proposalId]: decision },
-      });
+      
+      // Also silently refresh the merchant reviews list so the dashboard stays up to date
+      try {
+        const reviews = await apiClient.listReviews("mer_demo");
+        setState({
+          decisions: { ...state.decisions, [proposalId]: decision },
+          reviews: reviews
+        });
+      } catch (e) {
+        setState({
+          decisions: { ...state.decisions, [proposalId]: decision },
+        });
+      }
+      
       return decision;
     },
     async cancelProposal(proposalId) {
@@ -390,6 +402,15 @@ export function createCommerceStore() {
           error.details.transaction_id,
         );
         return await storeTransactionWithAudit(transaction, proposalId);
+      }
+    },
+    async verifyCheckout(transactionId, razorpayOrderId, razorpayPaymentId, razorpaySignature) {
+      try {
+        const transaction = await apiClient.verifyCheckout(transactionId, razorpayOrderId, razorpayPaymentId, razorpaySignature);
+        return await storeTransactionWithAudit(transaction, transaction.proposalId);
+      } catch (error) {
+        console.error("Failed to verify checkout", error);
+        throw error;
       }
     },
     async refreshTransaction(transactionId) {

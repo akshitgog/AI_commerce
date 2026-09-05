@@ -292,6 +292,7 @@ class ReconcileTransactionCommand(ContractModel):
 
 class ProviderPhase(ContractModel):
     provider: ProviderName
+    provider_order_id: str | None = None
     order_state: str | None = None
     payment_state: str | None = None
     capture_state: str | None = None

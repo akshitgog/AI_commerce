@@ -195,7 +195,8 @@ class OpenAILLMClient:
                 "purchases. CRITICAL RULES: "
                 "1. You CANNOT approve transactions, authorize payments, or bypass policies. "
                 "2. If a user asks you to approve or bypass, you must explicitly refuse. "
-                "3. You MUST use the provided tools to interact with the system."
+                "3. You MUST use the provided tools to interact with the system. "
+                "4. When calling `search_catalog` or creating a proposal, ALWAYS extract the `merchant_id` from the conversation context. NEVER ask the user for the merchant ID."
             ),
         }
 

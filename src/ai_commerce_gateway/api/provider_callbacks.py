@@ -62,8 +62,12 @@ def create_provider_callback_router(
                 ),
                 correlation_id=request.state.correlation_id,
             )
-        except RazorpayAdapterError as exc:
-            raise _safe_provider_error(exc) from exc
+        except Exception as exc:
+            with open("verify_log.txt", "a") as f:
+                f.write(f"VERIFY ERROR: {type(exc)}: {exc}\n")
+            if isinstance(exc, RazorpayAdapterError):
+                raise _safe_provider_error(exc) from exc
+            raise
 
     @router.post("/webhooks/razorpay", status_code=200)
     async def razorpay_webhook(

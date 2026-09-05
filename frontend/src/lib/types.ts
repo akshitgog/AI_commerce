@@ -116,6 +116,7 @@ export type TransactionState =
 
 export interface ProviderPhase {
   provider: "RAZORPAY";
+  providerOrderId: string | null;
   orderState: string | null;
   paymentState: string | null;
   lastVerifiedAt: string | null;

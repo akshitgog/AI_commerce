@@ -205,7 +205,6 @@ export function ProductEditor({
         router.push(`/merchant/products/${created.id}`);
       } else if (product) {
         await actions.updateProduct(product.id, {
-          sku: fields.sku,
           title: fields.title.trim(),
           description: fields.description.trim(),
           category: fields.category || null,

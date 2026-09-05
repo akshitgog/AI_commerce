@@ -379,6 +379,24 @@ export class ApiClient {
     return this.mapTransaction(data);
   }
 
+  async verifyCheckout(transactionId: string, razorpayOrderId: string, razorpayPaymentId: string, razorpaySignature: string): Promise<Transaction> {
+    const res = await fetch("/api/checkout/razorpay/verify", {
+        method: "POST",
+        headers: this.buyerHeaders(),
+        body: JSON.stringify({
+            transaction_id: transactionId,
+            razorpay_order_id: razorpayOrderId,
+            razorpay_payment_id: razorpayPaymentId,
+            razorpay_signature: razorpaySignature
+        })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+        throw new ApiError(data.error ? data : { error: { message: data.detail || "Verification request failed", code: "VERIFICATION_FAILED" } });
+    }
+    return this.mapTransaction(data);
+  }
+
   async getTransaction(transactionId: string): Promise<Transaction> {
     const data = await this.request("/v1/buyer/transactions/" + transactionId, {
         headers: this.buyerHeaders()
@@ -527,7 +545,13 @@ export class ApiClient {
         productId: "", // Need to attach this in store logic from proposal!
         amount: data.amount,
         state: data.state,
-        providerPhase: data.provider_phase,
+        providerPhase: data.provider_phase ? {
+            provider: data.provider_phase.provider,
+            providerOrderId: data.provider_phase.provider_order_id,
+            orderState: data.provider_phase.order_state,
+            paymentState: data.provider_phase.payment_state,
+            lastVerifiedAt: data.provider_phase.last_verified_at,
+        } : null,
         createdAt: data.created_at,
         updatedAt: data.updated_at
     };
