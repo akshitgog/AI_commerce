@@ -178,11 +178,18 @@ export function createCommerceStore() {
   const actions: CommerceActions = {
     async chat(messages) {
       const response = await apiClient.chat(messages);
+      const patch: Partial<CommerceState> = {};
       if (response.ingestedProposals?.length) {
         const newProposals = { ...state.proposals };
         response.ingestedProposals.forEach((p: any) => { newProposals[p.id] = p; });
-        setState({ proposals: newProposals });
+        patch.proposals = newProposals;
       }
+      if (response.ingestedProducts?.length) {
+        const existingIds = new Set(state.products.map((p: any) => p.id));
+        const novel = response.ingestedProducts.filter((p: any) => !existingIds.has(p.id));
+        if (novel.length) patch.products = [...state.products, ...novel];
+      }
+      if (Object.keys(patch).length) setState(patch);
       return response;
     },
     async init() {

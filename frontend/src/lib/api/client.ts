@@ -343,7 +343,10 @@ export class ApiClient {
     const ingestedProposals = data.tool_results
         ?.filter((tr: any) => tr.tool === "create_purchase_proposal" && tr.result)
         ?.map((tr: any) => this.mapProposal(tr.result)) || [];
-    return { ...data, ingestedProposals };
+    const ingestedProducts = data.tool_results
+        ?.filter((tr: any) => tr.tool === "search_catalog" && tr.result?.items)
+        ?.flatMap((tr: any) => tr.result.items.map((p: any) => this.mapProduct(p))) || [];
+    return { ...data, ingestedProposals, ingestedProducts };
   }
 
   // --- Mappers (snake_case -> camelCase) ---
