@@ -1,62 +1,157 @@
 # Testing & Validation
 
-This project enforces enterprise-grade reliability and security constraints through a comprehensive, fully-automated test suite. Our CI/CD pipeline guarantees that our AI adapters cannot bypass human authority or strict financial controls.
+AI Commerce Gateway is backed by an automated test suite focused on the parts that matter most for agentic commerce: **financial boundaries, transaction correctness, idempotency, tenant isolation, Razorpay verification, and MCP safety.**
 
-## Test Results
+## Latest Backend Test Run
 
-The AI Commerce Gateway is validated by an extensive test suite covering the core domain, strict idempotency enforcement, MCP adapters, and transaction state machines.
-
-**Backend Test Suite Results (Latest Run):**
-\\\	ext
+```text
 ============================= test session starts =============================
 platform win32 -- Python 3.13.13, pytest-8.4.2
 plugins: anyio-4.15.0, cov-6.3.0
 collected 885 items
 
-tests/integration/test_transaction_execution.py ...........s.            [ 10%]
-tests/unit/api/mcp/test_buyer_mcp.py ..........                          [ 12%]
-tests/unit/api/mcp/test_buyer_mcp_interop.py ...                         [ 12%]
-tests/unit/api/mcp/test_merchant_mcp.py ....                             [ 13%]
-tests/unit/test_a7_idempotency.py ............                           [ 26%]
-tests/unit/test_money_hardening.py ...............................       [ 47%]
-tests/unit/test_razorpay_adapter.py .................................... [ 67%]
-tests/unit/test_transaction_state_machine.py ........................... [ 76%]
+tests/integration/test_transaction_execution.py ...........s.
+tests/unit/api/mcp/test_buyer_mcp.py ..........
+tests/unit/api/mcp/test_buyer_mcp_interop.py ...
+tests/unit/api/mcp/test_merchant_mcp.py ....
+tests/unit/test_a7_idempotency.py ............
+tests/unit/test_money_hardening.py ...............................
+tests/unit/test_razorpay_adapter.py ....................................
+tests/unit/test_transaction_state_machine.py ...........................
 ...
+
 ================= 879 passed, 6 skipped in 30.28s ==================
-\\\
+```
 
-**MCP Adapter Validation:**
-Our Model Context Protocol (MCP) layer is verified with 100% test coverage. These tests mathematically prove that:
-1. Untrusted AI intent is safely translated into typed domain commands.
-2. The AI cannot bypass role-based access controls or manipulate financial state directly.
-3. Transport-level \Idempotency-Key\ headers are strictly enforced on all mutations.
+The suite covers:
 
-## Static Analysis & Linting
+* transaction-state transitions and invalid-transition rejection
+* integer minor-unit money handling
+* buyer and merchant authorization boundaries
+* durable idempotency and replay protection
+* Razorpay adapter behavior and payment verification
+* provider failure and transaction recovery paths
+* buyer and merchant MCP adapters
+* tenant and role isolation
+* audit/event behavior
 
-We enforce strict Python typing to guarantee memory and state safety:
-- **mypy**: Enforces strict type-checking across 80+ files, eliminating runtime type errors.
-- **ruff**: Ensures extremely fast, uncompromising codebase linting.
+## MCP Safety Validation
 
-\\\powershell
-# Run the validation suite locally
+The Buyer and Merchant MCP adapters have dedicated tests verifying that external AI clients remain behind the same trusted commerce boundary.
+
+The tests verify that:
+
+1. Untrusted AI input is converted into typed application commands.
+2. Buyer and merchant identity cannot be switched through ordinary tool parameters.
+3. Role and tenant restrictions are enforced.
+4. AI clients cannot directly manipulate financial state.
+5. Mutating MCP operations require trusted idempotency metadata.
+6. Sensitive operations remain gated by backend authorization and confirmation rules.
+
+MCP provides interoperability with external AI clients; it does not bypass the transaction authority.
+
+## Financial Safety Tests
+
+Important adversarial cases include:
+
+```text
+AI-supplied price
+        ↓
+Rejected / ignored as financial authority
+
+Duplicate execution request
+        ↓
+Same idempotency key
+        ↓
+No duplicate logical execution
+
+Same idempotency key + changed request
+        ↓
+Rejected
+
+Illegal transaction transition
+        ↓
+Deterministic error
+
+Unverified provider result
+        ↓
+Cannot become SUCCEEDED
+
+Cross-merchant request
+        ↓
+Access denied
+```
+
+These tests support the central rule of the project:
+
+> **The AI can request commerce actions, but the backend decides whether they are financially valid.**
+
+## Static Validation
+
+Backend quality checks:
+
+```powershell
 uv run pytest
 uv run ruff check .
 uv run mypy
-\\\
+```
+
+* **pytest** validates domain, application, provider, MCP, and integration behavior.
+* **mypy** performs static type checking across the Python codebase.
+* **ruff** enforces linting and code-quality rules.
 
 ## Frontend Validation
 
-Run frontend checks from \rontend\:
+From `frontend/`:
 
-\\\powershell
-npm run build
+```powershell
 npm run lint
-\\\
+npm run build
+```
 
-## Manual Acceptance Flow
+These checks validate the Next.js frontend and ensure the production build completes successfully.
 
-1. Create or publish a product in the merchant dashboard.
-2. Discover it in the buyer assistant and create a purchase proposal.
-3. Confirm that buyer approval and merchant policy checks occur before payment initiation.
-4. Use Razorpay **Test Mode** only.
-5. Verify the final transaction state and audit record in the merchant dashboard.
+## Manual End-to-End Acceptance Flow
+
+The final system is also validated through the actual commerce journey:
+
+```text
+Merchant creates/publishes product
+        ↓
+AI buyer discovers product
+        ↓
+Backend creates trusted proposal
+        ↓
+Buyer authorizes purchase
+        ↓
+Merchant policy / review gate
+        ↓
+Transaction becomes executable
+        ↓
+Razorpay Test Mode payment
+        ↓
+Provider verification
+        ↓
+Final transaction state
+        ↓
+Structured audit trail
+```
+
+We also validate the failure path where a provider outcome becomes uncertain and the transaction must be reconciled rather than blindly retried.
+
+## What the Tests Demonstrate
+
+The goal of the test suite is not simply high test count.
+
+It provides evidence that the important agentic-commerce boundaries hold:
+
+* AI cannot manufacture trusted price.
+* AI cannot manufacture buyer consent.
+* AI cannot manufacture merchant acceptance.
+* AI cannot directly mark payment successful.
+* retries do not silently become duplicate transactions.
+* provider truth is verified before success.
+* cross-tenant access is denied.
+* consequential transaction changes remain auditable.
+
+**879 passing tests support the same principle demonstrated in the live product: AI can orchestrate the purchase, but trusted backend services retain financial authority.**
