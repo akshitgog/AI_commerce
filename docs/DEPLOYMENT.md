@@ -46,22 +46,22 @@ git push origin main
 
 ```bash
 # Database (Production - Use PostgreSQL)
-DATABASE_URL=postgresql://postgres:[REDACTED]@db.kzukufnkjriccoztuggu.supabase.co:5432/postgres
+DATABASE_URL=postgresql+psycopg://<user>:<password>@<host>:5432/<database>
 
 # LLM
-FIREWORKS_API_KEY=[REDACTED]
+FIREWORKS_API_KEY=fw_your_api_key
 LLM_MODEL=openai/accounts/fireworks/models/glm-5p2
 LLM_BASE_URL=https://api.fireworks.ai/inference/v1
 
 # Storage (Production - Use Supabase)
 STORAGE_PROVIDER=supabase
 STORAGE_BUCKET=product-images
-SUPABASE_URL=https://kzukufnkjriccoztuggu.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=[REDACTED]
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 # Razorpay
-RAZORPAY_KEY_ID=[REDACTED]
-RAZORPAY_KEY_SECRET=[REDACTED]
+RAZORPAY_KEY_ID=rzp_test_your_key_id
+RAZORPAY_KEY_SECRET=your_key_secret
 
 # Sessions (Render auto-generates these)
 BUYER_SESSIONS_SECRET=[Leave blank - Render generates]
