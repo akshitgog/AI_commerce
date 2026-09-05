@@ -1,170 +1,55 @@
-# Deployment Guide
+# Deployment
 
-## ✅ New Simple Architecture
+AI Commerce Gateway is deployed as two services:
 
-**Everything in .env** - Same config for local and production!
+| Service | Platform | Responsibility |
+| --- | --- | --- |
+| Web app | Vercel | Serves the Next.js frontend and proxies `/api/*` to the backend. |
+| API | Render | Runs the FastAPI application, AI integration, policy engine, and payment workflows. |
 
----
+## Current endpoints
 
-## 🏠 Local Development
+- Web app: <https://ai-commerce-zeta.vercel.app>
+- API health: <https://ai-commerce-backend-bgc3.onrender.com/health/live>
 
-**Just start the servers:**
+## Render
 
-```bash
-# Terminal 1 - Backend (reads .env automatically)
-.venv\Scripts\python.exe -m uvicorn src.ai_commerce_gateway.api.app:app --host 127.0.0.1 --port 8000 --reload
+The production Blueprint is the root-level [`render.yaml`](../render.yaml). Create a Render Blueprint from the repository and set the values in the Render Environment dashboard.
 
-# Terminal 2 - Frontend
-cd frontend
-npm run dev
+Required production configuration:
+
+```text
+DATABASE_URL                 Hosted PostgreSQL connection string
+FIREWORKS_API_KEY            Fireworks AI credential
+LLM_MODEL                    Configured Fireworks model
+LLM_BASE_URL                 Fireworks OpenAI-compatible API URL
+RAZORPAY_KEY_ID              Razorpay Test Mode key ID
+RAZORPAY_KEY_SECRET          Razorpay Test Mode secret
+BUYER_SESSIONS_SECRET        Long, random production secret
+BUYER_SESSIONS_ISSUER_KEY    Long, random production secret
+STORAGE_PROVIDER             supabase when using Supabase Storage
+STORAGE_BUCKET               Storage bucket name
+SUPABASE_URL                 Supabase project URL
+SUPABASE_SERVICE_ROLE_KEY    Supabase service-role credential
 ```
 
-**That's it!** No YAML files to manage. Everything in `.env`
+Never commit any of these values. SQLite is convenient locally, but a hosted PostgreSQL database is required for durable production data on Render.
 
----
+## Vercel
 
-## 🚀 Production Deployment (Render)
+Import the repository with `frontend` as the root directory. Set this server-only environment variable:
 
-### Step 1: Push Code to GitHub
-
-```bash
-git add .
-git commit -m "feat: complete image upload and exports"
-git push origin main
+```text
+BACKEND_ORIGIN=https://ai-commerce-backend-bgc3.onrender.com
 ```
 
-### Step 2: Deploy Backend to Render
+Redeploy after changing it. The rewrite in `frontend/next.config.ts` then forwards browser `/api/*` requests to Render without exposing backend credentials to clients.
 
-1. Go to: https://dashboard.render.com/
-2. Click **"New +"** → **"Web Service"**
-3. Connect your GitHub repository
-4. Render will auto-detect `deploy/render.yaml`
+## Verify after a deployment
 
-### Step 3: Add Environment Variables
-
-**In Render Dashboard → Environment tab, add these:**
-
-```bash
-# Database (Production - Use PostgreSQL)
-DATABASE_URL=postgresql+psycopg://<user>:<password>@<host>:5432/<database>
-
-# LLM
-FIREWORKS_API_KEY=fw_your_api_key
-LLM_MODEL=openai/accounts/fireworks/models/glm-5p2
-LLM_BASE_URL=https://api.fireworks.ai/inference/v1
-
-# Storage (Production - Use Supabase)
-STORAGE_PROVIDER=supabase
-STORAGE_BUCKET=product-images
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-
-# Razorpay
-RAZORPAY_KEY_ID=rzp_test_your_key_id
-RAZORPAY_KEY_SECRET=your_key_secret
-
-# Sessions (Render auto-generates these)
-BUYER_SESSIONS_SECRET=[Leave blank - Render generates]
-BUYER_SESSIONS_ISSUER_KEY=[Leave blank - Render generates]
+```powershell
+Invoke-WebRequest https://ai-commerce-zeta.vercel.app/api/health/live
+Invoke-WebRequest https://ai-commerce-zeta.vercel.app/api/health/ready
 ```
 
-**Click "Save Changes"** → Render auto-deploys!
-
-### Step 4: Deploy Frontend to Vercel
-
-1. Go to: https://vercel.com/
-2. Click **"Add New..."** → **"Project"**
-3. Import your GitHub repository
-4. Set **Root Directory:** `frontend`
-5. Add environment variable:
-   ```
-   NEXT_PUBLIC_API_URL=https://your-backend.onrender.com
-   ```
-6. Click **"Deploy"**
-
----
-
-## 🔄 Update Configuration After Deployment
-
-### Change Database
-```bash
-# In Render Dashboard → Environment
-DATABASE_URL=postgresql://new-database-url
-```
-**Save** → Auto-redeploys
-
-### Change Storage Provider
-```bash
-# Switch from local to Supabase
-STORAGE_PROVIDER=supabase
-
-# Or switch to S3
-STORAGE_PROVIDER=s3
-AWS_REGION=us-east-1
-AWS_ACCESS_KEY_ID=AKIA...
-AWS_SECRET_ACCESS_KEY=...
-```
-**Save** → Auto-redeploys
-
-### Change LLM Provider
-```bash
-# Switch from Fireworks to OpenAI
-FIREWORKS_API_KEY=sk-...  # Use OpenAI key
-LLM_MODEL=gpt-4o-mini
-LLM_BASE_URL=  # Remove (OpenAI is default)
-```
-**Save** → Auto-redeploys
-
----
-
-## 📊 Configuration Matrix
-
-| Environment | Database | Storage | Config Location |
-|-------------|----------|---------|-----------------|
-| **Local** | SQLite | Local files | `.env` file |
-| **Production** | PostgreSQL | Supabase Storage | Render dashboard |
-
----
-
-## 🎯 Benefits of This Approach
-
-✅ **Same config system everywhere** - no surprises  
-✅ **Easy to switch providers** - change one env var  
-✅ **Test prod config locally** - copy .env values  
-✅ **No YAML confusion** - one source of truth  
-✅ **Git-safe** - .env is gitignored  
-
----
-
-## 🐛 Troubleshooting
-
-### "Environment variable not found"
-**Check:** `.env` file exists and has the variable  
-**Fix:** Copy from `.env.example` template
-
-### "Database connection failed"
-**Check:** `DATABASE_URL` is correct  
-**Fix:** Verify password has no spaces
-
-### "Storage not configured"
-**Check:** `STORAGE_PROVIDER` is set  
-**Fix:** Set to `local`, `supabase`, `s3`, or `gcs`
-
----
-
-## 📝 Quick Reference
-
-**Local Setup:**
-1. Copy `.env.example` → `.env`
-2. Fill in your secrets
-3. `uvicorn ...` (backend reads .env)
-
-**Deploy:**
-1. Copy all `.env` variables → Render dashboard
-2. Change `DATABASE_URL` → PostgreSQL
-3. Change `STORAGE_PROVIDER` → supabase
-4. Deploy!
-
----
-
-**Simple, consistent, works everywhere!** 🚀
+For a functional check, refresh the buyer or merchant page after a Render restart so the browser obtains a current server session.
