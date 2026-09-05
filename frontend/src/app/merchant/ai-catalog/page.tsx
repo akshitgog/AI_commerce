@@ -8,6 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MoneyText } from "@/components/shared/money";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ApiError } from "@/lib/api/client";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { AlertTriangle } from "lucide-react";
+import Link from "next/link";
 
 interface DraftResult {
   title: string;
@@ -29,6 +35,8 @@ export default function AICatalogPage() {
   const [draft, setDraft] = useState<DraftResult | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [successId, setSuccessId] = useState<string | null>(null);
+  const [uploadedImages, setUploadedImages] = useState<File[]>([]);
+  const [extractError, setExtractError] = useState<string | null>(null);
 
   const handleGenerate = async () => {
     if (!inputText.trim()) return;
@@ -38,8 +46,14 @@ export default function AICatalogPage() {
     try {
       const result = await actions.extractDraft(inputText);
       setDraft(result as DraftResult);
+      setExtractError(null); // Clear any previous error
     } catch (error) {
       console.error("Failed to generate draft:", error);
+      if (error instanceof ApiError) {
+        setExtractError(error.message);
+      } else {
+        setExtractError("Failed to generate draft. Please try again.");
+      }
     } finally {
       setIsGenerating(false);
     }
@@ -57,7 +71,21 @@ export default function AICatalogPage() {
         category: draft.category || undefined,
         sku: draft.sku || `SKU-${Date.now()}`,
       });
+
+      // Upload images after product is created
+      for (let i = 0; i < uploadedImages.length; i++) {
+        await actions.addProductImage(
+          product.id,
+          {
+            file: uploadedImages[i],
+            alt: undefined,
+            sortOrder: i
+          }
+        );
+      }
+
       setSuccessId(product.id);
+      setUploadedImages([]); // Clear images
     } catch (error) {
       console.error("Failed to create product:", error);
     } finally {
@@ -83,6 +111,26 @@ export default function AICatalogPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {extractError && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>AI Generation Failed</AlertTitle>
+                <AlertDescription>
+                  <p className="mb-2">{extractError}</p>
+                  <p>
+                    You can still{" "}
+                    <Link
+                      href="/merchant/products/new"
+                      className="underline hover:no-underline font-medium"
+                    >
+                      create products manually
+                    </Link>
+                    .
+                  </p>
+                </AlertDescription>
+              </Alert>
+            )}
+
             <Textarea
               rows={6}
               placeholder="e.g. Premium USB-C charger, 65W GaN, ₹1,499, 50 units available. Comes with a braided cable."
@@ -90,6 +138,43 @@ export default function AICatalogPage() {
               onChange={(e) => setInputText(e.target.value)}
               className="resize-none"
             />
+
+            <div className="space-y-2">
+              <Label>Product Images (Optional)</Label>
+              <Input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                multiple
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []).slice(0, 3);
+                  setUploadedImages(files);
+                }}
+              />
+              <p className="text-sm text-muted-foreground">
+                Upload up to 3 images (max 5MB each). JPEG, PNG, WebP, or GIF.
+              </p>
+              {uploadedImages.length > 0 && (
+                <div className="flex gap-2 flex-wrap">
+                  {uploadedImages.map((file, idx) => (
+                    <div key={idx} className="relative">
+                      <img
+                        src={URL.createObjectURL(file)}
+                        alt={`Preview ${idx + 1}`}
+                        className="w-20 h-20 object-cover rounded border"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setUploadedImages(imgs => imgs.filter((_, i) => i !== idx))}
+                        className="absolute -top-2 -right-2 bg-destructive text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-destructive/90"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <Button
               onClick={handleGenerate}
               disabled={isGenerating || !inputText.trim()}

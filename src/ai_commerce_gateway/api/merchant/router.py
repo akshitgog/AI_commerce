@@ -18,7 +18,7 @@ from collections.abc import Iterator
 from datetime import datetime
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Header, Request
+from fastapi import APIRouter, Depends, File, Form, Header, Request, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -177,11 +177,14 @@ _CATALOG_WRITE_ROLES = {MerchantRole.ADMIN, MerchantRole.EDITOR}
 
 
 def get_catalog_service(db: DbSession) -> IdempotentCatalogService:
+    from ai_commerce_gateway.storage.factory import create_storage_service
+
+    storage_svc = create_storage_service(get_settings())
     inner = ApplicationMerchantCatalogService(
         SqlAlchemyMerchantRepository(db),
         SqlAlchemyProductRepository(db),
         SqlAlchemyProductImageRepository(db),
-        None,
+        storage_svc,
     )
     return IdempotentCatalogService(inner, SqlAlchemyMerchantIdempotencyRepository(db))
 
@@ -393,21 +396,61 @@ def update_product(
 
 
 # ---------------------------------------------------------------------------
-# AI-assisted draft extraction (D-010) — propose-only
+# Product Images (multipart file upload)
 # ---------------------------------------------------------------------------
 
-from ai_commerce_gateway.contracts.models import AddProductImageCommand
+from ai_commerce_gateway.contracts.models import AddProductImageCommand, DeleteProductImageCommand
+
+
 @router.post("/{merchant_id}/products/{product_id}/images", status_code=201)
-def add_product_image(
+async def add_product_image(
     merchant_id: str,
     product_id: str,
-    body: AddProductImageCommand,
-    catalog: CatalogService,
+    catalog: CatalogSvc,
     actor: Annotated[ActorContext, Depends(get_merchant_actor)],
+    file: UploadFile = File(...),
+    alt_text: str | None = Form(None),
+    sort_order: int = Form(0),
+    idempotency_key: str = Form(...),
 ) -> dict[str, Any]:
-    # Ensure URL is passed. The command is meant for a filename, but we will hack it to accept URL in filename for now.
-    res = catalog.add_product_image(body, actor)
+    """Upload a product image (multipart/form-data)."""
+    content = await file.read()
+    command = AddProductImageCommand(
+        merchant_id=merchant_id,
+        product_id=product_id,
+        filename=file.filename or "upload.jpg",
+        content_type=file.content_type or "image/jpeg",
+        content=content,
+        alt_text=alt_text,
+        sort_order=sort_order,
+        idempotency_key=idempotency_key,
+    )
+    res = catalog.add_product_image(command, actor)
     return res.model_dump()
+
+
+@router.delete("/{merchant_id}/products/{product_id}/images/{image_id}", status_code=204)
+def delete_product_image(
+    merchant_id: str,
+    product_id: str,
+    image_id: str,
+    catalog: CatalogSvc,
+    actor: Annotated[ActorContext, Depends(get_merchant_actor)],
+    idempotency_key: str = Header(..., alias="X-Idempotency-Key"),
+) -> None:
+    """Delete a product image."""
+    command = DeleteProductImageCommand(
+        merchant_id=merchant_id,
+        product_id=product_id,
+        image_id=image_id,
+        idempotency_key=idempotency_key,
+    )
+    catalog.delete_product_image(command, actor)
+
+
+# ---------------------------------------------------------------------------
+# AI-assisted draft extraction (D-010) — propose-only
+# ---------------------------------------------------------------------------
 
 @router.post("/{merchant_id}/products/extract-draft")
 def extract_product_draft(

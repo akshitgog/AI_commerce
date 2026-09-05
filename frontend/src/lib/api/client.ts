@@ -162,6 +162,74 @@ export class ApiClient {
     return this.mapProduct(data);
   }
 
+  async addProductImage(
+    merchantId: string,
+    productId: string,
+    file: File,
+    altText?: string,
+    sortOrder: number = 0
+  ): Promise<any> {
+    const formData = new FormData();
+    formData.append("file", file);
+    if (altText) formData.append("alt_text", altText);
+    formData.append("sort_order", sortOrder.toString());
+    formData.append("idempotency_key", crypto.randomUUID());
+
+    const headers = this.merchantHeaders();
+    // Remove Content-Type header - browser will set it with boundary for multipart
+    delete headers["Content-Type"];
+
+    const res = await fetch(
+      `/api/merchants/${merchantId}/products/${productId}/images`,
+      {
+        method: "POST",
+        headers,
+        body: formData,
+      }
+    );
+
+    if (!res.ok) {
+      let err;
+      try {
+        err = await res.json();
+      } catch (e) {
+        throw new Error(res.statusText);
+      }
+      throw new ApiError(err);
+    }
+
+    return res.json();
+  }
+
+  async deleteProductImage(
+    merchantId: string,
+    productId: string,
+    imageId: string
+  ): Promise<void> {
+    const headers = {
+      ...this.merchantHeaders(),
+      "X-Idempotency-Key": crypto.randomUUID(),
+    };
+
+    const res = await fetch(
+      `/api/merchants/${merchantId}/products/${productId}/images/${imageId}`,
+      {
+        method: "DELETE",
+        headers,
+      }
+    );
+
+    if (!res.ok) {
+      let err;
+      try {
+        err = await res.json();
+      } catch (e) {
+        throw new Error(res.statusText);
+      }
+      throw new ApiError(err);
+    }
+  }
+
     async extractDraft(merchantId: string, text: string): Promise<any> {
     const res = await this.request("/merchants/" + merchantId + "/products/extract-draft", {
         method: "POST",

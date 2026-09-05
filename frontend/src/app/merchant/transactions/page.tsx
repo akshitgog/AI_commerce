@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ReceiptText } from "lucide-react";
+import { ReceiptText, Download } from "lucide-react";
 
 import { useCommerce } from "@/lib/services/provider";
 import { formatRelativeTime } from "@/lib/format";
@@ -20,6 +20,67 @@ import {
   TransactionStatusBadge,
 } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/merchant/empty-state";
+import { Button } from "@/components/ui/button";
+
+function exportTransactionsCSV(
+  transactions: any[],
+  authorizations: any[],
+  decisions: any[],
+  productTitle: (id: string) => string
+) {
+  const headers = [
+    "Transaction ID",
+    "Product",
+    "Amount (minor)",
+    "Currency",
+    "Buyer Auth Status",
+    "Merchant Decision",
+    "Transaction Status",
+    "Updated At",
+  ];
+
+  const rows = transactions.map((txn) => {
+    const auth = authorizations.find((a) => a.proposalId === txn.proposalId);
+    const decision = decisions.find((d) => d.proposalId === txn.proposalId);
+
+    return [
+      txn.id,
+      productTitle(txn.productId),
+      txn.amount.amount_minor,
+      txn.amount.currency,
+      auth?.status || "—",
+      decision?.decision || "—",
+      txn.state,
+      txn.updatedAt,
+    ];
+  });
+
+  const csvContent = [
+    headers.join(","),
+    ...rows.map((row) =>
+      row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+    ),
+  ].join("\n");
+
+  const blob = new Blob([csvContent], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `transactions_${Date.now()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportTransactionsJSON(transactions: any[]) {
+  const json = JSON.stringify(transactions, null, 2);
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `transactions_${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 export default function TransactionsPage() {
   const router = useRouter();
@@ -37,12 +98,41 @@ export default function TransactionsPage() {
 
   return (
     <>
-      <div>
-        <h2 className="text-lg font-semibold">Transactions</h2>
-        <p className="text-sm text-muted-foreground">
-          <span className="tnum">{transactions.length}</span> transactions.
-          Buyer authorization and merchant decision are tracked independently.
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">Transactions</h2>
+          <p className="text-sm text-muted-foreground">
+            <span className="tnum">{transactions.length}</span> transactions.
+            Buyer authorization and merchant decision are tracked independently.
+          </p>
+        </div>
+        {transactions.length > 0 && (
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                exportTransactionsCSV(
+                  transactions,
+                  authorizations,
+                  decisions,
+                  productTitle
+                )
+              }
+            >
+              <Download className="h-4 w-4 mr-2" />
+              CSV
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => exportTransactionsJSON(transactions)}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              JSON
+            </Button>
+          </div>
+        )}
       </div>
 
       {transactions.length === 0 ? (

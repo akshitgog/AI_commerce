@@ -100,6 +100,16 @@ class Settings(BaseSettings):
     storage_provider: str = "unconfigured"
     storage_bucket: str = "product-images"
     storage_public_base_url: str | None = None
+    # AWS S3 credentials
+    aws_region: str | None = None
+    aws_access_key_id: str | None = None
+    aws_secret_access_key: SecretStr | None = None
+    # GCP credentials (JSON string)
+    gcp_credentials_json: SecretStr | None = None
+    # Supabase credentials
+    supabase_url: str | None = None
+    supabase_service_role_key: SecretStr | None = None
+    supabase_anon_key: str | None = None
 
     razorpay_key_id: str | None = None
     razorpay_key_secret: SecretStr | None = None

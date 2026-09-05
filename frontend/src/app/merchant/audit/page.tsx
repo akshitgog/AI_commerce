@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ScrollText } from "lucide-react";
+import { ScrollText, Download } from "lucide-react";
 
 import { useCommerce } from "@/lib/services/provider";
 import {
@@ -21,6 +21,47 @@ import {
 } from "@/components/ui/select";
 import { AuditTimeline } from "@/components/shared/audit-timeline";
 import { EmptyState } from "@/components/merchant/empty-state";
+import { Button } from "@/components/ui/button";
+
+function exportAuditCSV(events: any[], transactionId: string) {
+  const headers = ["Timestamp", "Event Type", "Actor Type", "Actor ID", "Reason Code", "Previous State", "New State", "Correlation ID"];
+  const rows = events.map((e) => [
+    e.created_at || e.createdAt || "",
+    e.event_type || e.eventType || "",
+    e.actor_type || e.actorType || "",
+    e.actor_id || e.actorId || "",
+    e.reason_code || e.reasonCode || "",
+    e.previous_state || e.previousState || "",
+    e.new_state || e.newState || "",
+    e.correlation_id || e.correlationId || "",
+  ]);
+
+  const csvContent = [
+    headers.join(","),
+    ...rows.map((row) =>
+      row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+    ),
+  ].join("\n");
+
+  const blob = new Blob([csvContent], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `audit_${transactionId}_${Date.now()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportAuditJSON(events: any[], transactionId: string) {
+  const json = JSON.stringify(events, null, 2);
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `audit_${transactionId}_${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 export default function AuditPage() {
   const { state, actions } = useCommerce();
@@ -61,10 +102,34 @@ export default function AuditPage() {
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Transaction audit trail</CardTitle>
-            <CardDescription>
-              Select a transaction to inspect its causal event history.
-            </CardDescription>
+            <div className="flex items-start justify-between">
+              <div>
+                <CardTitle>Transaction audit trail</CardTitle>
+                <CardDescription>
+                  Select a transaction to inspect its causal event history.
+                </CardDescription>
+              </div>
+              {currentId && events.length > 0 && (
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => exportAuditCSV(events, currentId)}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    CSV
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => exportAuditJSON(events, currentId)}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    JSON
+                  </Button>
+                </div>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="max-w-md space-y-2">

@@ -17,4 +17,24 @@ services:
         generateValue: true
       - key: BUYER_SESSIONS_ISSUER_KEY
         generateValue: true
+      # Storage Configuration
+      - key: STORAGE_PROVIDER
+        value: local  # local, s3, gcs, or unconfigured
+      - key: STORAGE_BUCKET
+        value: product-images
+      # AWS S3 (optional - only if STORAGE_PROVIDER=s3)
+      - key: AWS_REGION
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      # GCP (optional - only if STORAGE_PROVIDER=gcs)
+      - key: GCP_CREDENTIALS_JSON
+        sync: false
+      # Supabase (optional - only if STORAGE_PROVIDER=supabase)
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
 

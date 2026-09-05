@@ -20,7 +20,7 @@ llm:
   max_tool_steps: 8
 
 storage:
-  provider: unconfigured
+  provider: local
   bucket: product-images
   public_base_url: null
 

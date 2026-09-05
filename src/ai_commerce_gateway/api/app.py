@@ -151,6 +151,14 @@ def create_app(
     engine = create_engine(settings)
     app.state.session_factory = create_session_factory(engine)
 
+    # Mount static files for serving uploaded images
+    from pathlib import Path
+    from fastapi.staticfiles import StaticFiles
+
+    uploads_dir = Path("uploads")
+    uploads_dir.mkdir(exist_ok=True)
+    app.mount("/media", StaticFiles(directory=str(uploads_dir)), name="media")
+
     # Transaction lane provider callbacks.
     callback_service = provider_verification_service
     if owned_composition_root is not None:

@@ -236,12 +236,37 @@ export function createCommerceStore() {
       setState({ products: state.products.filter(p => p.id !== productId) });
     },
     async addProductImage(productId, image) {
-      return state.products.find(p => p.id === productId)!;
+      await apiClient.addProductImage(
+        "mer_demo",
+        productId,
+        image.file,
+        image.alt,
+        image.sortOrder || 0
+      );
+      // Reload product to get updated images
+      const product = await apiClient.getProduct("mer_demo", productId);
+      const idx = state.products.findIndex(p => p.id === productId);
+      if (idx !== -1) {
+        const newProducts = [...state.products];
+        newProducts[idx] = product;
+        setState({ products: newProducts });
+      }
+      return product;
     },
     async removeProductImage(productId, imageId) {
-      return state.products.find(p => p.id === productId)!;
+      await apiClient.deleteProductImage("mer_demo", productId, imageId);
+      // Reload product
+      const product = await apiClient.getProduct("mer_demo", productId);
+      const idx = state.products.findIndex(p => p.id === productId);
+      if (idx !== -1) {
+        const newProducts = [...state.products];
+        newProducts[idx] = product;
+        setState({ products: newProducts });
+      }
+      return product;
     },
     async reorderProductImages(productId, imageIds) {
+      // For now, reordering is not implemented on backend - just return current product
       return state.products.find(p => p.id === productId)!;
     },
     async extractDraft(text) {
