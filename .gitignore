@@ -8,6 +8,7 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 .coverage
+commerce_dev.db
 htmlcov/
 dist/
 build/

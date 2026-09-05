@@ -1,36 +1,35 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI Commerce Gateway Web App
 
-## Getting Started
+This folder contains the customer-facing Next.js application for [AI Commerce Gateway](../README.md): the buyer assistant, checkout journey, merchant dashboard, and merchant AI catalog tools.
 
-First, run the development server:
+## Run locally
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). The app proxies `/api/*` requests to the backend so the browser stays on a single origin.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Configuration
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Create `frontend/.env.local` only when the API is not running at the default local address:
 
-## Learn More
+```env
+BACKEND_ORIGIN=http://127.0.0.1:8000
+```
 
-To learn more about Next.js, take a look at the following resources:
+For Vercel, configure `BACKEND_ORIGIN` as a production environment variable that points to the deployed FastAPI service. Do not put backend credentials or payment secrets in this frontend project.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Useful commands
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm run dev      # development server
+npm run lint     # lint the application
+npm run build    # production build
+npm run start    # run the built app
+```
 
-## Deploy on Vercel
+## Production
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The deployed experience is available at [ai-commerce-zeta.vercel.app](https://ai-commerce-zeta.vercel.app). For the complete product architecture, backend setup, and deployment guide, return to the [repository README](../README.md).
