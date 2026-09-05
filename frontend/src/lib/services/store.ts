@@ -232,7 +232,9 @@ export function createCommerceStore() {
       setState({ products: newProducts });
       return p;
     },
-    async deleteDraft(productId) {},
+    async deleteDraft(productId) {
+      setState({ products: state.products.filter(p => p.id !== productId) });
+    },
     async addProductImage(productId, image) {
       return state.products.find(p => p.id === productId)!;
     },
@@ -276,7 +278,14 @@ export function createCommerceStore() {
       });
       return decision;
     },
-    async cancelProposal(proposalId) {},
+    async cancelProposal(proposalId) {
+      const p = state.proposals[proposalId];
+      if (p) {
+        setState({
+          proposals: { ...state.proposals, [proposalId]: { ...p, status: "CANCELLED" as any } },
+        });
+      }
+    },
     listReviews() {
       return state.reviews;
     },

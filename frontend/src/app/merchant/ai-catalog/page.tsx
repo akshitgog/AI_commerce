@@ -36,7 +36,6 @@ export default function AICatalogPage() {
     setDraft(null);
     setSuccessId(null);
     try {
-      // @ts-ignore
       const result = await actions.extractDraft(inputText);
       setDraft(result as DraftResult);
     } catch (error) {
@@ -50,16 +49,13 @@ export default function AICatalogPage() {
     if (!draft) return;
     setIsCreating(true);
     try {
-      // @ts-ignore
       const product = await actions.createProduct({
         title: draft.title,
         description: draft.description,
-        price_amount: draft.price.amount_minor,
-        price_currency: draft.price.currency,
-        available_quantity: draft.available_quantity,
+        price: { amount_minor: draft.price.amount_minor, currency: draft.price.currency },
+        availableQuantity: draft.available_quantity,
         category: draft.category || undefined,
-        sku: draft.sku || undefined,
-        status: "draft",
+        sku: draft.sku || `SKU-${Date.now()}`,
       });
       setSuccessId(product.id);
     } catch (error) {
@@ -183,7 +179,7 @@ export default function AICatalogPage() {
               </CardHeader>
               <CardContent>
                 <Button
-                  onClick={() => router.push(`/merchant/products/${successId}/edit`)}
+                  onClick={() => router.push(`/merchant/products/${successId}`)}
                   variant="outline"
                   className="w-full group"
                 >
