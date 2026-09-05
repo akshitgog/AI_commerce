@@ -51,6 +51,7 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501", "E402", "B008"]
 
 [tool.mypy]
 python_version = "3.12"
@@ -61,3 +62,4 @@ packages = ["ai_commerce_gateway"]
 [[tool.mypy.overrides]]
 module = ['boto3.*', 'botocore.*', 'google.cloud.*']
 ignore_missing_imports = true
+
