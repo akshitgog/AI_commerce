@@ -85,9 +85,7 @@ async def test_buyer_harness_chat_parity(running_server: tuple[str, str]) -> Non
     """
     base_url, _ = running_server
 
-    auth_headers = buyer_headers(
-        "buyer_harness_001", correlation_id="corr_chat_001"
-    )
+    auth_headers = buyer_headers("buyer_harness_001", correlation_id="corr_chat_001")
 
     async with httpx.AsyncClient(base_url=base_url) as client:
         # 1. Search Catalog

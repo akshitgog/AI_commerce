@@ -38,6 +38,7 @@ CATALOG_IDEMPOTENT_OPERATIONS: Final[frozenset[str]] = frozenset(
 # Fingerprint helpers
 # ---------------------------------------------------------------------------
 
+
 def _hash_payload(payload: dict[str, object]) -> str:
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
     return f"sha256:{hashlib.sha256(encoded).hexdigest()}"
@@ -80,6 +81,7 @@ def response_fingerprint(response_json: str) -> str:
 # ---------------------------------------------------------------------------
 # Idempotency record
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True, slots=True)
 class CatalogIdempotencyRecord:

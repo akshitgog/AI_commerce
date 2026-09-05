@@ -57,9 +57,7 @@ class IdempotentCatalogService:
 
     # -- passthrough operations -------------------------------------------
 
-    def create_merchant(
-        self, command: CreateMerchantCommand, actor: ActorContext
-    ) -> MerchantView:
+    def create_merchant(self, command: CreateMerchantCommand, actor: ActorContext) -> MerchantView:
         return self._inner.create_merchant(command, actor)
 
     def get_merchant(self, merchant_id: str, actor: ActorContext) -> MerchantView:
@@ -78,16 +76,12 @@ class IdempotentCatalogService:
     ) -> ProductImageView:
         return self._inner.add_product_image(command, actor)
 
-    def delete_product_image(
-        self, command: DeleteProductImageCommand, actor: ActorContext
-    ) -> None:
+    def delete_product_image(self, command: DeleteProductImageCommand, actor: ActorContext) -> None:
         return self._inner.delete_product_image(command, actor)
 
     # -- idempotent mutations ---------------------------------------------
 
-    def create_product(
-        self, command: CreateProductCommand, actor: ActorContext
-    ) -> ProductView:
+    def create_product(self, command: CreateProductCommand, actor: ActorContext) -> ProductView:
         return self._idempotent(
             command_idempotency_key=command.idempotency_key,
             actor=actor,
@@ -106,9 +100,7 @@ class IdempotentCatalogService:
             execute=lambda: self._inner.create_product(command, actor),
         )
 
-    def update_product(
-        self, command: UpdateProductCommand, actor: ActorContext
-    ) -> ProductView:
+    def update_product(self, command: UpdateProductCommand, actor: ActorContext) -> ProductView:
         return self._idempotent(
             command_idempotency_key=command.idempotency_key,
             actor=actor,
@@ -120,9 +112,7 @@ class IdempotentCatalogService:
                 "title": command.title,
                 "description": command.description,
                 "category": command.category,
-                "amount_minor": (
-                    command.price.amount_minor if command.price is not None else None
-                ),
+                "amount_minor": (command.price.amount_minor if command.price is not None else None),
                 "currency": command.price.currency if command.price is not None else None,
                 "available_quantity": command.available_quantity,
             },

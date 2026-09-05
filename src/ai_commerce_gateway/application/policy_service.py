@@ -123,10 +123,7 @@ class ApplicationMerchantPolicyService(MerchantPolicyService):
             saved = self._policy_repo.add(new_policy)
             return _to_policy_view(saved)
 
-        if (
-            command.expected_version is not None
-            and current.version != command.expected_version
-        ):
+        if command.expected_version is not None and current.version != command.expected_version:
             raise AppError(
                 ErrorCode.VALIDATION_ERROR,
                 "Version mismatch (stale write).",
@@ -163,8 +160,7 @@ class ApplicationMerchantPolicyService(MerchantPolicyService):
             )
             .where(
                 orm.MerchantDecision.merchant_id == merchant_id,
-                orm.MerchantDecision.decision
-                == MerchantDecisionValue.REVIEW_REQUIRED.value,
+                orm.MerchantDecision.decision == MerchantDecisionValue.REVIEW_REQUIRED.value,
             )
             .order_by(orm.MerchantDecision.created_at, orm.MerchantDecision.id)
             .limit(limit)
@@ -229,9 +225,7 @@ class ApplicationMerchantPolicyService(MerchantPolicyService):
                 )
             )
 
-        next_cursor = (
-            results[-1][0].id if len(results) == limit else None
-        )
+        next_cursor = results[-1][0].id if len(results) == limit else None
         return MerchantReviewPage(items=tuple(items), next_cursor=next_cursor)
 
     def evaluate(

@@ -232,9 +232,7 @@ class FakeProductImageRepository:
         self._store[entity.id] = entity
         return entity
 
-    def get(
-        self, merchant_id: str, product_id: str, image_id: str
-    ) -> ProductImageEntity | None:
+    def get(self, merchant_id: str, product_id: str, image_id: str) -> ProductImageEntity | None:
         img = self._store.get(image_id)
         if img is None or not self._tenant_guard(img, merchant_id, product_id):
             return None

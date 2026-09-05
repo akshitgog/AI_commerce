@@ -272,8 +272,6 @@ class SqlAlchemyProductRepository:
         row = self._session.scalars(stmt).first()
         return _orm_product_to_entity(row) if row is not None else None
 
-
-
     def get_by_sku(self, merchant_id: str, sku: str) -> ProductEntity | None:
         stmt = select(orm.Product).where(
             orm.Product.merchant_id == merchant_id,
@@ -284,6 +282,7 @@ class SqlAlchemyProductRepository:
 
     def update(self, entity: ProductEntity) -> ProductEntity:
         from sqlalchemy import update as sql_update
+
         stmt = (
             sql_update(orm.Product)
             .where(
@@ -306,12 +305,11 @@ class SqlAlchemyProductRepository:
         )
         try:
             result = self._session.execute(stmt)
-            if getattr(result, 'rowcount', 0) == 0:
+            if getattr(result, "rowcount", 0) == 0:
                 # Distinguish between 404 (not found) and 409 (stale write)
                 exists = self._session.scalar(
                     select(orm.Product.id).where(
-                        orm.Product.id == entity.id,
-                        orm.Product.merchant_id == entity.merchant_id
+                        orm.Product.id == entity.id, orm.Product.merchant_id == entity.merchant_id
                     )
                 )
                 if not exists:
@@ -334,18 +332,15 @@ class SqlAlchemyProductRepository:
                 status_code=409,
                 details={"sku": entity.sku, "merchant_id": entity.merchant_id},
             ) from exc
-        
+
         # Fetch the updated row to return
         row = self._session.scalars(
             select(orm.Product).where(
-                orm.Product.id == entity.id,
-                orm.Product.merchant_id == entity.merchant_id
+                orm.Product.id == entity.id, orm.Product.merchant_id == entity.merchant_id
             )
         ).first()
         assert row is not None, "Row must exist after successful update"
         return _orm_product_to_entity(row)
-
-
 
     def list_for_merchant(
         self,
@@ -364,8 +359,11 @@ class SqlAlchemyProductRepository:
             cursor_row = self._session.get(orm.Product, cursor)
             if cursor_row:
                 stmt = stmt.where(
-                    (orm.Product.created_at > cursor_row.created_at) |
-                    ((orm.Product.created_at == cursor_row.created_at) & (orm.Product.id > cursor))
+                    (orm.Product.created_at > cursor_row.created_at)
+                    | (
+                        (orm.Product.created_at == cursor_row.created_at)
+                        & (orm.Product.id > cursor)
+                    )
                 )
 
         return [_orm_product_to_entity(r) for r in self._session.scalars(stmt)]
@@ -506,9 +504,7 @@ class SqlAlchemyProductImageRepository:
             ) from exc
         return _orm_product_image_to_entity(row)
 
-    def get(
-        self, merchant_id: str, product_id: str, image_id: str
-    ) -> ProductImageEntity | None:
+    def get(self, merchant_id: str, product_id: str, image_id: str) -> ProductImageEntity | None:
         stmt = select(orm.ProductImage).where(
             orm.ProductImage.id == image_id,
             orm.ProductImage.product_id == product_id,
@@ -517,9 +513,7 @@ class SqlAlchemyProductImageRepository:
         row = self._session.scalars(stmt).first()
         return _orm_product_image_to_entity(row) if row is not None else None
 
-    def list_for_product(
-        self, merchant_id: str, product_id: str
-    ) -> list[ProductImageEntity]:
+    def list_for_product(self, merchant_id: str, product_id: str) -> list[ProductImageEntity]:
         stmt = (
             select(orm.ProductImage)
             .where(
@@ -571,14 +565,10 @@ class SqlAlchemyMerchantPolicyRepository:
             merchant_id=entity.merchant_id,
             mode=entity.mode.value,
             auto_accept_max_minor=(
-                entity.auto_accept_max.amount_minor
-                if entity.auto_accept_max is not None
-                else None
+                entity.auto_accept_max.amount_minor if entity.auto_accept_max is not None else None
             ),
             currency=(
-                entity.auto_accept_max.currency
-                if entity.auto_accept_max is not None
-                else None
+                entity.auto_accept_max.currency if entity.auto_accept_max is not None else None
             ),
             version=entity.version,
             status=entity.status.value,
@@ -611,14 +601,10 @@ class SqlAlchemyMerchantPolicyRepository:
         now = _now_utc()
         row.mode = entity.mode.value
         row.auto_accept_max_minor = (
-            entity.auto_accept_max.amount_minor
-            if entity.auto_accept_max is not None
-            else None
+            entity.auto_accept_max.amount_minor if entity.auto_accept_max is not None else None
         )
         row.currency = (
-            entity.auto_accept_max.currency
-            if entity.auto_accept_max is not None
-            else None
+            entity.auto_accept_max.currency if entity.auto_accept_max is not None else None
         )
         row.version = entity.version
         row.status = entity.status.value

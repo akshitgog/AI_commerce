@@ -193,9 +193,7 @@ class IdempotencyRepository(Protocol):
         """Return the existing record or None."""
         ...
 
-    def claim(
-        self, record: CatalogIdempotencyRecord
-    ) -> tuple[CatalogIdempotencyRecord, bool]:
+    def claim(self, record: CatalogIdempotencyRecord) -> tuple[CatalogIdempotencyRecord, bool]:
         """Attempt to atomically claim the idempotency slot.
 
         Returns ``(record, True)`` if this call inserted the record, or

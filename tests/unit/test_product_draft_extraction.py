@@ -1,4 +1,4 @@
-﻿"""D-010 merchant AI-assisted catalog creation — extraction layer tests.
+"""D-010 merchant AI-assisted catalog creation — extraction layer tests.
 
 Covers the propose-only trust boundary: the extractor and endpoint produce
 drafts and never persist anything; publication flows only through the
@@ -19,6 +19,7 @@ from ai_commerce_gateway.core.errors import AppError
 # ---------------------------------------------------------------------------
 # StubProductDraftExtractor — deterministic heuristics
 # ---------------------------------------------------------------------------
+
 
 class TestStubProductDraftExtractor:
     def test_full_description_draft(self):
@@ -73,6 +74,7 @@ class TestStubProductDraftExtractor:
 # ---------------------------------------------------------------------------
 # LLMProductDraftExtractor — mocked LiteLLM transport
 # ---------------------------------------------------------------------------
+
 
 class _FakeMessage:
     def __init__(self, content: str) -> None:

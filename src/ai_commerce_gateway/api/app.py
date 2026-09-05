@@ -85,9 +85,7 @@ def create_app(
     # Otherwise compose lazily on first use so a missing transaction
     # configuration degrades buyer surfaces to 503 instead of crashing the
     # merchant/provider surfaces at startup.
-    buyer_factory_state: dict[str, BuyerServicesFactory | None] = {
-        "factory": services_factory
-    }
+    buyer_factory_state: dict[str, BuyerServicesFactory | None] = {"factory": services_factory}
     buyer_owned_root: list[object] = []
 
     def buyer_services_scope():  # type: ignore[no-untyped-def]

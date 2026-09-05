@@ -53,9 +53,7 @@ class ProductDraft(BaseModel):
 
     def with_missing_fields(self) -> ProductDraft:
         """Return a copy with ``missing_fields`` computed from core fields."""
-        missing = [
-            name for name in _CORE_DRAFT_FIELDS if getattr(self, name) is None
-        ]
+        missing = [name for name in _CORE_DRAFT_FIELDS if getattr(self, name) is None]
         return self.model_copy(update={"missing_fields": missing})
 
 
@@ -110,9 +108,7 @@ class StubProductDraftExtractor:
         first_sentence = re.split(r"(?<=\w[.!?])\s", first_line, maxsplit=1)[0]
         title = (first_sentence or first_line).rstrip(".!? ").strip()
         if title:
-            draft = draft.model_copy(
-                update={"title": title[:80], "description": cleaned}
-            )
+            draft = draft.model_copy(update={"title": title[:80], "description": cleaned})
 
         price_match = self._PRICE_RE.search(cleaned)
         if price_match:
@@ -128,9 +124,7 @@ class StubProductDraftExtractor:
         if quantity_match:
             raw = quantity_match.group(1) or quantity_match.group(2)
             if raw:
-                draft = draft.model_copy(
-                    update={"available_quantity": int(raw.replace(",", ""))}
-                )
+                draft = draft.model_copy(update={"available_quantity": int(raw.replace(",", ""))})
 
         ports = [f"{count}× {port.upper()}" for count, port in self._PORT_RE.findall(cleaned)]
         if ports:
@@ -150,10 +144,10 @@ class LLMProductDraftExtractor:
     _SYSTEM_PROMPT: Final[str] = (
         "You extract structured product catalog drafts from a merchant's "
         "natural-language description. Respond with JSON only, no prose, using "
-        "exactly this schema: {\"title\": str|null, \"description\": str|null, "
-        "\"category\": str|null, \"price_amount_minor\": int|null, "
-        "\"currency\": str|null, \"available_quantity\": int|null, "
-        "\"attributes\": object}. price_amount_minor is the integer amount in "
+        'exactly this schema: {"title": str|null, "description": str|null, '
+        '"category": str|null, "price_amount_minor": int|null, '
+        '"currency": str|null, "available_quantity": int|null, '
+        '"attributes": object}. price_amount_minor is the integer amount in '
         "minor units (paise) of the merchant's stated price. Use null for any "
         "field the merchant did not state. Never invent facts."
     )

@@ -73,6 +73,7 @@ def engine():  # type: ignore[no-untyped-def]
     yield eng
     if eng.dialect.name == "postgresql":
         from sqlalchemy import text
+
         with eng.begin() as conn:
             for table in reversed(Base.metadata.sorted_tables):
                 conn.execute(text(f"TRUNCATE {table.name} RESTART IDENTITY CASCADE"))

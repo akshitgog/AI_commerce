@@ -51,9 +51,7 @@ def issue_buyer_token(buyer_id: str) -> str:
     return token
 
 
-def buyer_headers(
-    buyer_id: str, *, correlation_id: str | None = None
-) -> dict[str, str]:
+def buyer_headers(buyer_id: str, *, correlation_id: str | None = None) -> dict[str, str]:
     headers = {"Authorization": f"Bearer {issue_buyer_token(buyer_id)}"}
     if correlation_id is not None:
         headers["X-Correlation-ID"] = correlation_id
@@ -61,9 +59,7 @@ def buyer_headers(
 
 
 @asynccontextmanager
-async def mcp_buyer_client(
-    mcp_url: str, buyer_id: str | None
-) -> AsyncIterator[Client]:
+async def mcp_buyer_client(mcp_url: str, buyer_id: str | None) -> AsyncIterator[Client]:
     """Open an MCP client over Streamable HTTP with a real buyer session.
 
     ``buyer_id=None`` connects WITHOUT a session (for negative auth tests).

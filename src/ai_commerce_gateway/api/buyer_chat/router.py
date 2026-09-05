@@ -322,9 +322,7 @@ def approve_authorization(
     return {**auth.model_dump(), "correlation_id": invocation.correlation_id}
 
 
-@router.post(
-    "/purchase-proposals/{proposal_id}/merchant-evaluations", status_code=201
-)
+@router.post("/purchase-proposals/{proposal_id}/merchant-evaluations", status_code=201)
 def evaluate_merchant_policy(
     proposal_id: str,
     actor: Annotated[ActorContext, Depends(get_buyer_actor)],
@@ -368,7 +366,9 @@ def list_buyer_transactions(
     queries = root.transaction_query_service
     page = queries.list_for_buyer(actor.actor_id, actor, cursor)
     from typing import cast
+
     return cast(dict[str, Any], page.model_dump())
+
 
 @router.get("/transactions/{transaction_id}")
 def get_transaction_status(

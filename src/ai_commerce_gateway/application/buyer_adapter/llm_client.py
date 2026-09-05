@@ -221,11 +221,7 @@ class OpenAILLMClient:
                 tool_calls = []
                 for tc in message.tool_calls:
                     try:
-                        args = (
-                            json.loads(tc.function.arguments)
-                            if tc.function.arguments
-                            else {}
-                        )
+                        args = json.loads(tc.function.arguments) if tc.function.arguments else {}
                     except json.JSONDecodeError:
                         args = {}
                     tool_calls.append(

@@ -296,9 +296,7 @@ class MerchantSessionRecord(Base, TimestampMixin):
     __tablename__ = "merchant_sessions"
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
-    merchant_id: Mapped[str] = mapped_column(
-        ForeignKey("merchants.id"), nullable=False, index=True
-    )
+    merchant_id: Mapped[str] = mapped_column(ForeignKey("merchants.id"), nullable=False, index=True)
     user_id: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[str] = mapped_column(String(32), nullable=False)
     issued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
@@ -318,4 +316,6 @@ class UsedConfirmationToken(Base, TimestampMixin):
     product_id: Mapped[str] = mapped_column(String(64), nullable=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     used_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
 Index("ix_transactions_merchant_state", Transaction.merchant_id, Transaction.state)

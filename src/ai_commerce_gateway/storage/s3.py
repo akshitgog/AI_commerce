@@ -11,9 +11,7 @@ from ai_commerce_gateway.core.ids import new_id
 class S3StorageService(StorageService):
     """Storage adapter persisting image bytes to AWS S3."""
 
-    def __init__(
-        self, bucket: str, region: str, access_key: str, secret_key: str
-    ) -> None:
+    def __init__(self, bucket: str, region: str, access_key: str, secret_key: str) -> None:
         self.bucket = bucket
         self.region = region
         self.s3_client = boto3.client(

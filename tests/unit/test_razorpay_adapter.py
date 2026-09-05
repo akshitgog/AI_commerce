@@ -294,9 +294,7 @@ def test_receipt_lookup_rejects_absent_ambiguous_or_mismatched_orders(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     # Skip the real backoff sleeps; retry behavior is covered separately.
-    monkeypatch.setattr(
-        "ai_commerce_gateway.providers.razorpay.sleep", lambda _seconds: None
-    )
+    monkeypatch.setattr("ai_commerce_gateway.providers.razorpay.sleep", lambda _seconds: None)
     with client_for(lambda _: httpx.Response(200, json=payload)) as client:
         adapter = RazorpayAdapter(key_id=KEY_ID, key_secret=KEY_SECRET, client=client)
         with pytest.raises(RazorpayProtocolError):
@@ -309,18 +307,14 @@ def test_receipt_lookup_retries_until_the_list_index_converges(
     """A fresh order appears in the list index after a few attempts; the
     lookup must retry (GET-only) and then validate the single-order payload."""
     sleeps: list[float] = []
-    monkeypatch.setattr(
-        "ai_commerce_gateway.providers.razorpay.sleep", sleeps.append
-    )
+    monkeypatch.setattr("ai_commerce_gateway.providers.razorpay.sleep", sleeps.append)
     requests: list[httpx.Request] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
         requests.append(request)
         if request.url.path == "/v1/orders":
             if len(requests) < 3:
-                return httpx.Response(
-                    200, json={"entity": "collection", "count": 0, "items": []}
-                )
+                return httpx.Response(200, json={"entity": "collection", "count": 0, "items": []})
             return httpx.Response(
                 200,
                 json={"entity": "collection", "count": 1, "items": [recovered_order()]},

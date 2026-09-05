@@ -37,6 +37,7 @@ ACTION_UNPUBLISH: Final[str] = "UNPUBLISH"
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _b64url_encode(data: bytes) -> str:
     return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
 
@@ -57,6 +58,7 @@ def _reject(message: str) -> AppError:
 # ---------------------------------------------------------------------------
 # Domain claim
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True, slots=True)
 class PublicationConfirmationClaim:
@@ -84,6 +86,7 @@ class PublicationConfirmationClaim:
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def issue_publication_confirmation(
     *,

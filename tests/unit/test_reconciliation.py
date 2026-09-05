@@ -39,9 +39,7 @@ class FakeProvider:
         self.payment_lookups: list[tuple[str, str]] = []
         self.receipt_lookups: list[str] = []
 
-    def lookup_order_by_receipt(
-        self, command: CreateProviderOrderCommand
-    ) -> ProviderObservation:
+    def lookup_order_by_receipt(self, command: CreateProviderOrderCommand) -> ProviderObservation:
         if self.error:
             raise self.error
         self.receipt_lookups.append(command.receipt)
@@ -194,9 +192,6 @@ def test_reconcile_no_attempt_preserves_unknown(transaction: Transaction) -> Non
         ("txn_123", TransactionState.RECONCILING),
         ("txn_123", TransactionState.UNKNOWN),
     ]
-
-
-
 
 
 def test_reconcile_ignores_ready_transactions(

@@ -149,18 +149,14 @@ class ToolOrchestrator:
             audit_events.append(event)
 
         for turn in range(self.max_tool_steps):
-            response = self.llm_client.generate(
-                conversation, tools=self._get_tool_schemas()
-            )
+            response = self.llm_client.generate(conversation, tools=self._get_tool_schemas())
             if response.text:
                 result["text"] = response.text
 
             if not response.tool_calls:
                 break
 
-            conversation.append(
-                _assistant_tool_call_message(response.tool_calls, response.text)
-            )
+            conversation.append(_assistant_tool_call_message(response.tool_calls, response.text))
 
             hit_handoff = False
             for index, tool_call in enumerate(response.tool_calls):
@@ -178,8 +174,7 @@ class ToolOrchestrator:
                         {
                             "tool": tool_call.name,
                             "error": (
-                                "Pending human authorization handoff; this step "
-                                "was not executed."
+                                "Pending human authorization handoff; this step was not executed."
                             ),
                         }
                     )
@@ -199,9 +194,7 @@ class ToolOrchestrator:
                         result_reference="tool-not-allowed",
                     )
                     error = "Tool not allowed. AI cannot perform this action."
-                    result["tool_results"].append(
-                        {"tool": tool_call.name, "error": error}
-                    )
+                    result["tool_results"].append({"tool": tool_call.name, "error": error})
                     conversation.append(_tool_result_message(tool_call, index, {"error": error}))
                     continue
 
@@ -218,25 +211,17 @@ class ToolOrchestrator:
                         outcome=OUTCOME_FAILED,
                         result_reference=str(exc)[:200],
                     )
-                    result["tool_results"].append(
-                        {"tool": tool_call.name, "error": str(exc)}
-                    )
-                    conversation.append(
-                        _tool_result_message(tool_call, index, {"error": str(exc)})
-                    )
+                    result["tool_results"].append({"tool": tool_call.name, "error": str(exc)})
+                    conversation.append(_tool_result_message(tool_call, index, {"error": str(exc)}))
                     continue
 
                 record(
                     turn=turn,
                     tool=tool_call.name,
                     outcome=OUTCOME_COMPLETED,
-                    result_reference=extract_result_reference(
-                        tool_call.name, tool_result
-                    ),
+                    result_reference=extract_result_reference(tool_call.name, tool_result),
                 )
-                result["tool_results"].append(
-                    {"tool": tool_call.name, "result": tool_result}
-                )
+                result["tool_results"].append({"tool": tool_call.name, "result": tool_result})
                 conversation.append(_tool_result_message(tool_call, index, tool_result))
 
                 if tool_call.name in HANDOFF_TOOLS:
@@ -245,13 +230,10 @@ class ToolOrchestrator:
                     if not result["text"]:
                         if tool_call.name == "execute_transaction":
                             result["text"] = (
-                                "Payment handoff initiated. "
-                                "Please complete the payment process."
+                                "Payment handoff initiated. Please complete the payment process."
                             )
                         else:
-                            result["text"] = (
-                                "Please review and authorize the transaction."
-                            )
+                            result["text"] = "Please review and authorize the transaction."
 
             if hit_handoff:
                 break
@@ -348,9 +330,7 @@ class ToolOrchestrator:
         raise ValueError(f"Unknown tool {tool_name}")
 
 
-def _assistant_tool_call_message(
-    tool_calls: list[ToolCall], text: str | None
-) -> dict[str, Any]:
+def _assistant_tool_call_message(tool_calls: list[ToolCall], text: str | None) -> dict[str, Any]:
     """Build the assistant message that precedes tool results in the loop."""
     return {
         "role": "assistant",

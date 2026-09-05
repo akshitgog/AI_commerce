@@ -118,17 +118,13 @@ async def test_interop_full_buyer_journey_over_http(
         proposal_id = proposal_data["id"]
 
         # ---- request_authorization (NOT approve) ----
-        auth_result = await client.call_tool(
-            "request_authorization", {"proposal_id": proposal_id}
-        )
+        auth_result = await client.call_tool("request_authorization", {"proposal_id": proposal_id})
         auth_data = json.loads(auth_result.content[0].text)  # type: ignore[index]
         assert auth_data["status"] == "REQUESTED"
         assert auth_data["buyer_id"] == "buyer_interop_1"
 
         # ---- execute_transaction ----
-        exec_result = await client.call_tool(
-            "execute_transaction", {"proposal_id": proposal_id}
-        )
+        exec_result = await client.call_tool("execute_transaction", {"proposal_id": proposal_id})
         exec_data = json.loads(exec_result.content[0].text)  # type: ignore[index]
         transaction_id = exec_data["id"]
 

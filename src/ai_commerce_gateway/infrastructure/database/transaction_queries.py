@@ -20,8 +20,13 @@ class SqlAlchemyTransactionQueryRepository(SqlAlchemyExecutionRepository):
     def list_transactions_for_buyer(
         self, buyer_id: str, cursor: str | None
     ) -> tuple[tuple[Transaction, ...], str | None]:
-        statement = select(models.Transaction).join(models.PurchaseProposal, models.Transaction.proposal_id == models.PurchaseProposal.id).where(
-            models.PurchaseProposal.buyer_id == buyer_id
+        statement = (
+            select(models.Transaction)
+            .join(
+                models.PurchaseProposal,
+                models.Transaction.proposal_id == models.PurchaseProposal.id,
+            )
+            .where(models.PurchaseProposal.buyer_id == buyer_id)
         )
         if cursor is not None:
             anchor = self._session.get(models.Transaction, cursor)
@@ -51,9 +56,7 @@ class SqlAlchemyTransactionQueryRepository(SqlAlchemyExecutionRepository):
     def list_transactions(
         self, merchant_id: str, cursor: str | None
     ) -> tuple[tuple[Transaction, ...], str | None]:
-        statement = select(models.Transaction).where(
-            models.Transaction.merchant_id == merchant_id
-        )
+        statement = select(models.Transaction).where(models.Transaction.merchant_id == merchant_id)
         if cursor is not None:
             anchor = self._session.get(models.Transaction, cursor)
             if anchor is None or anchor.merchant_id != merchant_id:
@@ -139,9 +142,7 @@ def _event_view(record: models.TransactionEvent) -> TransactionEventView:
         actor_id=record.actor_id,
         reason_code=record.reason_code,
         previous_state=(
-            TransactionState(record.previous_state)
-            if record.previous_state is not None
-            else None
+            TransactionState(record.previous_state) if record.previous_state is not None else None
         ),
         new_state=(TransactionState(record.new_state) if record.new_state is not None else None),
         correlation_id=record.correlation_id,

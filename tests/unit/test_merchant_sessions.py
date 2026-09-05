@@ -42,9 +42,7 @@ def _seed_member(db: Session, role: MerchantRole = MerchantRole.ADMIN) -> None:
     m_repo = SqlAlchemyMerchantRepository(db)
     u_repo = SqlAlchemyMerchantUserRepository(db)
     m_repo.add(CreateMerchantDomain(id="mer_1", name="M", idempotency_key="ik_m"))
-    u_repo.add(
-        AddMerchantUserDomain(id="mu_1", merchant_id="mer_1", user_id="user_1", role=role)
-    )
+    u_repo.add(AddMerchantUserDomain(id="mu_1", merchant_id="mer_1", user_id="user_1", role=role))
     db.flush()
 
 

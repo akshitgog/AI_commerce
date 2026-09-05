@@ -248,9 +248,7 @@ class TransactionReconciliationApplicationService:
                     **_audit_scope(transaction),
                     "provider": attempt.provider.value,
                     "provider_order_state": order_evidence.provider_order_state,
-                    "recovery_method": (
-                        "transaction_receipt" if recovered_by_receipt else None
-                    ),
+                    "recovery_method": ("transaction_receipt" if recovered_by_receipt else None),
                     "provider_payment_state": (
                         payment_evidence.provider_payment_state
                         if order_evidence.provider_order_state == "paid"

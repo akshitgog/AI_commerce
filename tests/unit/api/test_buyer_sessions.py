@@ -104,9 +104,7 @@ def test_issue_session_disabled_without_issuer_key() -> None:
 
 
 def test_no_token_is_unauthenticated(app_client: TestClient) -> None:
-    response = app_client.post(
-        "/v1/buyer/catalog/search", json={"merchant_id": "mer_1"}
-    )
+    response = app_client.post("/v1/buyer/catalog/search", json={"merchant_id": "mer_1"})
     assert response.status_code == 401
     assert response.json()["error"]["code"] == "UNAUTHENTICATED"
 
@@ -134,9 +132,7 @@ def test_tampered_token_is_rejected(app_client: TestClient) -> None:
 def test_expired_token_is_rejected() -> None:
     import time
 
-    service = BuyerSessionService(
-        secret=SecretStr(TEST_SESSION_SECRET), ttl_seconds=1
-    )
+    service = BuyerSessionService(secret=SecretStr(TEST_SESSION_SECRET), ttl_seconds=1)
     token, _claims = service.issue("buyer_1")
     assert service.resolve(token) is not None
     # itsdangerous compares integer timestamps, so expiry needs > 2s elapsed
@@ -145,9 +141,7 @@ def test_expired_token_is_rejected() -> None:
 
 
 def test_foreign_secret_token_is_rejected(app_client: TestClient) -> None:
-    foreign = BuyerSessionService(
-        secret=SecretStr("another-secret"), ttl_seconds=3600
-    )
+    foreign = BuyerSessionService(secret=SecretStr("another-secret"), ttl_seconds=3600)
     token, _claims = foreign.issue("buyer_1")
     response = app_client.post(
         "/v1/buyer/catalog/search",

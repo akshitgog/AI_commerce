@@ -42,9 +42,7 @@ class SqlAlchemyMerchantIdempotencyRepository:
         )
         return self._record_to_domain(record) if record is not None else None
 
-    def claim(
-        self, record: CatalogIdempotencyRecord
-    ) -> tuple[CatalogIdempotencyRecord, bool]:
+    def claim(self, record: CatalogIdempotencyRecord) -> tuple[CatalogIdempotencyRecord, bool]:
         existing = self.get(
             actor_id=record.actor_id,
             operation=record.operation,
@@ -70,18 +68,14 @@ class SqlAlchemyMerchantIdempotencyRepository:
             statement = (
                 postgresql_insert(models.IdempotencyRecord)
                 .values(**values)
-                .on_conflict_do_nothing(
-                    index_elements=["actor_id", "operation", "idempotency_key"]
-                )
+                .on_conflict_do_nothing(index_elements=["actor_id", "operation", "idempotency_key"])
                 .returning(models.IdempotencyRecord.id)
             )
         elif dialect_name == "sqlite":
             statement = (
                 sqlite_insert(models.IdempotencyRecord)
                 .values(**values)
-                .on_conflict_do_nothing(
-                    index_elements=["actor_id", "operation", "idempotency_key"]
-                )
+                .on_conflict_do_nothing(index_elements=["actor_id", "operation", "idempotency_key"])
                 .returning(models.IdempotencyRecord.id)
             )
         else:

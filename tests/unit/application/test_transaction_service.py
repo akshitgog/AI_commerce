@@ -20,9 +20,7 @@ class RecordingCreationService:
         self._transaction = transaction
         self._calls = calls
 
-    def create(
-        self, command: CreateTransactionCommand, actor: ActorContext
-    ) -> TransactionView:
+    def create(self, command: CreateTransactionCommand, actor: ActorContext) -> TransactionView:
         assert command.proposal_id == self._transaction.proposal_id
         assert actor.actor_id == self._transaction.buyer_id
         self._calls.append("create")

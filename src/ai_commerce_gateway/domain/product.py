@@ -118,7 +118,7 @@ class ProductEntity:
     description: str
     category: str | None
     # ---- authoritative commercial fields ----
-    price: MoneyMinor   # integer minor units + explicit currency
+    price: MoneyMinor  # integer minor units + explicit currency
     available_quantity: int  # >= 0
     status: ProductStatus
     version: int  # >= 1, incremented on every write
@@ -135,9 +135,7 @@ class ProductEntity:
         if self.available_quantity < 0:
             raise ValueError("available_quantity must be >= 0")
         if type(self.version) is not int:  # noqa: E721
-            raise TypeError(
-                f"version must be a plain int, got {type(self.version).__name__!r}"
-            )
+            raise TypeError(f"version must be a plain int, got {type(self.version).__name__!r}")
         if self.version < 1:
             raise ValueError("version must be >= 1")
 

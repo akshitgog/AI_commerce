@@ -58,7 +58,9 @@ def create_storage_service(settings: Settings) -> StorageService | None:
 
         return GCSStorageService(
             bucket=settings.storage_bucket,
-            credentials_json=settings.gcp_credentials_json.get_secret_value() if settings.gcp_credentials_json else None,
+            credentials_json=settings.gcp_credentials_json.get_secret_value()
+            if settings.gcp_credentials_json
+            else None,
         )
 
     elif provider == "supabase":
@@ -66,9 +68,7 @@ def create_storage_service(settings: Settings) -> StorageService | None:
         from ai_commerce_gateway.storage.supabase import SupabaseStorageService
 
         if not all([settings.supabase_url, settings.supabase_service_role_key]):
-            raise ValueError(
-                "Supabase storage requires: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY"
-            )
+            raise ValueError("Supabase storage requires: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY")
 
         return SupabaseStorageService(
             project_url=settings.supabase_url,  # type: ignore

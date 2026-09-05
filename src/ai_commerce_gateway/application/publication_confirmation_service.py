@@ -101,9 +101,7 @@ class PublicationConfirmationService:
             lifetime=self._lifetime,
         )
 
-    def verify(
-        self, token: str, *, now: datetime | None = None
-    ) -> PublicationConfirmationClaim:
+    def verify(self, token: str, *, now: datetime | None = None) -> PublicationConfirmationClaim:
         """Verify the token and reject replayed JTIs.
 
         Note: marks nothing — the caller marks the JTI used only *after* a

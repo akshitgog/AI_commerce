@@ -55,9 +55,7 @@ def test_merchant_policy_crud_and_modes(memory_session: Session) -> None:
     cat_svc = ApplicationMerchantCatalogService(m_repo, p_repo)
     pol_svc = ApplicationMerchantPolicyService(pol_repo, memory_session)
 
-    sys_actor = ActorContext(
-        actor_id="sys1", actor_type=ActorType.SYSTEM, correlation_id="c1"
-    )
+    sys_actor = ActorContext(actor_id="sys1", actor_type=ActorType.SYSTEM, correlation_id="c1")
     m = cat_svc.create_merchant(
         CreateMerchantCommand(name="Policy Store", idempotency_key="ik1"), sys_actor
     )
@@ -139,9 +137,7 @@ def test_merchant_policy_stale_write_and_version_mismatches(
     cat_svc = ApplicationMerchantCatalogService(m_repo, p_repo)
     pol_svc = ApplicationMerchantPolicyService(pol_repo, memory_session)
 
-    sys_actor = ActorContext(
-        actor_id="sys1", actor_type=ActorType.SYSTEM, correlation_id="c1"
-    )
+    sys_actor = ActorContext(actor_id="sys1", actor_type=ActorType.SYSTEM, correlation_id="c1")
     m = cat_svc.create_merchant(
         CreateMerchantCommand(name="Policy Stale Store", idempotency_key="ik_stale"),
         sys_actor,
@@ -196,9 +192,7 @@ def test_merchant_policy_role_and_tenant_denials(memory_session: Session) -> Non
     cat_svc = ApplicationMerchantCatalogService(m_repo, p_repo)
     pol_svc = ApplicationMerchantPolicyService(pol_repo, memory_session)
 
-    sys_actor = ActorContext(
-        actor_id="sys1", actor_type=ActorType.SYSTEM, correlation_id="c1"
-    )
+    sys_actor = ActorContext(actor_id="sys1", actor_type=ActorType.SYSTEM, correlation_id="c1")
     m1 = cat_svc.create_merchant(
         CreateMerchantCommand(name="M1 Policy", idempotency_key="ik_m1"), sys_actor
     )
@@ -242,9 +236,7 @@ def test_merchant_policy_role_and_tenant_denials(memory_session: Session) -> Non
         roles=frozenset([MerchantRole.ADMIN]),
         correlation_id="c_adm2",
     )
-    buyer_actor = ActorContext(
-        actor_id="buyer1", actor_type=ActorType.BUYER, correlation_id="c_b"
-    )
+    buyer_actor = ActorContext(actor_id="buyer1", actor_type=ActorType.BUYER, correlation_id="c_b")
 
     # Initial policy on M1 by ADMIN
     pol_svc.update_policy(
@@ -296,9 +288,7 @@ def test_merchant_review_queue_and_deferred_evaluation(memory_session: Session) 
     cat_svc = ApplicationMerchantCatalogService(m_repo, p_repo)
     pol_svc = ApplicationMerchantPolicyService(pol_repo, memory_session)
 
-    sys_actor = ActorContext(
-        actor_id="sys1", actor_type=ActorType.SYSTEM, correlation_id="c1"
-    )
+    sys_actor = ActorContext(actor_id="sys1", actor_type=ActorType.SYSTEM, correlation_id="c1")
     m = cat_svc.create_merchant(
         CreateMerchantCommand(name="Review Store", idempotency_key="ik_rev"), sys_actor
     )
@@ -340,9 +330,7 @@ def test_merchant_review_queue_and_deferred_evaluation(memory_session: Session) 
 
     # Insert proposal, authorization, and decision with REVIEW_REQUIRED
     now = _now()
-    buyer = orm.Buyer(
-        id="buy_1", external_identity="buyer_ext_1", status=RecordStatus.ACTIVE.value
-    )
+    buyer = orm.Buyer(id="buy_1", external_identity="buyer_ext_1", status=RecordStatus.ACTIVE.value)
     memory_session.add(buyer)
 
     proposal = orm.PurchaseProposal(
@@ -464,9 +452,7 @@ def test_merchant_review_queue_and_deferred_evaluation(memory_session: Session) 
 
     # 4. Deferred operations to B2 raise NotImplementedError
     with pytest.raises(NotImplementedError) as exc_ev:
-        pol_svc.evaluate(
-            EvaluateMerchantPolicyCommand(proposal_id=proposal.id), admin_actor
-        )
+        pol_svc.evaluate(EvaluateMerchantPolicyCommand(proposal_id=proposal.id), admin_actor)
     assert "Transaction Core (B2)" in str(exc_ev.value)
 
     with pytest.raises(NotImplementedError) as exc_rec:
@@ -500,4 +486,3 @@ def test_update_merchant_policy_command_validation() -> None:
             auto_accept_max=Money(amount_minor=100, currency="USD"),
             idempotency_key="ik2",
         )
-

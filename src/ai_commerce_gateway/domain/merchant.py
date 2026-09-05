@@ -62,6 +62,7 @@ class AddMerchantUserDomain:
 
 # Membership validation helpers — kept in domain, not ORM
 
+
 def validate_merchant_name(name: str) -> None:
     if not name or not name.strip():
         raise ValueError("Merchant name must not be empty.")

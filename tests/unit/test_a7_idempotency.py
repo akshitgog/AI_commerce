@@ -50,6 +50,7 @@ from ai_commerce_gateway.infrastructure.database.models import Base
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def memory_session() -> Session:
     engine = create_engine("sqlite:///:memory:")
@@ -125,6 +126,7 @@ def _create_product(
 # ---------------------------------------------------------------------------
 # Catalog request fingerprint tests
 # ---------------------------------------------------------------------------
+
 
 class TestCatalogRequestFingerprint:
     def test_same_inputs_same_fingerprint(self):
@@ -203,6 +205,7 @@ class TestCatalogRequestFingerprint:
 # ---------------------------------------------------------------------------
 # IdempotentCatalogService — core idempotency
 # ---------------------------------------------------------------------------
+
 
 class TestIdempotentCatalogService:
     def test_first_execution_succeeds(
@@ -296,12 +299,8 @@ class TestIdempotentCatalogService:
         from ai_commerce_gateway.domain.merchant import CreateMerchantDomain
 
         m_repo = SqlAlchemyMerchantRepository(memory_session)
-        m_repo.add(CreateMerchantDomain(
-            id="mer_a", name="A", idempotency_key="ik_a"
-        ))
-        m_repo.add(CreateMerchantDomain(
-            id="mer_b", name="B", idempotency_key="ik_b"
-        ))
+        m_repo.add(CreateMerchantDomain(id="mer_a", name="A", idempotency_key="ik_a"))
+        m_repo.add(CreateMerchantDomain(id="mer_b", name="B", idempotency_key="ik_b"))
         memory_session.flush()
 
         actor_a = ActorContext(
@@ -348,9 +347,7 @@ class TestIdempotentCatalogService:
     ):
         _create_merchant(memory_session)
         actor = _merchant_actor()
-        prod = _create_product(
-            idempotent_service, "mer_test", actor, sku="SKU-PUB"
-        )
+        prod = _create_product(idempotent_service, "mer_test", actor, sku="SKU-PUB")
 
         pub_cmd = SetProductPublicationCommand(
             merchant_id="mer_test",
@@ -379,9 +376,7 @@ class TestIdempotentCatalogService:
     ):
         _create_merchant(memory_session)
         actor = _merchant_actor()
-        prod = _create_product(
-            idempotent_service, "mer_test", actor, sku="SKU-UPD"
-        )
+        prod = _create_product(idempotent_service, "mer_test", actor, sku="SKU-UPD")
 
         cmd = UpdateProductCommand(
             merchant_id="mer_test",
@@ -405,6 +400,7 @@ class TestIdempotentCatalogService:
 # IdempotentCatalogService — concurrent claim
 # ---------------------------------------------------------------------------
 
+
 class TestConcurrentClaim:
     def test_two_claims_one_wins(
         self,
@@ -423,16 +419,28 @@ class TestConcurrentClaim:
         )
         now = datetime.now(tz=UTC)
         rec1 = CatalogIdempotencyRecord(
-            id="idem_1", actor_id=actor.actor_id,
-            operation=CATALOG_CREATE_PRODUCT, idempotency_key="ik_concurrent",
-            request_fingerprint=fp, resource_type=None, resource_id=None,
-            response_code=None, response_body_hash=None, created_at=now,
+            id="idem_1",
+            actor_id=actor.actor_id,
+            operation=CATALOG_CREATE_PRODUCT,
+            idempotency_key="ik_concurrent",
+            request_fingerprint=fp,
+            resource_type=None,
+            resource_id=None,
+            response_code=None,
+            response_body_hash=None,
+            created_at=now,
         )
         rec2 = CatalogIdempotencyRecord(
-            id="idem_2", actor_id=actor.actor_id,
-            operation=CATALOG_CREATE_PRODUCT, idempotency_key="ik_concurrent",
-            request_fingerprint=fp, resource_type=None, resource_id=None,
-            response_code=None, response_body_hash=None, created_at=now,
+            id="idem_2",
+            actor_id=actor.actor_id,
+            operation=CATALOG_CREATE_PRODUCT,
+            idempotency_key="ik_concurrent",
+            request_fingerprint=fp,
+            resource_type=None,
+            resource_id=None,
+            response_code=None,
+            response_body_hash=None,
+            created_at=now,
         )
         _, is_new_1 = idempotency_repo.claim(rec1)
         _, is_new_2 = idempotency_repo.claim(rec2)
@@ -443,6 +451,7 @@ class TestConcurrentClaim:
 # ---------------------------------------------------------------------------
 # IdempotentCatalogService — restart persistence
 # ---------------------------------------------------------------------------
+
 
 class TestRestartPersistence:
     def test_record_survives_new_repo_instance(
@@ -469,4 +478,3 @@ class TestRestartPersistence:
         svc2 = IdempotentCatalogService(inner_service, idempotency_repo)
         second = svc2.create_product(cmd, actor)
         assert first.id == second.id
-

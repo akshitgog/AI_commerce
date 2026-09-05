@@ -40,9 +40,7 @@ def test_buyer_catalog_service_draft_invisibility_and_publication_lifecycle(
     merchant_svc = ApplicationMerchantCatalogService(m_repo, p_repo)
     buyer_svc = ApplicationCatalogService(p_repo)
 
-    sys_actor = ActorContext(
-        actor_id="sys1", actor_type=ActorType.SYSTEM, correlation_id="cor1"
-    )
+    sys_actor = ActorContext(actor_id="sys1", actor_type=ActorType.SYSTEM, correlation_id="cor1")
     m_view = merchant_svc.create_merchant(
         CreateMerchantCommand(name="M_Buyer", idempotency_key="ik"), sys_actor
     )
@@ -55,9 +53,7 @@ def test_buyer_catalog_service_draft_invisibility_and_publication_lifecycle(
         roles=frozenset([MerchantRole.ADMIN]),
         correlation_id="cor1",
     )
-    buyer_actor = ActorContext(
-        actor_id="buyer1", actor_type=ActorType.BUYER, correlation_id="cor2"
-    )
+    buyer_actor = ActorContext(actor_id="buyer1", actor_type=ActorType.BUYER, correlation_id="cor2")
 
     # Create two products, one published and one draft
     p1 = merchant_svc.create_product(
@@ -138,9 +134,7 @@ def test_publish_unpublish_role_and_tenant_denials(memory_session):
     p_repo = SqlAlchemyProductRepository(memory_session)
     merchant_svc = ApplicationMerchantCatalogService(m_repo, p_repo)
 
-    sys_actor = ActorContext(
-        actor_id="sys1", actor_type=ActorType.SYSTEM, correlation_id="cor1"
-    )
+    sys_actor = ActorContext(actor_id="sys1", actor_type=ActorType.SYSTEM, correlation_id="cor1")
     m1 = merchant_svc.create_merchant(
         CreateMerchantCommand(name="M1", idempotency_key="ik1"), sys_actor
     )
@@ -227,9 +221,7 @@ def test_publish_unpublish_stale_write_and_not_found(memory_session):
     p_repo = SqlAlchemyProductRepository(memory_session)
     merchant_svc = ApplicationMerchantCatalogService(m_repo, p_repo)
 
-    sys_actor = ActorContext(
-        actor_id="sys1", actor_type=ActorType.SYSTEM, correlation_id="cor1"
-    )
+    sys_actor = ActorContext(actor_id="sys1", actor_type=ActorType.SYSTEM, correlation_id="cor1")
     m = merchant_svc.create_merchant(
         CreateMerchantCommand(name="M_Stale", idempotency_key="ik_stale"), sys_actor
     )
@@ -327,9 +319,7 @@ def test_catalog_search_filters_and_multi_merchant_isolation(memory_session):
     merchant_svc = ApplicationMerchantCatalogService(m_repo, p_repo)
     buyer_svc = ApplicationCatalogService(p_repo)
 
-    sys_actor = ActorContext(
-        actor_id="sys1", actor_type=ActorType.SYSTEM, correlation_id="cor1"
-    )
+    sys_actor = ActorContext(actor_id="sys1", actor_type=ActorType.SYSTEM, correlation_id="cor1")
     m1 = merchant_svc.create_merchant(
         CreateMerchantCommand(name="M1", idempotency_key="ik_m1"), sys_actor
     )
@@ -352,9 +342,7 @@ def test_catalog_search_filters_and_multi_merchant_isolation(memory_session):
         roles=frozenset([MerchantRole.ADMIN]),
         correlation_id="c2",
     )
-    buyer_actor = ActorContext(
-        actor_id="buyer1", actor_type=ActorType.BUYER, correlation_id="b1"
-    )
+    buyer_actor = ActorContext(actor_id="buyer1", actor_type=ActorType.BUYER, correlation_id="b1")
 
     # Populate M1 with multiple published items
     p1 = merchant_svc.create_product(
@@ -447,16 +435,12 @@ def test_catalog_search_filters_and_multi_merchant_isolation(memory_session):
     assert exc_cross.value.status_code == 404
 
     # 2. Query filter on description
-    res_desc = buyer_svc.search(
-        CatalogSearchQuery(merchant_id=m1.id, query="OLED"), buyer_actor
-    )
+    res_desc = buyer_svc.search(CatalogSearchQuery(merchant_id=m1.id, query="OLED"), buyer_actor)
     assert len(res_desc.items) == 1
     assert res_desc.items[0].id == p1.id
 
     # 3. Category filter
-    res_cat = buyer_svc.search(
-        CatalogSearchQuery(merchant_id=m1.id, category="books"), buyer_actor
-    )
+    res_cat = buyer_svc.search(CatalogSearchQuery(merchant_id=m1.id, category="books"), buyer_actor)
     assert len(res_cat.items) == 1
     assert res_cat.items[0].id == p2.id
 
@@ -483,9 +467,7 @@ def test_catalog_search_filters_and_multi_merchant_isolation(memory_session):
 
     # Combined price range
     res_range = buyer_svc.search(
-        CatalogSearchQuery(
-            merchant_id=m1.id, min_price_minor=10000, max_price_minor=30000
-        ),
+        CatalogSearchQuery(merchant_id=m1.id, min_price_minor=10000, max_price_minor=30000),
         buyer_actor,
     )
     assert len(res_range.items) == 1
@@ -503,9 +485,7 @@ def test_catalog_search_filters_and_multi_merchant_isolation(memory_session):
     assert len(res_curr_mismatch.items) == 0
 
     # 6. Pagination testing with next_cursor
-    res_page1 = buyer_svc.search(
-        CatalogSearchQuery(merchant_id=m1.id, limit=2), buyer_actor
-    )
+    res_page1 = buyer_svc.search(CatalogSearchQuery(merchant_id=m1.id, limit=2), buyer_actor)
     assert len(res_page1.items) == 2
     assert res_page1.next_cursor is not None
 

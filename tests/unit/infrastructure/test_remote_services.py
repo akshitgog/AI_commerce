@@ -73,9 +73,7 @@ def test_catalog_search_wire_contract() -> None:
     service = RemoteCatalogService(_client(handler), CATALOG_BASE)
     from ai_commerce_gateway.contracts.models import CatalogSearchQuery
 
-    result = service.search(
-        CatalogSearchQuery(merchant_id="mer_1", query="widget"), _actor()
-    )
+    result = service.search(CatalogSearchQuery(merchant_id="mer_1", query="widget"), _actor())
     assert seen["method"] == "POST"
     assert seen["path"] == "/internal/buyer/catalog/search"
     assert seen["body"]["merchant_id"] == "mer_1"

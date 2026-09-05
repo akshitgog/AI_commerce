@@ -176,9 +176,7 @@ async def test_get_product_and_status(running_server: tuple[str, str]) -> None:
         )
         assert json.loads(prod.content[0].text)["id"] == "prod_fake_001"  # type: ignore[index]
 
-        status = await client.call_tool(
-            "get_transaction_status", {"transaction_id": "txn_1"}
-        )
+        status = await client.call_tool("get_transaction_status", {"transaction_id": "txn_1"})
         assert json.loads(status.content[0].text)["id"] == "txn_1"  # type: ignore[index]
 
 
@@ -186,9 +184,7 @@ async def test_get_product_and_status(running_server: tuple[str, str]) -> None:
 async def test_get_transaction_audit(running_server: tuple[str, str]) -> None:
     _, mcp_url = running_server
     async with mcp_buyer_client(mcp_url, "buyer_1") as client:
-        result = await client.call_tool(
-            "get_transaction_audit", {"transaction_id": "txn_1"}
-        )
+        result = await client.call_tool("get_transaction_audit", {"transaction_id": "txn_1"})
         data = json.loads(result.content[0].text)  # type: ignore[index]
         assert "items" in data
 

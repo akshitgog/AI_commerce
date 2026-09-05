@@ -284,9 +284,7 @@ class ScriptedLLMClient:
         self.responses = responses
         self.calls: list[tuple[list[dict[str, Any]], list[dict[str, Any]]]] = []
 
-    def generate(
-        self, messages: list[dict[str, Any]], tools: list[dict[str, Any]]
-    ) -> LLMResponse:
+    def generate(self, messages: list[dict[str, Any]], tools: list[dict[str, Any]]) -> LLMResponse:
         self.calls.append((list(messages), list(tools)))
         if not self.responses:
             return LLMResponse(text="done")
@@ -354,9 +352,7 @@ def test_bounded_loop_feeds_tool_results_back(
     )
     orchestrator = ToolOrchestrator(llm, mock_adapter)
 
-    result = orchestrator.chat(
-        actor, invocation, [{"role": "user", "content": "find phones"}]
-    )
+    result = orchestrator.chat(actor, invocation, [{"role": "user", "content": "find phones"}])
 
     assert result["text"] == "I found 0 products."
     assert result["tool_calls"] == ["search_catalog"]
@@ -378,9 +374,7 @@ def test_loop_is_hard_bounded(
     llm = ScriptedLLMClient(
         [
             LLMResponse(
-                tool_calls=[
-                    ToolCall(name="search_catalog", arguments={"merchant_id": "mer_123"})
-                ]
+                tool_calls=[ToolCall(name="search_catalog", arguments={"merchant_id": "mer_123"})]
             )
         ]
         * 10
@@ -388,9 +382,7 @@ def test_loop_is_hard_bounded(
     auditor = RecordingAuditor()
     orchestrator = ToolOrchestrator(llm, mock_adapter, auditor=auditor, max_tool_steps=3)
 
-    result = orchestrator.chat(
-        actor, invocation, [{"role": "user", "content": "loop forever"}]
-    )
+    result = orchestrator.chat(actor, invocation, [{"role": "user", "content": "loop forever"}])
 
     assert len(llm.calls) == 3
     assert "maximum number of steps" in result["text"]
@@ -487,8 +479,7 @@ def test_result_reference_prefers_resource_ids() -> None:
 
     assert extract_result_reference("get_product", {"id": "prod_9"}) == "prod_9"
     assert (
-        extract_result_reference("get_transaction_status", {"transaction_id": "txn_7"})
-        == "txn_7"
+        extract_result_reference("get_transaction_status", {"transaction_id": "txn_7"}) == "txn_7"
     )
     assert (
         extract_result_reference("search_catalog", {"items": [{}, {}], "next_cursor": None})

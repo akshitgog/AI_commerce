@@ -226,14 +226,19 @@ def test_reference_buyer_e2e_full_journey(tmp_path: Path) -> None:
         if txn_resp.status_code == 200:
             txn_id = txn_body["id"]
             assert txn_body["state"] in (
-                "EXECUTING", "PAYMENT_PENDING", "VERIFYING", "SUCCEEDED",
+                "EXECUTING",
+                "PAYMENT_PENDING",
+                "VERIFYING",
+                "SUCCEEDED",
             )
         else:
             assert txn_resp.status_code == 503
             assert txn_body["error"]["code"] == "PROVIDER_OUTCOME_UNKNOWN"
             txn_id = txn_body["error"]["details"]["transaction_id"]
 
-        assert txn_body.get("buyer_id", txn_body.get("error", {}).get("details", {}).get("buyer_id", "buyer_1"))
+        assert txn_body.get(
+            "buyer_id", txn_body.get("error", {}).get("details", {}).get("buyer_id", "buyer_1")
+        )
 
         # 7. REST: check transaction status (works regardless of provider outcome)
         status_resp = client.get(

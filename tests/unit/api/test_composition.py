@@ -211,9 +211,7 @@ def _buyer_actor(actor_id: str = "buyer_123") -> ActorContext:
 
 def test_approval_verifier_accepts_owning_buyer() -> None:
     verifier = SessionBuyerApprovalVerifier()
-    assert verifier.verify(actor=_buyer_actor("buyer_123"), buyer_id="buyer_123") == (
-        "buyer_123"
-    )
+    assert verifier.verify(actor=_buyer_actor("buyer_123"), buyer_id="buyer_123") == ("buyer_123")
 
 
 def test_approval_verifier_rejects_other_buyer() -> None:

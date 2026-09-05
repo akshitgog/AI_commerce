@@ -45,9 +45,7 @@ class FakeCatalogService:
             )
         )
 
-    def get_product(
-        self, merchant_id: str, product_id: str, actor: ActorContext
-    ) -> ProductView:
+    def get_product(self, merchant_id: str, product_id: str, actor: ActorContext) -> ProductView:
         return ProductView(
             id=product_id,
             merchant_id=merchant_id,

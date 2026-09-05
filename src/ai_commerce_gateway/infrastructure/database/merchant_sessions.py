@@ -80,9 +80,7 @@ class SqlAlchemyMerchantSessionService:
             )
         )
 
-    def issue(
-        self, merchant_id: str, user_id: str, *, correlation_id: str = ""
-    ) -> MerchantSession:
+    def issue(self, merchant_id: str, user_id: str, *, correlation_id: str = "") -> MerchantSession:
         membership = self._user_repo.get(merchant_id, user_id)
         if membership is None:
             self._audit(

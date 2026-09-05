@@ -111,9 +111,7 @@ def _safe_json(service: str, response: httpx.Response) -> Any:
     try:
         return response.json()
     except ValueError as exc:
-        raise RemoteServiceTransportError(
-            service, "response was not valid JSON."
-        ) from exc
+        raise RemoteServiceTransportError(service, "response was not valid JSON.") from exc
 
 
 class _RemoteServiceBase:
@@ -149,9 +147,7 @@ class _RemoteServiceBase:
                 actor.correlation_id,
                 exc,
             )
-            raise RemoteServiceTransportError(
-                type(self).__name__, str(exc)
-            ) from exc
+            raise RemoteServiceTransportError(type(self).__name__, str(exc)) from exc
         if response.status_code >= 400:
             _raise_for_error_response(type(self).__name__, response)
         return _safe_json(type(self).__name__, response)
@@ -163,9 +159,7 @@ class RemoteCatalogService:
     def __init__(self, client: httpx.Client, base_url: str) -> None:
         self._base = _RemoteServiceBase(client, base_url)
 
-    def search(
-        self, query: CatalogSearchQuery, actor: ActorContext
-    ) -> CatalogSearchResult:
+    def search(self, query: CatalogSearchQuery, actor: ActorContext) -> CatalogSearchResult:
         payload = self._base._request(
             method="POST",
             path="/internal/buyer/catalog/search",
@@ -174,9 +168,7 @@ class RemoteCatalogService:
         )
         return CatalogSearchResult.model_validate(payload)
 
-    def get_product(
-        self, merchant_id: str, product_id: str, actor: ActorContext
-    ) -> ProductView:
+    def get_product(self, merchant_id: str, product_id: str, actor: ActorContext) -> ProductView:
         payload = self._base._request(
             method="GET",
             path=f"/internal/buyer/catalog/products/{product_id}?merchant_id={merchant_id}",
@@ -191,9 +183,7 @@ class RemoteProposalService:
     def __init__(self, client: httpx.Client, base_url: str) -> None:
         self._base = _RemoteServiceBase(client, base_url)
 
-    def create(
-        self, command: CreateProposalCommand, actor: ActorContext
-    ) -> PurchaseProposalView:
+    def create(self, command: CreateProposalCommand, actor: ActorContext) -> PurchaseProposalView:
         payload = self._base._request(
             method="POST",
             path="/internal/buyer/proposals",
@@ -254,9 +244,7 @@ class RemoteTransactionService:
     def __init__(self, client: httpx.Client, base_url: str) -> None:
         self._base = _RemoteServiceBase(client, base_url)
 
-    def create(
-        self, command: CreateTransactionCommand, actor: ActorContext
-    ) -> TransactionView:
+    def create(self, command: CreateTransactionCommand, actor: ActorContext) -> TransactionView:
         payload = self._base._request(
             method="POST",
             path="/internal/buyer/transactions",
@@ -266,9 +254,7 @@ class RemoteTransactionService:
         )
         return TransactionView.model_validate(payload)
 
-    def execute(
-        self, command: ExecuteTransactionCommand, actor: ActorContext
-    ) -> TransactionView:
+    def execute(self, command: ExecuteTransactionCommand, actor: ActorContext) -> TransactionView:
         payload = self._base._request(
             method="POST",
             path=f"/internal/buyer/transactions/{command.transaction_id}/execute",

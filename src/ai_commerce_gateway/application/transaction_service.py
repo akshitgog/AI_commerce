@@ -78,6 +78,7 @@ class TransactionQueryApplicationService:
     ) -> TransactionPage:
         if actor.actor_id != buyer_id:
             from ai_commerce_gateway.core.errors import AppError, ErrorCode
+
             raise AppError(ErrorCode.FORBIDDEN, "Not authorized.")
         with self._unit_of_work_factory() as unit_of_work:
             transactions, next_cursor = unit_of_work.repository.list_transactions_for_buyer(
@@ -103,9 +104,7 @@ class TransactionQueryApplicationService:
 
 
 class TransactionCreatePort(Protocol):
-    def create(
-        self, command: CreateTransactionCommand, actor: ActorContext
-    ) -> TransactionView: ...
+    def create(self, command: CreateTransactionCommand, actor: ActorContext) -> TransactionView: ...
 
 
 class TransactionExecutePort(Protocol):
@@ -142,9 +141,7 @@ class TransactionApplicationService:
         self._queries = queries
         self._commit_created_transaction = commit_created_transaction
 
-    def create(
-        self, command: CreateTransactionCommand, actor: ActorContext
-    ) -> TransactionView:
+    def create(self, command: CreateTransactionCommand, actor: ActorContext) -> TransactionView:
         transaction = self._creation.create(command, actor)
         if self._commit_created_transaction is not None:
             # Execution opens a fresh, locking unit of work. Persist the READY
@@ -152,9 +149,7 @@ class TransactionApplicationService:
             self._commit_created_transaction()
         return transaction
 
-    def execute(
-        self, command: ExecuteTransactionCommand, actor: ActorContext
-    ) -> TransactionView:
+    def execute(self, command: ExecuteTransactionCommand, actor: ActorContext) -> TransactionView:
         return self._execution.execute(command, actor)
 
     def get_status(self, transaction_id: str, actor: ActorContext) -> TransactionView:
@@ -181,9 +176,7 @@ class TransactionApplicationService:
         return self._queries.get_audit(transaction_id, actor, cursor)
 
 
-def _get_transaction(
-    repository: TransactionQueryRepository, transaction_id: str
-) -> Transaction:
+def _get_transaction(repository: TransactionQueryRepository, transaction_id: str) -> Transaction:
     transaction = repository.get_transaction(transaction_id)
     if transaction is None:
         raise AppError(ErrorCode.NOT_FOUND, "Transaction was not found.", status_code=404)

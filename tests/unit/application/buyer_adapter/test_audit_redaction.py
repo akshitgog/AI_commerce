@@ -70,9 +70,7 @@ def _adapter_with_page(page: AuditPage) -> BuyerAdapter:
 
 
 def _actor() -> ActorContext:
-    return ActorContext(
-        actor_id="buyer_1", actor_type=ActorType.BUYER, correlation_id="corr_1"
-    )
+    return ActorContext(actor_id="buyer_1", actor_type=ActorType.BUYER, correlation_id="corr_1")
 
 
 def _invocation() -> Any:

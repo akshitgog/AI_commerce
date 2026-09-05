@@ -30,6 +30,7 @@ def session_factory():
     yield factory
     if engine.dialect.name == "postgresql":
         from sqlalchemy import text
+
         with engine.begin() as conn:
             for table in reversed(models.Base.metadata.sorted_tables):
                 conn.execute(text(f"TRUNCATE {table.name} RESTART IDENTITY CASCADE"))
@@ -184,9 +185,7 @@ def test_production_composition_exposes_one_complete_transaction_service(
                 session_factory=session_factory,
                 provider_service=provider,
             )
-            view = composition.transactions.get_status(
-                "txn_1", actor("buyer_1", ActorType.BUYER)
-            )
+            view = composition.transactions.get_status("txn_1", actor("buyer_1", ActorType.BUYER))
             replay_safe = composition.transactions.execute(
                 ExecuteTransactionCommand(
                     transaction_id="txn_1",
@@ -325,9 +324,7 @@ def _seed(factory) -> None:
                     ),
                     actor_type=(ActorType.BUYER.value if index == 0 else ActorType.SYSTEM.value),
                     actor_id="buyer_1" if index == 0 else None,
-                    reason_code=(
-                        "GATES_SATISFIED" if index == 0 else "PROVIDER_ATTEMPT_CREATED"
-                    ),
+                    reason_code=("GATES_SATISFIED" if index == 0 else "PROVIDER_ATTEMPT_CREATED"),
                     previous_state=None if index == 0 else TransactionState.READY.value,
                     new_state=(
                         TransactionState.READY.value

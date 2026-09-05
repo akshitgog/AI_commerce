@@ -41,9 +41,7 @@ logger = logging.getLogger(__name__)
 _AUTH_REQUIRED = "A valid buyer session is required (Authorization: Bearer <session token>)."
 
 
-def _actor_from_context(
-    ctx: Context, session_service: BuyerSessionService | None
-) -> ActorContext:
+def _actor_from_context(ctx: Context, session_service: BuyerSessionService | None) -> ActorContext:
     """Resolve the authenticated buyer actor from the MCP request context.
 
     ``ctx.headers`` is the raw client-supplied header map; the session token
@@ -73,9 +71,7 @@ def _actor_from_context(
     return actor
 
 
-def _invocation_from_context(
-    ctx: Context, idempotency_key: str | None = None
-) -> InvocationContext:
+def _invocation_from_context(ctx: Context, idempotency_key: str | None = None) -> InvocationContext:
     headers = ctx.headers or {}
     correlation_id = (
         headers.get("x-correlation-id")

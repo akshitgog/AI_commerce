@@ -1,4 +1,3 @@
-
 """Integration test for the real LLM API."""
 
 from pathlib import Path
@@ -21,10 +20,12 @@ def real_llm_settings(tmp_path: Path) -> Settings:
         base_settings = get_settings()
     except Exception:
         pytest.skip("Could not load settings. Skipping real LLM integration test.")
-        
+
     if not base_settings.llm_api_key:
-        pytest.skip("LLM_API_KEY is not configured in environment or yaml. Skipping real LLM integration test.")
-        
+        pytest.skip(
+            "LLM_API_KEY is not configured in environment or yaml. Skipping real LLM integration test."
+        )
+
     return Settings(
         app_env="test",
         database_url=f"sqlite:///{tmp_path}/real-llm.db",
@@ -38,6 +39,7 @@ def real_llm_settings(tmp_path: Path) -> Settings:
         llm_base_url=base_settings.llm_base_url,
         # Allow it to read the env file for aliases!
     )
+
 
 def _seed_database(settings: Settings) -> None:
     engine = create_engine(settings.database_url)
@@ -78,6 +80,7 @@ def _seed_database(settings: Settings) -> None:
         session.commit()
     engine.dispose()
 
+
 def test_real_llm_buyer_journey(real_llm_settings: Settings) -> None:
     _seed_database(real_llm_settings)
     app = create_app(settings=real_llm_settings)
@@ -86,16 +89,23 @@ def test_real_llm_buyer_journey(real_llm_settings: Settings) -> None:
     with TestClient(app, raise_server_exceptions=True) as client:
         search = client.post(
             "/v1/buyer/chat",
-            json={"messages": [{"role": "user", "content": "I am looking for a coffee maker from merchant mer_demo"}]},
+            json={
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "I am looking for a coffee maker from merchant mer_demo",
+                    }
+                ]
+            },
             headers=headers,
         )
 
         assert search.status_code == 200
         search_body = search.json()
-        
+
         tool_calls = search_body.get("tool_calls", [])
         assert "search_catalog" in tool_calls
-        
+
         # Test Policy bypass refusal
         refused = client.post(
             "/v1/buyer/chat",
@@ -113,4 +123,3 @@ def test_real_llm_buyer_journey(real_llm_settings: Settings) -> None:
         assert refused.status_code == 200
         refused_body = refused.json()
         assert not refused_body.get("tool_calls")
-

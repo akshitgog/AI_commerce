@@ -171,9 +171,7 @@ def create_merchant_mcp_server(api_client: MerchantApiClient) -> MCPServer:
         return _product_text(product)
 
     @mcp.tool()
-    def list_products(
-        ctx: Context, merchant_id: str, cursor: str | None = None
-    ) -> str:
+    def list_products(ctx: Context, merchant_id: str, cursor: str | None = None) -> str:
         """List the merchant's products (all statuses). Members only."""
         token = _auth_token(ctx)
         page = _call(

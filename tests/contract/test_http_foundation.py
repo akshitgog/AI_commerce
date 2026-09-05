@@ -37,9 +37,7 @@ def test_request_timing_is_visible_and_logs_exclude_query_secrets(
     assert "must-not-appear" not in message
 
 
-def test_untrusted_correlation_id_is_not_reflected_or_logged(
-    client: TestClient, caplog
-) -> None:
+def test_untrusted_correlation_id_is_not_reflected_or_logged(client: TestClient, caplog) -> None:
     unsafe = "secret value that must not be logged"
     with caplog.at_level(logging.INFO, logger="ai_commerce_gateway.api.app"):
         response = client.get("/health/live", headers={"X-Correlation-ID": unsafe})

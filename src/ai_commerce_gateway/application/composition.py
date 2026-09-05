@@ -120,6 +120,7 @@ def compose_transaction_services(
 
     def query_uow() -> SqlAlchemyTransactionQueryUnitOfWork:
         return SqlAlchemyTransactionQueryUnitOfWork(session_factory)
+
     creation = TransactionCreationApplicationService(
         SqlAlchemyProposalGateRepository(request_session)
     )

@@ -309,9 +309,7 @@ class RazorpayAdapter:
             observation_source="razorpay_order_lookup",
         )
 
-    def lookup_order_by_receipt(
-        self, command: CreateProviderOrderCommand
-    ) -> ProviderEvidence:
+    def lookup_order_by_receipt(self, command: CreateProviderOrderCommand) -> ProviderEvidence:
         """Recover an ambiguously-created order without dispatching a second order.
 
         This is an internal recovery capability rather than an addition to the frozen
@@ -358,9 +356,7 @@ class RazorpayAdapter:
                 candidate_id = raw_id
                 break
             if len(matches) > 1:
-                raise RazorpayProtocolError(
-                    "Razorpay receipt lookup matched multiple orders."
-                )
+                raise RazorpayProtocolError("Razorpay receipt lookup matched multiple orders.")
             if attempt < _RECEIPT_LOOKUP_MAX_ATTEMPTS:
                 sleep(_RECEIPT_LOOKUP_BACKOFF_SECONDS * attempt)
 
@@ -389,9 +385,7 @@ class RazorpayAdapter:
             raise RazorpayProtocolError("Razorpay payment belongs to another order.")
         return observation
 
-    def _get(
-        self, path: str, *, params: Mapping[str, str] | None = None
-    ) -> Mapping[str, Any]:
+    def _get(self, path: str, *, params: Mapping[str, str] | None = None) -> Mapping[str, Any]:
         try:
             response = self._client.get(
                 f"{self._api_base_url}{path}",

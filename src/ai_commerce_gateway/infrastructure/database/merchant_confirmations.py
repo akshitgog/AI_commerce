@@ -20,9 +20,7 @@ from ai_commerce_gateway.infrastructure.database import models
 class SqlAlchemyUsedConfirmationStore:
     """Database-backed ``UsedConfirmationStore`` (durable replay protection)."""
 
-    def __init__(
-        self, session: Session, *, clock: Callable[[], datetime] | None = None
-    ) -> None:
+    def __init__(self, session: Session, *, clock: Callable[[], datetime] | None = None) -> None:
         self._session = session
         self._clock = clock or (lambda: datetime.now(tz=UTC))
 

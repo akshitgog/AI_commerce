@@ -211,9 +211,7 @@ class TestProductLifecycle:
         )
         assert res.status_code == 422  # confirmation_token required
 
-        confirm_token = _issue_confirmation(
-            client, token, product_id, version=1, action="PUBLISH"
-        )
+        confirm_token = _issue_confirmation(client, token, product_id, version=1, action="PUBLISH")
         res = client.post(
             f"/merchants/mer_1/products/{product_id}/publish",
             json={
@@ -244,9 +242,7 @@ class TestProductLifecycle:
             headers=_auth(token),
         )
 
-        unconfirm = _issue_confirmation(
-            client, token, product_id, version=2, action="UNPUBLISH"
-        )
+        unconfirm = _issue_confirmation(client, token, product_id, version=2, action="UNPUBLISH")
         res = client.post(
             f"/merchants/mer_1/products/{product_id}/unpublish",
             json={
@@ -323,9 +319,7 @@ class TestConfirmationTokenDefenses:
         product = _create_product(client, token)
         product_id = product["id"]
 
-        unpub_token = _issue_confirmation(
-            client, token, product_id, version=1, action="UNPUBLISH"
-        )
+        unpub_token = _issue_confirmation(client, token, product_id, version=1, action="UNPUBLISH")
         res = client.post(
             f"/merchants/mer_1/products/{product_id}/publish",
             json={

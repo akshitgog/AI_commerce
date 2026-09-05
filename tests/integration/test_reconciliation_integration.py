@@ -32,12 +32,14 @@ def db_engine():
     models.Base.metadata.create_all(engine)
     if engine.dialect.name == "postgresql":
         from sqlalchemy import text
+
         with engine.begin() as conn:
             for table in reversed(models.Base.metadata.sorted_tables):
                 conn.execute(text(f"TRUNCATE {table.name} RESTART IDENTITY CASCADE"))
     yield engine
     if engine.dialect.name == "postgresql":
         from sqlalchemy import text
+
         with engine.begin() as conn:
             for table in reversed(models.Base.metadata.sorted_tables):
                 conn.execute(text(f"TRUNCATE {table.name} RESTART IDENTITY CASCADE"))
@@ -165,9 +167,6 @@ def test_reconciliation_integration_executing_to_pending(session_factory, seed_d
         ActorContext(actor_id="sys", actor_type=ActorType.SYSTEM, correlation_id="c1"),
     )
     assert result.state == TransactionState.PAYMENT_PENDING
-
-
-
 
 
 def test_reconciliation_integration_unknown_to_succeeded(session_factory, seed_data) -> None:

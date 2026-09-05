@@ -60,9 +60,7 @@ class MerchantApiClient:
         try:
             response = self._client.request(method, url, json=body, headers=headers)
         except httpx.HTTPError as exc:
-            logger.error(
-                "merchant_api_transport_error path=%s detail=%s", url, type(exc).__name__
-            )
+            logger.error("merchant_api_transport_error path=%s detail=%s", url, type(exc).__name__)
             raise MerchantApiError(
                 ErrorCode.INTERNAL_ERROR,
                 "The merchant catalog service is unavailable.",

@@ -233,9 +233,7 @@ def compose_in_process_buyer_services_factory(
                     integrated.SqlAlchemyProductImageRepository(request_session),
                 ),
                 proposal=integrated.ProposalApplicationService(gates),
-                auth=integrated.AuthorizationApplicationService(
-                    gates, approval_verifier
-                ),
+                auth=integrated.AuthorizationApplicationService(gates, approval_verifier),
                 transaction=transaction_services.transactions,
                 merchant_gates=integrated.MerchantGateApplicationService(gates),
             )
@@ -257,9 +255,7 @@ def compose_default_buyer_services_factory(
     if config.buyer_services_mode == "remote":
         return compose_remote_buyer_services_factory(config)
     if config.buyer_services_mode == "in_process":
-        return compose_in_process_buyer_services_factory(
-            config, transaction_root=transaction_root
-        )
+        return compose_in_process_buyer_services_factory(config, transaction_root=transaction_root)
     raise RuntimeError(
         f"Unknown buyer_services.mode: {config.buyer_services_mode!r}. "
         "Supported modes: in_process, remote."

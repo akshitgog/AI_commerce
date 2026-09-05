@@ -56,9 +56,7 @@ class MerchantSession:
 class MerchantSessionService(Protocol):
     """The single trust boundary for merchant request identity."""
 
-    def issue(
-        self, merchant_id: str, user_id: str, *, correlation_id: str = ""
-    ) -> MerchantSession:
+    def issue(self, merchant_id: str, user_id: str, *, correlation_id: str = "") -> MerchantSession:
         """Create a session after server-side membership verification."""
         ...
 
@@ -124,9 +122,7 @@ class InMemoryMerchantSessionService:
             )
         )
 
-    def issue(
-        self, merchant_id: str, user_id: str, *, correlation_id: str = ""
-    ) -> MerchantSession:
+    def issue(self, merchant_id: str, user_id: str, *, correlation_id: str = "") -> MerchantSession:
         membership = self._user_repo.get(merchant_id, user_id)
         if membership is None:
             self._audit(
@@ -136,9 +132,7 @@ class InMemoryMerchantSessionService:
                 correlation_id=correlation_id,
             )
             # Do not reveal whether the merchant or the user is unknown.
-            raise MerchantAuthenticationError(
-                "No such merchant user or membership."
-            )
+            raise MerchantAuthenticationError("No such merchant user or membership.")
         now = datetime.now(tz=UTC)
         session = MerchantSession(
             token=f"msess_{secrets.token_urlsafe(32)}",

@@ -98,6 +98,7 @@ router = APIRouter(prefix="/merchants", tags=["merchant"])
 # Dependencies
 # ---------------------------------------------------------------------------
 
+
 def get_db_session(request: Request) -> Iterator[Session]:
     factory = request.app.state.session_factory
     session: Session = factory()
@@ -168,9 +169,7 @@ def _actor_from_session(session: MerchantSession, request: Request) -> ActorCont
 
 def _require_roles(actor: ActorContext, allowed: set[MerchantRole]) -> None:
     if not actor.roles & allowed:
-        raise AppError(
-            ErrorCode.FORBIDDEN, "Insufficient role.", status_code=403
-        )
+        raise AppError(ErrorCode.FORBIDDEN, "Insufficient role.", status_code=403)
 
 
 _CATALOG_WRITE_ROLES = {MerchantRole.ADMIN, MerchantRole.EDITOR}
@@ -193,9 +192,7 @@ CatalogSvc = Annotated[IdempotentCatalogService, Depends(get_catalog_service)]
 
 
 def get_policy_service(db: DbSession) -> ApplicationMerchantPolicyService:
-    return ApplicationMerchantPolicyService(
-        SqlAlchemyMerchantPolicyRepository(db), session=db
-    )
+    return ApplicationMerchantPolicyService(SqlAlchemyMerchantPolicyRepository(db), session=db)
 
 
 PolicySvc = Annotated[ApplicationMerchantPolicyService, Depends(get_policy_service)]
@@ -205,9 +202,7 @@ def get_merchant_gate_service(db: DbSession) -> MerchantGateApplicationService:
     return MerchantGateApplicationService(SqlAlchemyProposalGateRepository(db))
 
 
-MerchantGateSvc = Annotated[
-    MerchantGateApplicationService, Depends(get_merchant_gate_service)
-]
+MerchantGateSvc = Annotated[MerchantGateApplicationService, Depends(get_merchant_gate_service)]
 
 
 def get_confirmation_service(db: DbSession) -> PublicationConfirmationService:
@@ -217,9 +212,7 @@ def get_confirmation_service(db: DbSession) -> PublicationConfirmationService:
     )
 
 
-ConfirmationSvc = Annotated[
-    PublicationConfirmationService, Depends(get_confirmation_service)
-]
+ConfirmationSvc = Annotated[PublicationConfirmationService, Depends(get_confirmation_service)]
 
 
 def get_product_draft_extractor() -> ProductDraftExtractor:
@@ -239,6 +232,7 @@ Extractor = Annotated[ProductDraftExtractor, Depends(get_product_draft_extractor
 # ---------------------------------------------------------------------------
 # Request bodies
 # ---------------------------------------------------------------------------
+
 
 class IssueSessionBody(BaseModel):
     user_id: str = Field(min_length=1, max_length=255)
@@ -297,6 +291,7 @@ class RecordMerchantDecisionBody(BaseModel):
 # Sessions (auth boundary)
 # ---------------------------------------------------------------------------
 
+
 @router.post("/{merchant_id}/sessions", status_code=201)
 def issue_session(
     merchant_id: str, body: IssueSessionBody, sessions: SessionService, request: Request
@@ -332,6 +327,7 @@ def revoke_session(
 # ---------------------------------------------------------------------------
 # Products CRUD (through the idempotent wrapper)
 # ---------------------------------------------------------------------------
+
 
 @router.post("/{merchant_id}/products", status_code=201)
 def create_product(
@@ -452,6 +448,7 @@ def delete_product_image(
 # AI-assisted draft extraction (D-010) — propose-only
 # ---------------------------------------------------------------------------
 
+
 @router.post("/{merchant_id}/products/extract-draft")
 def extract_product_draft(
     merchant_id: str, body: ExtractDraftBody, actor: MerchantActor, extractor: Extractor
@@ -469,6 +466,7 @@ def extract_product_draft(
 # ---------------------------------------------------------------------------
 # Publication: dashboard-only confirmation issuance + verified actions
 # ---------------------------------------------------------------------------
+
 
 @router.post("/{merchant_id}/products/{product_id}/publication-confirmations")
 def issue_publication_confirmation(
@@ -589,6 +587,7 @@ def unpublish_product(
 # Policy and review queue
 # ---------------------------------------------------------------------------
 
+
 @router.get("/{merchant_id}/policy")
 def get_policy(merchant_id: str, actor: MerchantActor, policy: PolicySvc) -> MerchantPolicyView:
     return policy.get_policy(merchant_id, actor)
@@ -648,11 +647,10 @@ def record_manual_decision(
 # Transaction / audit reads
 # ---------------------------------------------------------------------------
 
+
 def get_transaction_query_service(request: Request) -> TransactionQueryApplicationService:
     factory = request.app.state.session_factory
-    return TransactionQueryApplicationService(
-        lambda: SqlAlchemyTransactionQueryUnitOfWork(factory)
-    )
+    return TransactionQueryApplicationService(lambda: SqlAlchemyTransactionQueryUnitOfWork(factory))
 
 
 TransactionQuerySvc = Annotated[

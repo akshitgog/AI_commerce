@@ -31,21 +31,21 @@ class TestMoneyRejectsAdversarial:
     @pytest.mark.parametrize(
         "bad_amount",
         [
-            True,                       # bool is int subclass — must reject
+            True,  # bool is int subclass — must reject
             False,
-            10.0,                       # float, even integral
-            1699.99,                    # float
-            math.nan,                   # NaN
-            math.inf,                   # Infinity
+            10.0,  # float, even integral
+            1699.99,  # float
+            math.nan,  # NaN
+            math.inf,  # Infinity
             -math.inf,
-            -1,                         # negative
+            -1,  # negative
             -100,
-            "100",                      # numeric string
+            "100",  # numeric string
             "1699.99",
-            "",                         # empty string
-            None,                       # null
-            [100],                      # sequence
-            {"amount": 100},            # mapping
+            "",  # empty string
+            None,  # null
+            [100],  # sequence
+            {"amount": 100},  # mapping
         ],
     )
     def test_amount_minor_rejected(self, bad_amount):
@@ -55,14 +55,14 @@ class TestMoneyRejectsAdversarial:
     @pytest.mark.parametrize(
         "bad_currency",
         [
-            "inr",                      # lowercase
+            "inr",  # lowercase
             "Inr",
-            "IN",                       # too short
-            "INRP",                     # too long
-            "123",                      # digits
-            "",                         # empty (implicit currency)
-            None,                       # missing
-            123,                        # non-string
+            "IN",  # too short
+            "INRP",  # too long
+            "123",  # digits
+            "",  # empty (implicit currency)
+            None,  # missing
+            123,  # non-string
         ],
     )
     def test_currency_rejected(self, bad_currency):
