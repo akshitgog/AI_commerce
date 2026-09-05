@@ -43,7 +43,7 @@ def create_storage_service(settings: Settings) -> StorageService | None:
             )
 
         return S3StorageService(
-            bucket=settings.storage_bucket,  # type: ignore
+            bucket=settings.storage_bucket,
             region=settings.aws_region,  # type: ignore
             access_key=settings.aws_access_key_id,  # type: ignore
             secret_key=settings.aws_secret_access_key,  # type: ignore
@@ -58,7 +58,7 @@ def create_storage_service(settings: Settings) -> StorageService | None:
 
         return GCSStorageService(
             bucket=settings.storage_bucket,
-            credentials_json=settings.gcp_credentials_json,
+            credentials_json=settings.gcp_credentials_json.get_secret_value() if settings.gcp_credentials_json else None,
         )
 
     elif provider == "supabase":

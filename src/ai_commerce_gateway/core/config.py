@@ -8,7 +8,7 @@ from secrets import token_urlsafe
 from typing import Any, Literal
 
 import yaml
-from pydantic import Field, SecretStr, AliasChoices, model_validator
+from pydantic import AliasChoices, Field, SecretStr, model_validator
 from pydantic_settings import (
     BaseSettings,
     InitSettingsSource,

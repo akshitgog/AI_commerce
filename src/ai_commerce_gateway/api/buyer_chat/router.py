@@ -366,8 +366,9 @@ def list_buyer_transactions(
 ) -> dict[str, Any]:
     root = request.app.state.transaction_composition_root
     queries = root.transaction_query_service
-    page = queries.list_for_buyer(actor.buyer_id, actor, cursor)
-    return page.model_dump()
+    page = queries.list_for_buyer(actor.actor_id, actor, cursor)
+    from typing import cast
+    return cast(dict[str, Any], page.model_dump())
 
 @router.get("/transactions/{transaction_id}")
 def get_transaction_status(

@@ -57,3 +57,7 @@ python_version = "3.12"
 strict = true
 packages = ["ai_commerce_gateway"]
 
+
+[[tool.mypy.overrides]]
+module = ['boto3.*', 'botocore.*', 'google.cloud.*']
+ignore_missing_imports = true

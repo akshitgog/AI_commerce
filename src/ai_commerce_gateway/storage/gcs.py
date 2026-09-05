@@ -2,8 +2,8 @@
 
 import json
 
-from google.cloud import storage
 from google.api_core.exceptions import GoogleAPIError
+from google.cloud import storage
 
 from ai_commerce_gateway.contracts.models import StoredImage
 from ai_commerce_gateway.contracts.services import StorageService

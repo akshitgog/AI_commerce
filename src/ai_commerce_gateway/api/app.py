@@ -153,6 +153,7 @@ def create_app(
 
     # Mount static files for serving uploaded images
     from pathlib import Path
+
     from fastapi.staticfiles import StaticFiles
 
     uploads_dir = Path("uploads")

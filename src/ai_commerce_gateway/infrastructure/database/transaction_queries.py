@@ -20,8 +20,8 @@ class SqlAlchemyTransactionQueryRepository(SqlAlchemyExecutionRepository):
     def list_transactions_for_buyer(
         self, buyer_id: str, cursor: str | None
     ) -> tuple[tuple[Transaction, ...], str | None]:
-        statement = select(models.Transaction).join(models.Proposal, models.Transaction.proposal_id == models.Proposal.id).where(
-            models.Proposal.buyer_id == buyer_id
+        statement = select(models.Transaction).join(models.PurchaseProposal, models.Transaction.proposal_id == models.PurchaseProposal.id).where(
+            models.PurchaseProposal.buyer_id == buyer_id
         )
         if cursor is not None:
             anchor = self._session.get(models.Transaction, cursor)
@@ -46,7 +46,7 @@ class SqlAlchemyTransactionQueryRepository(SqlAlchemyExecutionRepository):
         has_more = len(records) > _PAGE_SIZE
         page = records[:_PAGE_SIZE]
         next_cursor = page[-1].id if has_more else None
-        return tuple(_transaction_to_domain(record) for record in page), next_cursor
+        return tuple(self._transaction_to_domain(record) for record in page), next_cursor
 
     def list_transactions(
         self, merchant_id: str, cursor: str | None
