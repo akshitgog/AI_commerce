@@ -8,7 +8,53 @@ The **AI Commerce Gateway** reimagines the checkout experience by putting an AI 
 
 ## System Architecture
 
-The project is structured into two main components: a Next.js frontend and a FastAPI backend following Domain-Driven Design (DDD) principles.
+The project is structured into two main components: a Next.js frontend and a FastAPI backend following strict Domain-Driven Design (DDD) principles.
+
+```mermaid
+graph TD
+    %% Actors
+    Buyer([Buyer / Browser])
+    Merchant([Merchant / Browser])
+
+    %% Frontend
+    subgraph Frontend [Frontend Application]
+        NextUI[Next.js App Router (React)]
+        StateStore[Centralized State Store]
+    end
+
+    %% Backend
+    subgraph Backend [FastAPI Backend - DDD]
+        Router[API Routers]
+        AppServices[Application Services]
+        
+        subgraph Domains [Core Domains]
+            Policy[Policy Engine]
+            Catalog[Catalog Domain]
+            TxMachine[Transaction State Machine]
+        end
+        
+        DBAdapter[SQLAlchemy Repository]
+    end
+
+    %% External Services
+    LLM[Fireworks AI Qwen 3p7+]
+    Razorpay[Razorpay Gateway]
+    Database[(PostgreSQL / SQLite)]
+
+    %% Flow
+    Buyer <-->|Chat / UI| NextUI
+    Merchant <-->|Dashboard| NextUI
+    NextUI <-->|State Sync| StateStore
+    StateStore <-->|REST API Proxy| Router
+    
+    Router <--> AppServices
+    AppServices <-->|Orchestration| Domains
+    AppServices <-->|Tool Calls| LLM
+    AppServices <-->|Checkout / Verification| Razorpay
+    
+    Domains <--> DBAdapter
+    DBAdapter <--> Database
+```
 
 ### 1. Frontend (`/frontend`)
 * **Framework:** Next.js (App Router) with React.
