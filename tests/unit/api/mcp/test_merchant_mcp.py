@@ -1,7 +1,7 @@
 import asyncio
+import contextlib
 import json
 import socket
-import contextlib
 from collections.abc import AsyncIterator
 
 import httpx
@@ -10,10 +10,10 @@ import uvicorn
 from fastapi import FastAPI
 from mcp.client import Client
 from mcp.client.streamable_http import streamable_http_client
-from mcp.types import TextContent
 
 from ai_commerce_gateway.api.mcp.merchant_server import create_merchant_mcp_server
 from ai_commerce_gateway.infrastructure.http.merchant_api_client import MerchantApiClient
+
 
 def _find_free_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:

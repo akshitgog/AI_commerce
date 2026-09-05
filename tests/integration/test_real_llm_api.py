@@ -1,21 +1,19 @@
 
 """Integration test for the real LLM API."""
 
-import os
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
-from sqlalchemy import create_engine, func, select
+from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from ai_commerce_gateway.api.app import create_app
-from ai_commerce_gateway.core.config import Settings
+from ai_commerce_gateway.core.config import Settings, get_settings
 from ai_commerce_gateway.infrastructure.database import models
 from tests.conftest import buyer_headers
 
-from ai_commerce_gateway.core.config import get_settings
 
 @pytest.fixture
 def real_llm_settings(tmp_path: Path) -> Settings:

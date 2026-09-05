@@ -18,11 +18,11 @@ from ai_commerce_gateway.api.app import create_app
 from ai_commerce_gateway.api.merchant.router import get_db_session
 from ai_commerce_gateway.domain.enums import MerchantRole
 from ai_commerce_gateway.domain.merchant import AddMerchantUserDomain, CreateMerchantDomain
+from ai_commerce_gateway.infrastructure.database import models
 from ai_commerce_gateway.infrastructure.database.merchant_repositories import (
     SqlAlchemyMerchantRepository,
     SqlAlchemyMerchantUserRepository,
 )
-from ai_commerce_gateway.infrastructure.database import models
 from ai_commerce_gateway.infrastructure.database.models import Base
 
 
