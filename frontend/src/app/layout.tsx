@@ -20,7 +20,8 @@ export const metadata: Metadata = {
     "AI proposes. Human authorizes. Merchant accepts. Trusted backend executes and verifies.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+interface LayoutProps { children: React.ReactNode; }
+export default function RootLayout({ children }: LayoutProps) {
   return (
     <html
       lang="en"

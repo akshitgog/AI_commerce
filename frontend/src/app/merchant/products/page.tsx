@@ -113,8 +113,7 @@ export default function ProductsPage() {
                 state.products.forEach(p => {
                   csvRows.push(`${p.id},${p.sku},"${p.title.replace(/"/g, "")}",${p.price.amount_minor},${p.status},${p.availableQuantity}`);
                 });
-                zip.file("catalog.csv", csvRows.join("
-"));
+                zip.file("catalog.csv", csvRows.join("\\n"));
                 
                 const imgFolder = zip.folder("images");
                 for (const p of state.products) {

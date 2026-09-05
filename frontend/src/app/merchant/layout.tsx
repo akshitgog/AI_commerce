@@ -16,7 +16,8 @@ import {
 } from "@/components/ui/sheet";
 import { MerchantNav, merchantTitleFor } from "@/components/merchant/nav";
 
-export default function MerchantLayout({ children }: LayoutProps<"/merchant">) {
+interface LayoutProps { children: React.ReactNode; }
+export default function MerchantLayout({ children }: LayoutProps) {
   const pathname = usePathname();
   const { state } = useCommerce();
   const [navOpen, setNavOpen] = useState(false);
