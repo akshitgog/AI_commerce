@@ -20,6 +20,10 @@ export type DemoOutcome =
   | "recovery_success"
   | "payment_failed";
 
+type ProductImageInput =
+  | { file: File; alt?: string; sortOrder?: number }
+  | { url: string; alt?: string; sortOrder?: number };
+
 export interface CommerceState {
   merchant: Merchant;
   buyerName: string;
@@ -43,7 +47,7 @@ export interface CommerceActions {
   publishProduct(productId: string): Promise<Product>;
   unpublishProduct(productId: string): Promise<Product>;
   deleteDraft(productId: string): Promise<void>;
-  addProductImage(productId: string, image: { url: string; alt: string }): Promise<Product>;
+  addProductImage(productId: string, image: ProductImageInput): Promise<Product>;
   removeProductImage(productId: string, imageId: string): Promise<Product>;
   reorderProductImages(productId: string, imageIds: string[]): Promise<Product>;
   extractDraft(text: string): Promise<any>;
@@ -232,14 +236,27 @@ export function createCommerceStore() {
       setState({ products: newProducts });
       return p;
     },
+    // Bug 2 fix: call the backend DELETE before removing from local state.
+    // If the API call fails, the error propagates and local state is unchanged.
     async deleteDraft(productId) {
+      await apiClient.deleteProduct("mer_demo", productId);
       setState({ products: state.products.filter(p => p.id !== productId) });
     },
     async addProductImage(productId, image) {
+      let file: File;
+      if ("file" in image) {
+        file = image.file;
+      } else {
+        const response = await fetch(image.url);
+        if (!response.ok) throw new Error("Could not load the image URL.");
+        const blob = await response.blob();
+        const name = new URL(image.url).pathname.split("/").pop() || "product-image";
+        file = new File([blob], name, { type: blob.type || "image/jpeg" });
+      }
       await apiClient.addProductImage(
         "mer_demo",
         productId,
-        image.file,
+        file,
         image.alt,
         image.sortOrder || 0
       );
@@ -265,9 +282,24 @@ export function createCommerceStore() {
       }
       return product;
     },
+    // Bug 3 fix: optimistic client-only reorder. No backend reorder endpoint
+    // exists yet, so we update local state to reflect the new image order.
+    // The reorder will NOT persist across page refreshes until backend support
+    // is added (e.g. PATCH /products/:id/images/reorder).
     async reorderProductImages(productId, imageIds) {
-      // For now, reordering is not implemented on backend - just return current product
-      return state.products.find(p => p.id === productId)!;
+      const product = state.products.find(p => p.id === productId);
+      if (!product) throw new Error("Product not found");
+      const reordered = imageIds.map((id, i) => {
+        const img = product.images.find(img => img.id === id);
+        if (!img) throw new Error(`Image ${id} not found`);
+        return { ...img, position: i, isPrimary: i === 0 };
+      });
+      const updated = { ...product, images: reordered };
+      const idx = state.products.findIndex(p => p.id === productId);
+      const newProducts = [...state.products];
+      newProducts[idx] = updated;
+      setState({ products: newProducts });
+      return updated;
     },
     async extractDraft(text) {
       return await apiClient.extractDraft("mer_demo", text);

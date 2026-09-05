@@ -1,43 +1,21 @@
 
 > frontend@0.1.0 dev
-> next dev --port 3100
+> next dev
 
 ▲ Next.js 16.3.4 (Turbopack)
-- Local:         http://localhost:3100
-- Network:       http://192.168.1.20:3100
-✓ Ready in 399ms
-✓ Running next.config.ts took 33ms
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.20:3000
+- Environments: .env.local
+✓ Ready in 356ms
+✓ Running next.config.ts took 29ms
 
-✓ Generated AGENTS.md and CLAUDE.md for AI agents. Set `agentRules: false` in next.config to disable.
- GET / 200 in 1960ms (next.js: 1725ms, application-code: 235ms)
- GET / 200 in 48ms (next.js: 9ms, application-code: 39ms)
- GET / 200 in 52ms (next.js: 3ms, application-code: 49ms)
- GET /merchant 200 in 525ms (next.js: 500ms, application-code: 25ms)
- GET /buyer 200 in 252ms (next.js: 231ms, application-code: 21ms)
- GET /buyer 200 in 94ms (next.js: 4ms, application-code: 90ms)
- GET /buyer 200 in 46ms (next.js: 5ms, application-code: 41ms)
- GET /merchant 200 in 101ms (next.js: 3ms, application-code: 97ms)
- GET /buyer 200 in 40ms (next.js: 4ms, application-code: 36ms)
- GET /merchant/audit 200 in 266ms (next.js: 224ms, application-code: 42ms)
- GET /merchant 200 in 27ms (next.js: 10ms, application-code: 17ms)
- GET /merchant/products 200 in 410ms (next.js: 392ms, application-code: 18ms)
- GET /merchant/products/new 200 in 236ms (next.js: 214ms, application-code: 22ms)
- GET /merchant/products 200 in 18ms (next.js: 4ms, application-code: 14ms)
- GET /merchant/policy 200 in 184ms (next.js: 166ms, application-code: 18ms)
- GET /merchant/review 200 in 213ms (next.js: 191ms, application-code: 22ms)
- GET /merchant/policy 200 in 19ms (next.js: 4ms, application-code: 15ms)
- GET /merchant/review 200 in 16ms (next.js: 3ms, application-code: 13ms)
- GET /merchant/transactions 200 in 182ms (next.js: 161ms, application-code: 21ms)
- GET /merchant/audit 200 in 19ms (next.js: 5ms, application-code: 14ms)
- GET /merchant/settings 200 in 193ms (next.js: 174ms, application-code: 19ms)
- GET /merchant 200 in 25ms (next.js: 9ms, application-code: 16ms)
- GET / 200 in 117ms (next.js: 39ms, application-code: 78ms)
- GET /merchant/products/new 200 in 100ms (next.js: 11ms, application-code: 89ms)
- GET /buyer 200 in 50ms (next.js: 9ms, application-code: 41ms)
- GET /merchant 200 in 65ms (next.js: 12ms, application-code: 53ms)
- GET /merchant/products 200 in 36ms (next.js: 11ms, application-code: 25ms)
- GET /merchant/audit 200 in 26ms (next.js: 11ms, application-code: 16ms)
- GET /merchant/transactions 200 in 25ms (next.js: 10ms, application-code: 16ms)
- GET /merchant/review 200 in 24ms (next.js: 9ms, application-code: 15ms)
- GET /merchant/policy 200 in 24ms (next.js: 9ms, application-code: 15ms)
- GET /merchant/settings 200 in 26ms (next.js: 10ms, application-code: 16ms)
+ GET /merchant 200 in 284ms (next.js: 132ms, application-code: 152ms)
+ GET /buyer 200 in 62ms (next.js: 15ms, application-code: 47ms)
+ GET /merchant 200 in 31ms (next.js: 2ms, application-code: 29ms)
+ POST /api/e2e/buyer-session 503 in 66ms (next.js: 40ms, application-code: 26ms)
+ GET /merchant/ai-catalog 200 in 32ms (next.js: 16ms, application-code: 15ms)
+ GET /buyer 200 in 28ms (next.js: 3ms, application-code: 25ms)
+ POST /api/e2e/buyer-session 503 in 13ms (next.js: 2ms, application-code: 11ms)
+ GET /merchant/ai-catalog 200 in 36ms (next.js: 3ms, application-code: 33ms)
+ POST /api/e2e/buyer-session 503 in 11ms (next.js: 1.6ms, application-code: 10ms)
+[?25h

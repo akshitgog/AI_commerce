@@ -37,6 +37,7 @@ export default function AICatalogPage() {
   const [successId, setSuccessId] = useState<string | null>(null);
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
   const [extractError, setExtractError] = useState<string | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
 
   const handleGenerate = async () => {
     if (!inputText.trim()) return;
@@ -45,7 +46,19 @@ export default function AICatalogPage() {
     setSuccessId(null);
     try {
       const result = await actions.extractDraft(inputText);
-      setDraft(result as DraftResult);
+      // Map backend response to frontend format
+      const mappedDraft: DraftResult = {
+        title: result.title,
+        description: result.description || "",
+        price: {
+          amount_minor: result.price_amount_minor,
+          currency: result.currency || "INR"
+        },
+        available_quantity: result.available_quantity,
+        category: result.category,
+        sku: result.sku
+      };
+      setDraft(mappedDraft);
       setExtractError(null); // Clear any previous error
     } catch (error) {
       console.error("Failed to generate draft:", error);
@@ -62,6 +75,8 @@ export default function AICatalogPage() {
   const handleCreateDraft = async () => {
     if (!draft) return;
     setIsCreating(true);
+    setImageError(null);
+    let createdProductId: string | null = null;
     try {
       const product = await actions.createProduct({
         title: draft.title,
@@ -71,6 +86,7 @@ export default function AICatalogPage() {
         category: draft.category || undefined,
         sku: draft.sku || `SKU-${Date.now()}`,
       });
+      createdProductId = product.id;
 
       // Upload images after product is created
       for (let i = 0; i < uploadedImages.length; i++) {
@@ -78,7 +94,6 @@ export default function AICatalogPage() {
           product.id,
           {
             file: uploadedImages[i],
-            alt: undefined,
             sortOrder: i
           }
         );
@@ -88,6 +103,14 @@ export default function AICatalogPage() {
       setUploadedImages([]); // Clear images
     } catch (error) {
       console.error("Failed to create product:", error);
+      if (createdProductId) setSuccessId(createdProductId);
+      setImageError(
+        createdProductId
+          ? "The product was created, but one or more images could not be uploaded. Open the product editor to retry."
+          : error instanceof Error
+            ? error.message
+            : "The product could not be saved. Please try again.",
+      );
     } finally {
       setIsCreating(false);
     }
@@ -146,17 +169,31 @@ export default function AICatalogPage() {
                 accept="image/jpeg,image/png,image/webp,image/gif"
                 multiple
                 onChange={(e) => {
-                  const files = Array.from(e.target.files || []).slice(0, 3);
+                  const selected = Array.from(e.target.files || []);
+                  const firstThree = selected.slice(0, 3);
+                  const files = firstThree.filter((file) => file.size <= 5 * 1024 * 1024);
+                  const tooLarge = files.length !== firstThree.length;
+                  setImageError(
+                    tooLarge
+                      ? "Each image must be 5MB or smaller."
+                      : selected.length > 3
+                        ? "Only the first 3 images were selected."
+                        : null,
+                  );
                   setUploadedImages(files);
                 }}
               />
               <p className="text-sm text-muted-foreground">
                 Upload up to 3 images (max 5MB each). JPEG, PNG, WebP, or GIF.
               </p>
+              {imageError ? (
+                <p className="text-sm text-destructive" role="alert">{imageError}</p>
+              ) : null}
               {uploadedImages.length > 0 && (
                 <div className="flex gap-2 flex-wrap">
                   {uploadedImages.map((file, idx) => (
                     <div key={idx} className="relative">
+                      {/* eslint-disable-next-line @next/next/no-img-element -- local object URL preview */}
                       <img
                         src={URL.createObjectURL(file)}
                         alt={`Preview ${idx + 1}`}

@@ -1,0 +1,172 @@
+INFO:     127.0.0.1:54091 - "GET /health/live HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54092 - "POST /v1/buyer/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:54091 - "POST /merchants/mer_demo/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:54093 - "GET /merchants/mer_demo/policy HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54091 - "GET /merchants/mer_demo/products?limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54094 - "GET /merchants/mer_demo/reviews HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54095 - "GET /merchants/mer_demo/transactions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54097 - "GET /health/live HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62470 - "GET /health/live HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62471 - "POST /v1/buyer/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:62470 - "POST /merchants/mer_demo/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:62470 - "GET /merchants/mer_demo/products?limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62473 - "GET /merchants/mer_demo/reviews HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62472 - "GET /merchants/mer_demo/policy HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62474 - "GET /merchants/mer_demo/transactions HTTP/1.1" 200 OK
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+INFO:     127.0.0.1:62969 - "POST /merchants/mer_demo/products/extract-draft HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:49227 - "GET /health/live HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49234 - "POST /buyer/sessions HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49235 - "POST /v1/buyer/sessions HTTP/1.1" 422 Unprocessable Content
+INFO:     127.0.0.1:49236 - "POST /v1/merchants/mer_demo/sessions HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49237 - "POST /v1/merchants/mer_demo/sessions HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49238 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49240 - "POST /v1/merchants/mer_demo/products/extract-draft HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49241 - "GET / HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49243 - "POST /merchants/mer_demo/products/extract-draft HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:49244 - "POST /merchants/mer_demo/sessions HTTP/1.1" 422 Unprocessable Content
+INFO:     127.0.0.1:49245 - "POST /merchants/mer_demo/products/extract-draft HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:49246 - "POST /merchants/mer_demo/sessions HTTP/1.1" 422 Unprocessable Content
+INFO:     127.0.0.1:49247 - "POST /merchants/mer_demo/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:49248 - "POST /merchants/mer_demo/products/extract-draft HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:49249 - "POST /merchants/mer_demo/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:49250 - "POST /merchants/mer_demo/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:49251 - "POST /merchants/mer_demo/products/extract-draft HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52164 - "GET /health/live HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52165 - "GET /health/live HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52166 - "POST /merchants/mer_demo/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:52167 - "POST /merchants/mer_demo/products/extract-draft HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52169 - "POST /merchants/mer_demo/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:52170 - "POST /merchants/mer_demo/products/extract-draft HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52174 - "GET /health/live HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52175 - "POST /merchants/mer_demo/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:52176 - "POST /merchants/mer_demo/products/extract-draft HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52178 - "GET /health/live HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52179 - "POST /merchants/mer_demo/products HTTP/1.1" 422 Unprocessable Content
+INFO:     127.0.0.1:52189 - "GET /health/live HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52190 - "POST /merchants/mer_demo/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:52191 - "POST /merchants/mer_demo/products/extract-draft HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52193 - "POST /merchants/mer_demo/products HTTP/1.1" 201 Created
+INFO:     127.0.0.1:52194 - "GET /merchants/mer_demo/products HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52197 - "POST /merchants/mer_demo/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:52198 - "GET /merchants/mer_demo/products HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52208 - "GET /health/live HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52209 - "POST /merchants/mer_demo/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:52210 - "POST /merchants/mer_demo/products/extract-draft HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52213 - "POST /merchants/mer_demo/products HTTP/1.1" 201 Created
+INFO:     127.0.0.1:52214 - "GET /merchants/mer_demo/products HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52215 - "POST /v1/buyer/sessions HTTP/1.1" 422 Unprocessable Content
+INFO:     127.0.0.1:52225 - "GET /health/live HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52226 - "POST /merchants/mer_demo/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:52227 - "POST /merchants/mer_demo/products/extract-draft HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52229 - "POST /merchants/mer_demo/products HTTP/1.1" 201 Created
+INFO:     127.0.0.1:52230 - "GET /merchants/mer_demo/products HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52231 - "POST /v1/buyer/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:52232 - "POST /v1/buyer/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:52233 - "GET /health/live HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52234 - "POST /merchants/mer_demo/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:52235 - "POST /merchants/mer_demo/products/extract-draft HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52237 - "POST /merchants/mer_demo/products HTTP/1.1" 201 Created
+INFO:     127.0.0.1:52238 - "GET /merchants/mer_demo/products HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52239 - "POST /v1/buyer/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:52240 - "GET /v1/buyer/transactions HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:52241 - "POST /v1/buyer/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:52242 - "GET /v1/buyer/transactions HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:52244 - "GET /health/live HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52245 - "POST /merchants/mer_demo/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:52246 - "POST /merchants/mer_demo/products/extract-draft HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52248 - "POST /merchants/mer_demo/products HTTP/1.1" 201 Created
+INFO:     127.0.0.1:52249 - "GET /merchants/mer_demo/products HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52250 - "POST /v1/buyer/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:52251 - "GET /v1/buyer/transactions HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:52252 - "GET /merchants/mer_demo/transactions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52253 - "GET /health/live HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52254 - "POST /merchants/mer_demo/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:52255 - "POST /merchants/mer_demo/products/extract-draft HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52257 - "POST /merchants/mer_demo/products HTTP/1.1" 201 Created
+INFO:     127.0.0.1:52258 - "GET /merchants/mer_demo/products HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52259 - "POST /v1/buyer/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:52260 - "GET /v1/buyer/transactions HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:52261 - "GET /merchants/mer_demo/transactions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53988 - "GET /health/live HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53989 - "POST /v1/buyer/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:53988 - "POST /merchants/mer_demo/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:53988 - "GET /merchants/mer_demo/products?limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53990 - "GET /merchants/mer_demo/policy HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53991 - "GET /merchants/mer_demo/reviews HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53992 - "GET /merchants/mer_demo/transactions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53379 - "GET /health/live HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53380 - "POST /v1/buyer/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:53379 - "POST /merchants/mer_demo/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:53383 - "GET /merchants/mer_demo/transactions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53381 - "GET /merchants/mer_demo/policy HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53382 - "GET /merchants/mer_demo/reviews HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53379 - "GET /merchants/mer_demo/products?limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50039 - "GET /health/live HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50040 - "POST /v1/buyer/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:50039 - "POST /merchants/mer_demo/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:50039 - "GET /merchants/mer_demo/products?limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49673 - "GET /merchants/mer_demo/policy HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49675 - "GET /merchants/mer_demo/transactions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49674 - "GET /merchants/mer_demo/reviews HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65306 - "GET /health/live HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65307 - "POST /v1/buyer/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:65306 - "POST /merchants/mer_demo/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:65310 - "GET /merchants/mer_demo/transactions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65308 - "GET /merchants/mer_demo/policy HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65309 - "GET /merchants/mer_demo/reviews HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65306 - "GET /merchants/mer_demo/products?limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65306 - "GET /health/live HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65307 - "POST /v1/buyer/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:65306 - "POST /merchants/mer_demo/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:65308 - "GET /merchants/mer_demo/reviews HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65310 - "GET /merchants/mer_demo/transactions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65309 - "GET /merchants/mer_demo/policy HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65306 - "GET /merchants/mer_demo/products?limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60985 - "POST /v1/buyer/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51325 - "GET /health/live HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51326 - "POST /v1/buyer/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:51325 - "POST /merchants/mer_demo/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:51327 - "GET /merchants/mer_demo/policy HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51328 - "GET /merchants/mer_demo/reviews HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51325 - "GET /merchants/mer_demo/products?limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51329 - "GET /merchants/mer_demo/transactions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49922 - "GET /health/live HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49923 - "POST /v1/buyer/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:49922 - "POST /merchants/mer_demo/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:49922 - "GET /merchants/mer_demo/products?limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49925 - "GET /merchants/mer_demo/reviews HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49924 - "GET /merchants/mer_demo/policy HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49926 - "GET /merchants/mer_demo/transactions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49926 - "GET /health/live HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49923 - "POST /v1/buyer/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:49926 - "POST /merchants/mer_demo/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:49925 - "GET /merchants/mer_demo/reviews HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49924 - "GET /merchants/mer_demo/policy HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49922 - "GET /merchants/mer_demo/transactions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49926 - "GET /merchants/mer_demo/products?limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59105 - "POST /merchants/mer_demo/products/extract-draft HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56036 - "POST /v1/buyer/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:55745 - "GET /merchants/mer_demo/products/prod_001 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55745 - "POST /merchants/mer_demo/products/extract-draft HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55748 - "POST /merchants/mer_demo/products/prod_001/publication-confirmations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55748 - "POST /merchants/mer_demo/products/prod_001/unpublish HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55748 - "PATCH /merchants/mer_demo/products/prod_001 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64204 - "GET /health/live HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64205 - "POST /v1/buyer/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:64204 - "POST /merchants/mer_demo/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:64206 - "GET /merchants/mer_demo/policy HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64207 - "GET /merchants/mer_demo/reviews HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64208 - "GET /merchants/mer_demo/transactions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64204 - "GET /merchants/mer_demo/products?limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64204 - "GET /health/live HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64205 - "POST /v1/buyer/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:64204 - "POST /merchants/mer_demo/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:64207 - "GET /merchants/mer_demo/reviews HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64206 - "GET /merchants/mer_demo/transactions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64208 - "GET /merchants/mer_demo/policy HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64204 - "GET /merchants/mer_demo/products?limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64204 - "POST /v1/buyer/chat HTTP/1.1" 200 OK

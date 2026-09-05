@@ -1,0 +1,19 @@
+
+> frontend@0.1.0 dev
+> next dev
+
+▲ Next.js 16.3.4 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.20:3000
+- Environments: .env.local
+✓ Ready in 337ms
+✓ Running next.config.ts took 32ms
+
+ GET /merchant/ai-catalog 200 in 472ms (next.js: 291ms, application-code: 181ms)
+ POST /api/e2e/buyer-session 503 in 76ms (next.js: 40ms, application-code: 36ms)
+ GET /buyer 200 in 63ms (next.js: 15ms, application-code: 48ms)
+ GET /merchant/ai-catalog 200 in 28ms (next.js: 3ms, application-code: 26ms)
+ POST /api/e2e/buyer-session 503 in 11ms (next.js: 2ms, application-code: 9ms)
+  Reload env: .env.local
+ GET /merchant/ai-catalog 200 in 45ms (next.js: 25ms, application-code: 20ms)
+[?25h

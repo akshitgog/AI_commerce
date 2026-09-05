@@ -96,15 +96,15 @@ export function BuyerChatShell() {
     setBusy(true);
 
     try {
-      const history = items
-        .filter((i) => i.kind === "buyer-message" || i.kind === "assistant-message")
-        .map((i) => ({
-          role: i.kind === "buyer-message" ? "user" : "assistant",
-          content: i.text,
-        }));
-      if (history.length === 0) {
-        history.push({ role: "system", content: `You are assisting a customer shopping at merchant ID: ${state.merchant.id}. Always use this merchant_id for tool calls.` });
-      }
+      const history = [
+        { role: "system", content: `You are assisting a customer shopping at merchant ID: ${state.merchant.id}. Always use this merchant_id for tool calls.` },
+        ...items
+          .filter((i) => i.kind === "buyer-message" || i.kind === "assistant-message")
+          .map((i) => ({
+            role: i.kind === "buyer-message" ? "user" : "assistant",
+            content: i.text,
+          }))
+      ];
       history.push({ role: "user", content: trimmed });
 
       const response = await actions.chat(history);
@@ -325,7 +325,7 @@ export function BuyerChatShell() {
   ) : null;
 
   return (
-    <div className="flex h-dvh flex-col bg-background text-foreground">
+    <div className="flex h-full flex-col bg-background text-foreground">
       <header className="shrink-0 border-b border-border bg-card">
         <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-4">
           <span className="text-sm font-semibold tracking-tight">
@@ -388,7 +388,11 @@ export function BuyerChatShell() {
           <p className="mb-2 text-center text-xs text-muted-foreground">
             AI proposes — you approve. Nothing is paid without your approval.
           </p>
-          <BuyerComposer disabled={busy || !state.initialized} onSend={send} />
+          <BuyerComposer
+            disabled={busy || !state.initialized}
+            initialized={state.initialized}
+            onSend={send}
+          />
         </div>
       </div>
     </div>

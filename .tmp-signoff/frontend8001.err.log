@@ -1,0 +1,39 @@
+Failed to proxy http://127.0.0.1:8001/health/live Error: connect ECONNREFUSED 127.0.0.1:8001
+    at <unknown> (Error: connect ECONNREFUSED 127.0.0.1:8001) {
+  errno: -4078,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 8001
+}
+Error: connect ECONNREFUSED 127.0.0.1:8001
+    at <unknown> (Error: connect ECONNREFUSED 127.0.0.1:8001) {
+  errno: -4078,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 8001
+}
+[browser] Failed to generate draft: ApiError: AI extraction is unavailable right now. Use the manual form.
+    at ApiClient.request (src/lib/api/client.ts:52:15)
+    at async ApiClient.extractDraft (src/lib/api/client.ts:234:17)
+    at async Object.extractDraft (src/lib/services/store.ts:287:14)
+    at async handleGenerate (src/app/merchant/ai-catalog/page.tsx:48:22)
+  50 |         let err;
+  51 |         try { err = await res.json(); } catch(e) { throw new Error(res.statusText); }
+> 52 |         throw new ApiError(err);
+     |               ^
+  53 |     }
+  54 |     return res.json();
+  55 |   } (src/app/merchant/ai-catalog/page.tsx:52:15)
+[browser] Uncaught TypeError: Cannot read properties of undefined (reading 'amount_minor')
+    at formatMoney (src/lib/format.ts:7:23)
+    at MoneyText (src/components/shared/money.tsx:28:19)
+    at AICatalogPage (src/app/merchant/ai-catalog/page.tsx:240:23)
+   5 |
+   6 | export function formatMoney(money: Money): string {
+>  7 |   const major = money.amount_minor / 100;
+     |                       ^
+   8 |   return new Intl.NumberFormat("en-IN", {
+   9 |     style: "currency",
+  10 |     currency: money.currency,

@@ -222,7 +222,13 @@ export default function PolicyPage() {
             <p className="mt-1 text-sm">{selected.consequence}</p>
           </div>
 
-          <div className="flex justify-end">
+          <div className="flex flex-col items-end gap-2">
+            {!dirty && !saving && (
+              <p className="text-xs text-muted-foreground">No changes to save</p>
+            )}
+            {maxAmountInvalid && (
+              <p className="text-xs text-destructive">Enter a valid maximum amount (greater than ₹0)</p>
+            )}
             <Button
               onClick={() => void handleSave()}
               disabled={!dirty || saving || maxAmountInvalid}

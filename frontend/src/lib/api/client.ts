@@ -230,6 +230,31 @@ export class ApiClient {
     }
   }
 
+  async deleteProduct(merchantId: string, productId: string): Promise<void> {
+    const headers = {
+      ...this.merchantHeaders(),
+      "X-Idempotency-Key": crypto.randomUUID(),
+    };
+
+    const res = await fetch(
+      `/api/merchants/${merchantId}/products/${productId}`,
+      {
+        method: "DELETE",
+        headers,
+      }
+    );
+
+    if (!res.ok) {
+      let err;
+      try {
+        err = await res.json();
+      } catch (e) {
+        throw new Error(res.statusText);
+      }
+      throw new ApiError(err);
+    }
+  }
+
     async extractDraft(merchantId: string, text: string): Promise<any> {
     const res = await this.request("/merchants/" + merchantId + "/products/extract-draft", {
         method: "POST",
@@ -248,7 +273,7 @@ export class ApiClient {
         headers: this.merchantHeaders(),
         body: JSON.stringify({ text: data.description + " improved" }) // Mocking extraction
     });
-    return res.description;
+    return res.draft.description;
   }
 
   // --- Policy ---
@@ -525,8 +550,8 @@ export class ApiClient {
         actorType: data.actor_type,
         actorId: data.actor_id,
         reasonCode: data.reason_code,
-        previousState: data.previous_state,
-        newState: data.new_state,
+        previousState: data.previous_state ?? null,
+        newState: data.new_state ?? null,
         correlationId: data.correlation_id,
         providerReferenceRedacted: data.provider_reference_redacted,
         summary,

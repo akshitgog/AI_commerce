@@ -1,0 +1,1264 @@
+INFO:     Started server process [8156]
+INFO:     Waiting for application startup.
+StreamableHTTP session manager started
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8001 (Press CTRL+C to quit)
+request_completed method=GET route=/health/live status=200 duration_ms=37.318 correlation_id=corr_b9fd8b89ddd945249f8a415f54e51547
+request_completed method=POST route=/buyer/sessions status=201 duration_ms=3.853 correlation_id=corr_8bc22e7c07294801a2d3cb30aee04e8e
+{"action": "session.issue", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": null, "before": null, "causation": null, "correlation_id": "corr_1e02a281773a4b59a72babf947f85ab5", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T12:48:35.425317+00:00", "target_id": "user_1", "target_type": "session", "version_after": null, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/sessions status=201 duration_ms=16.061 correlation_id=corr_1e02a281773a4b59a72babf947f85ab5
+request_completed method=GET route=/merchants/{merchant_id}/policy status=200 duration_ms=14.751 correlation_id=corr_c70e0504f67c41d590494f4db008fcf5
+request_completed method=GET route=/merchants/{merchant_id}/products status=200 duration_ms=21.826 correlation_id=corr_d8e73c10914e4ea382690d018f19f845
+request_completed method=GET route=/merchants/{merchant_id}/reviews status=200 duration_ms=18.556 correlation_id=corr_2d1da0ca584e423a952dd6c6577d632d
+request_completed method=GET route=/merchants/{merchant_id}/transactions status=200 duration_ms=19.119 correlation_id=corr_7ce4465cab0b4b0db0e86c0780dc52d5
+request_completed method=GET route=/health/live status=200 duration_ms=1.190 correlation_id=corr_c1f5d51f080546aeb145cb2a43c1de7a
+request_completed method=GET route=/health/live status=200 duration_ms=0.841 correlation_id=corr_f60d91645ee647b1a09e48715890ee72
+request_completed method=POST route=/buyer/sessions status=201 duration_ms=2.201 correlation_id=corr_eb3f73a62a56446f85b6a956b136661b
+{"action": "session.issue", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": null, "before": null, "causation": null, "correlation_id": "corr_99b1faf9caf0400e9ecc9dfc882e329d", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T12:48:40.732224+00:00", "target_id": "user_1", "target_type": "session", "version_after": null, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/sessions status=201 duration_ms=3.846 correlation_id=corr_99b1faf9caf0400e9ecc9dfc882e329d
+request_completed method=GET route=/merchants/{merchant_id}/products status=200 duration_ms=8.968 correlation_id=corr_5ac812c46f31443b9186c02ee8aa63cc
+request_completed method=GET route=/merchants/{merchant_id}/reviews status=200 duration_ms=8.930 correlation_id=corr_a949d6cae9264e32940a259335fc9a7e
+request_completed method=GET route=/merchants/{merchant_id}/policy status=200 duration_ms=10.419 correlation_id=corr_916c449c18c44da0a765e60f1e03fc0d
+request_completed method=GET route=/merchants/{merchant_id}/transactions status=200 duration_ms=10.443 correlation_id=corr_1926de4cfae94a18849b1d8dcb11c699
+[92m18:18:49 - LiteLLM:INFO[0m: utils.py:4023 - 
+LiteLLM completion() model= accounts/fireworks/models/qwen3-14b; provider = fireworks_ai
+
+LiteLLM completion() model= accounts/fireworks/models/qwen3-14b; provider = fireworks_ai
+LLM product draft extraction failed: litellm.NotFoundError: NotFoundError: Fireworks_aiException - {"error":{"message":"Model not found, inaccessible, and/or not deployed","param":"model","code":"NOT_FOUND","type":"error"},"request_id":"chatcmpl-de04b6a102f244c582dda76d0e53d340"}
+request_completed method=POST route=/merchants/{merchant_id}/products/extract-draft status=502 duration_ms=284.883 correlation_id=corr_9baa1ad21b4e42dfa83e7b26d49ebc30
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Galactus\AppData\Local\Programs\Python\Python313\Lib\site-packages\uvicorn\__main__.py", line 4, in <module>
+    uvicorn.main()
+    ~~~~~~~~~~~~^^
+  File "C:\Users\Galactus\AppData\Local\Programs\Python\Python313\Lib\site-packages\click\core.py", line 1524, in __call__
+    return self.main(*args, **kwargs)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\AppData\Local\Programs\Python\Python313\Lib\site-packages\click\core.py", line 1445, in main
+    rv = self.invoke(ctx)
+  File "C:\Users\Galactus\AppData\Local\Programs\Python\Python313\Lib\site-packages\click\core.py", line 1308, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+           ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\AppData\Local\Programs\Python\Python313\Lib\site-packages\click\core.py", line 877, in invoke
+    return callback(*args, **kwargs)
+  File "C:\Users\Galactus\AppData\Local\Programs\Python\Python313\Lib\site-packages\uvicorn\main.py", line 441, in main
+    run(
+    ~~~^
+        app,
+        ^^^^
+    ...<48 lines>...
+        reset_contextvars=reset_contextvars,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Galactus\AppData\Local\Programs\Python\Python313\Lib\site-packages\uvicorn\main.py", line 609, in run
+    config.load_app()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\Users\Galactus\AppData\Local\Programs\Python\Python313\Lib\site-packages\uvicorn\config.py", line 415, in load_app
+    return import_from_string(self.app)
+  File "C:\Users\Galactus\AppData\Local\Programs\Python\Python313\Lib\site-packages\uvicorn\importer.py", line 22, in import_from_string
+    raise exc from None
+  File "C:\Users\Galactus\AppData\Local\Programs\Python\Python313\Lib\site-packages\uvicorn\importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+  File "C:\Users\Galactus\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1395, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1395, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'ai_commerce_gateway'
+ERROR:    Error loading ASGI app. Could not import module "ai_commerce_gateway.main".
+ERROR:    Error loading ASGI app. Could not import module "ai_commerce_gateway.main".
+ERROR:    Error loading ASGI app. Could not import module "ai_commerce_gateway.main".
+INFO:     Started server process [10528]
+INFO:     Waiting for application startup.
+StreamableHTTP session manager started
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8001 (Press CTRL+C to quit)
+request_completed method=GET route=/health/live status=200 duration_ms=35.504 correlation_id=corr_77baf701765a4b6497b3a1334cb14906
+request_completed method=POST route=unmatched status=404 duration_ms=0.503 correlation_id=corr_3568d54f5c774ab9a3cd4e223c6b1ee3
+request_completed method=POST route=/buyer/sessions status=422 duration_ms=2.658 correlation_id=corr_d8802e8bd7174c46b705adbb1352d90d
+request_completed method=POST route=unmatched status=404 duration_ms=0.570 correlation_id=corr_526b7e19dfbe48dfacf5f800bf044390
+request_completed method=POST route=unmatched status=404 duration_ms=0.828 correlation_id=corr_914039b4de2e4bb29aa7ae24189e891f
+request_completed method=GET route=unmatched status=200 duration_ms=0.279 correlation_id=corr_84305d5deb814b57a0d82e982b0c8ebc
+request_completed method=POST route=unmatched status=404 duration_ms=0.552 correlation_id=corr_1ab4e6334410405c814843354e3b8d25
+request_completed method=GET route=unmatched status=404 duration_ms=0.483 correlation_id=corr_4cb160cb5e864b9bafbdf7c70f114167
+request_completed method=POST route=/merchants/{merchant_id}/products/extract-draft status=401 duration_ms=3.390 correlation_id=corr_c3b581fa03f64974a2091297565967ee
+request_completed method=POST route=/merchants/{merchant_id}/sessions status=422 duration_ms=1.328 correlation_id=corr_b07c1c6ce21f469d801e246f1afbc379
+request_completed method=POST route=/merchants/{merchant_id}/products/extract-draft status=401 duration_ms=12.164 correlation_id=corr_af156e1d60604cc2a2073953ec650152
+request_completed method=POST route=/merchants/{merchant_id}/sessions status=422 duration_ms=1.374 correlation_id=corr_275872ac1a7b4ee2a88708a520d6844d
+{"action": "session.issue", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": null, "before": null, "causation": null, "correlation_id": "corr_fc4a3afe968f46619e9a941b9af7c6ec", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T13:04:22.618855+00:00", "target_id": "user_1", "target_type": "session", "version_after": null, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/sessions status=201 duration_ms=5.534 correlation_id=corr_fc4a3afe968f46619e9a941b9af7c6ec
+request_completed method=POST route=/merchants/{merchant_id}/products/extract-draft status=401 duration_ms=2.468 correlation_id=corr_f066dccc33284c26b83ff9394da82423
+{"action": "session.issue", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": null, "before": null, "causation": null, "correlation_id": "corr_7e46d3e992564b0098e4fdd9dc670051", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T13:04:27.827011+00:00", "target_id": "user_1", "target_type": "session", "version_after": null, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/sessions status=201 duration_ms=3.838 correlation_id=corr_7e46d3e992564b0098e4fdd9dc670051
+{"action": "session.issue", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": null, "before": null, "causation": null, "correlation_id": "corr_c489539c674748ad9cef9940466bbe8b", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T13:04:36.859018+00:00", "target_id": "user_1", "target_type": "session", "version_after": null, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/sessions status=201 duration_ms=3.845 correlation_id=corr_c489539c674748ad9cef9940466bbe8b
+[92m18:34:36 - LiteLLM:INFO[0m: utils.py:4023 - 
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+[92m18:34:40 - LiteLLM:INFO[0m: utils.py:1550 - Wrapper: Completed Call, calling success_handler
+Wrapper: Completed Call, calling success_handler
+request_completed method=POST route=/merchants/{merchant_id}/products/extract-draft status=200 duration_ms=3309.891 correlation_id=corr_c5fd4b9225c248fbb7f88367ee46f305
+request_completed method=GET route=/health/live status=200 duration_ms=0.966 correlation_id=corr_f88f3c1ff8304c51975ad0b774e7ffae
+request_completed method=GET route=/health/live status=200 duration_ms=1.764 correlation_id=corr_64aaf2cb0ff2479594fb6b7fb03c9532
+{"action": "session.issue", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": null, "before": null, "causation": null, "correlation_id": "corr_3769cd11b84f4337a31d77971041fd15", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T13:06:21.214833+00:00", "target_id": "user_1", "target_type": "session", "version_after": null, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/sessions status=201 duration_ms=4.858 correlation_id=corr_3769cd11b84f4337a31d77971041fd15
+[92m18:36:21 - LiteLLM:INFO[0m: utils.py:4023 - 
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+[92m18:36:24 - LiteLLM:INFO[0m: utils.py:1550 - Wrapper: Completed Call, calling success_handler
+Wrapper: Completed Call, calling success_handler
+request_completed method=POST route=/merchants/{merchant_id}/products/extract-draft status=200 duration_ms=3292.812 correlation_id=corr_47971cc04ff445dbbd463c8445357b1b
+{"action": "session.issue", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": null, "before": null, "causation": null, "correlation_id": "corr_5e2fbb48c2b74f1ab2da8fa1429b1a04", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T13:06:33.290366+00:00", "target_id": "user_1", "target_type": "session", "version_after": null, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/sessions status=201 duration_ms=4.073 correlation_id=corr_5e2fbb48c2b74f1ab2da8fa1429b1a04
+[92m18:36:33 - LiteLLM:INFO[0m: utils.py:4023 - 
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+[92m18:36:36 - LiteLLM:INFO[0m: utils.py:1550 - Wrapper: Completed Call, calling success_handler
+Wrapper: Completed Call, calling success_handler
+request_completed method=POST route=/merchants/{merchant_id}/products/extract-draft status=200 duration_ms=2682.071 correlation_id=corr_35f564b98b6446909a612a14d9cf8e09
+request_completed method=GET route=/health/live status=200 duration_ms=0.616 correlation_id=corr_c9304e4559ac4326bd353690c03ce042
+{"action": "session.issue", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": null, "before": null, "causation": null, "correlation_id": "corr_a53f0c84f0c640d79e90ea6b128ec4ab", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T13:06:45.234042+00:00", "target_id": "user_1", "target_type": "session", "version_after": null, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/sessions status=201 duration_ms=4.756 correlation_id=corr_a53f0c84f0c640d79e90ea6b128ec4ab
+[92m18:36:45 - LiteLLM:INFO[0m: utils.py:4023 - 
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+[92m18:36:48 - LiteLLM:INFO[0m: utils.py:1550 - Wrapper: Completed Call, calling success_handler
+Wrapper: Completed Call, calling success_handler
+request_completed method=POST route=/merchants/{merchant_id}/products/extract-draft status=200 duration_ms=2951.842 correlation_id=corr_d5dc8fa935cc461aac1c50722e23d19a
+request_completed method=GET route=/health/live status=200 duration_ms=0.673 correlation_id=corr_eef0e02c92ed42ff99200f9a26d35d40
+request_completed method=POST route=/merchants/{merchant_id}/products status=422 duration_ms=6.461 correlation_id=corr_6e7a3a3d7a374b0e9bed77f5b1919d76
+request_completed method=GET route=/health/live status=200 duration_ms=0.955 correlation_id=corr_37c2f0a793424f21934a259f888b7519
+{"action": "session.issue", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": null, "before": null, "causation": null, "correlation_id": "corr_c2175f03737f45ae824aa617317d17fa", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T13:07:09.734821+00:00", "target_id": "user_1", "target_type": "session", "version_after": null, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/sessions status=201 duration_ms=3.785 correlation_id=corr_c2175f03737f45ae824aa617317d17fa
+[92m18:37:09 - LiteLLM:INFO[0m: utils.py:4023 - 
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+[92m18:37:12 - LiteLLM:INFO[0m: utils.py:1550 - Wrapper: Completed Call, calling success_handler
+Wrapper: Completed Call, calling success_handler
+request_completed method=POST route=/merchants/{merchant_id}/products/extract-draft status=200 duration_ms=2697.849 correlation_id=corr_30c200cd107f49b4a1b9ecb91693cc86
+{"action": "product.create", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": {"available_quantity": 100, "currency": "INR", "price_minor": 1000, "status": "DRAFT"}, "before": null, "causation": "test-product-1788613632620", "correlation_id": "corr_ab9303a3d4f948e5a94fd3af228215b4", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T13:07:12.813910+00:00", "target_id": "prod_JH9T2HiHQKThSj-gxaOT0A", "target_type": "product", "version_after": 1, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/products status=201 duration_ms=11.086 correlation_id=corr_ab9303a3d4f948e5a94fd3af228215b4
+request_completed method=GET route=/merchants/{merchant_id}/products status=200 duration_ms=7.405 correlation_id=corr_c79cb5f79d1c4665a576f029ca0955ec
+{"action": "session.issue", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": null, "before": null, "causation": null, "correlation_id": "corr_6f83813039794e59a18459758f7cc105", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T13:07:22.945822+00:00", "target_id": "user_1", "target_type": "session", "version_after": null, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/sessions status=201 duration_ms=3.995 correlation_id=corr_6f83813039794e59a18459758f7cc105
+request_completed method=GET route=/merchants/{merchant_id}/products status=200 duration_ms=4.009 correlation_id=corr_d403c9a95ae14d2d91356e51d35c884d
+request_completed method=GET route=/health/live status=200 duration_ms=0.685 correlation_id=corr_76e41570152b4d6798009c4d475caebf
+{"action": "session.issue", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": null, "before": null, "causation": null, "correlation_id": "corr_bdb384c23c6b4165889272f6bd6093f6", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T13:07:31.769389+00:00", "target_id": "user_1", "target_type": "session", "version_after": null, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/sessions status=201 duration_ms=3.567 correlation_id=corr_bdb384c23c6b4165889272f6bd6093f6
+[92m18:37:31 - LiteLLM:INFO[0m: utils.py:4023 - 
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+[92m18:37:34 - LiteLLM:INFO[0m: utils.py:1550 - Wrapper: Completed Call, calling success_handler
+Wrapper: Completed Call, calling success_handler
+request_completed method=POST route=/merchants/{merchant_id}/products/extract-draft status=200 duration_ms=2712.080 correlation_id=corr_8144a16ccbc2445ca98a711c85b97477
+{"action": "product.create", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": {"available_quantity": 100, "currency": "INR", "price_minor": 1000, "status": "DRAFT"}, "before": null, "causation": "test-product-1788613654648", "correlation_id": "corr_a9af120ec1b84ec1bfb93295c78de93a", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T13:07:34.836400+00:00", "target_id": "prod_8ZOFB-UCHFPVFnjdoaZrYA", "target_type": "product", "version_after": 1, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/products status=201 duration_ms=7.178 correlation_id=corr_a9af120ec1b84ec1bfb93295c78de93a
+request_completed method=GET route=/merchants/{merchant_id}/products status=200 duration_ms=4.590 correlation_id=corr_b63eb27c1f5f499abc3374eeb9c1d2e1
+request_completed method=POST route=/buyer/sessions status=422 duration_ms=1.628 correlation_id=corr_8ebb20ca865e4922b2aa408bc4c4bcbd
+request_completed method=GET route=/health/live status=200 duration_ms=0.967 correlation_id=corr_2f30f29b32b54fc9b95a7913dac4e2bd
+{"action": "session.issue", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": null, "before": null, "causation": null, "correlation_id": "corr_33a7d2631d944c08bc47d0cac332c237", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T13:07:54.521870+00:00", "target_id": "user_1", "target_type": "session", "version_after": null, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/sessions status=201 duration_ms=3.910 correlation_id=corr_33a7d2631d944c08bc47d0cac332c237
+[92m18:37:54 - LiteLLM:INFO[0m: utils.py:4023 - 
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+[92m18:37:57 - LiteLLM:INFO[0m: utils.py:1550 - Wrapper: Completed Call, calling success_handler
+Wrapper: Completed Call, calling success_handler
+request_completed method=POST route=/merchants/{merchant_id}/products/extract-draft status=200 duration_ms=3012.075 correlation_id=corr_a4826fdc02be49768538f46c1786130f
+{"action": "product.create", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": {"available_quantity": 100, "currency": "INR", "price_minor": 1000, "status": "DRAFT"}, "before": null, "causation": "test-product-1788613677720", "correlation_id": "corr_59fae4cdb8954e95a1dba148ff5f9b4c", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T13:07:57.898856+00:00", "target_id": "prod_J1jYClot9DT3JZGK-w-eUQ", "target_type": "product", "version_after": 1, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/products status=201 duration_ms=7.675 correlation_id=corr_59fae4cdb8954e95a1dba148ff5f9b4c
+request_completed method=GET route=/merchants/{merchant_id}/products status=200 duration_ms=4.415 correlation_id=corr_727b8235da2d481b931cf038733de733
+request_completed method=POST route=/buyer/sessions status=201 duration_ms=2.401 correlation_id=corr_39cef0d87cfe4504997458bb6d78d913
+request_completed method=POST route=/buyer/sessions status=201 duration_ms=2.101 correlation_id=corr_a25539dc9993428ea36fdd4a38a1ba42
+request_completed method=GET route=/health/live status=200 duration_ms=0.711 correlation_id=corr_0060f58c39e44f3fb002ce86d73f9470
+{"action": "session.issue", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": null, "before": null, "causation": null, "correlation_id": "corr_0b836d0e845b44a3a06e83b7c5ffc1c7", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T13:08:12.025114+00:00", "target_id": "user_1", "target_type": "session", "version_after": null, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/sessions status=201 duration_ms=5.624 correlation_id=corr_0b836d0e845b44a3a06e83b7c5ffc1c7
+[92m18:38:12 - LiteLLM:INFO[0m: utils.py:4023 - 
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+[92m18:38:14 - LiteLLM:INFO[0m: utils.py:1550 - Wrapper: Completed Call, calling success_handler
+Wrapper: Completed Call, calling success_handler
+request_completed method=POST route=/merchants/{merchant_id}/products/extract-draft status=200 duration_ms=2638.459 correlation_id=corr_e790809f675149ee9ee0538f2ded68f8
+{"action": "product.create", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": {"available_quantity": 100, "currency": "INR", "price_minor": 1000, "status": "DRAFT"}, "before": null, "causation": "test-product-1788613694849", "correlation_id": "corr_cd9e77683a8d4604a5391350c5abe406", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T13:08:15.023615+00:00", "target_id": "prod_CD9uGDcNzUX7NmMngqAUWQ", "target_type": "product", "version_after": 1, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/products status=201 duration_ms=7.256 correlation_id=corr_cd9e77683a8d4604a5391350c5abe406
+request_completed method=GET route=/merchants/{merchant_id}/products status=200 duration_ms=4.305 correlation_id=corr_3ae1e22191a2459491d3b3660b5bec22
+request_completed method=POST route=/buyer/sessions status=201 duration_ms=2.427 correlation_id=corr_6433b983c84a4662a5051c2e2ade69ec
+request_completed method=GET route=/buyer/transactions status=500 duration_ms=2.174 correlation_id=corr_bdf70ce89a9b4198b6f9b5f4eb38ecf4
+ERROR:    Exception in ASGI application
+  + Exception Group Traceback (most recent call last):
+  |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_utils.py", line 85, in create_collapsing_task_group
+  |     async with anyio.create_task_group() as tg:
+  |                ~~~~~~~~~~~~~~~~~~~~~~~^^
+  |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 847, in __aexit__
+  |     raise BaseExceptionGroup(
+  |         "unhandled errors in a TaskGroup", self._exceptions
+  |     ) from None
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Traceback (most recent call last):
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 422, in run_asgi
+    |     result = await app(  # type: ignore[func-returns-value]
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |         self.scope, self.receive, self.send
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |     )
+    |     ^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 63, in __call__
+    |     return await self.app(scope, receive, send)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\applications.py", line 1163, in __call__
+    |     await super().__call__(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\applications.py", line 96, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    |     raise exc
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    |     await self.app(scope, receive, _send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\src\ai_commerce_gateway\api\app.py", line 232, in correlation_id
+    |     response = await call_next(request)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\src\ai_commerce_gateway\api\app.py", line 219, in buyer_session_auth
+    |     return await call_next(request)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    |     await self.app(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\routing.py", line 670, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 2734, in app
+    |     await route.handle(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 1780, in handle
+    |     await self.original_router.handle(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 2789, in handle
+    |     await included_router._handle_selected(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 1800, in _handle_selected
+    |     await original_route.handle(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 1279, in handle
+    |     await app(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 158, in app
+    |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 144, in app
+    |     response = await f(request)
+    |                ^^^^^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 706, in app
+    |     raw_response = await run_endpoint_function(
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |     ...<3 lines>...
+    |     )
+    |     ^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 354, in run_endpoint_function
+    |     return await run_in_threadpool(dependant.call, **values)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\concurrency.py", line 34, in run_in_threadpool
+    |     return await anyio.to_thread.run_sync(func)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\anyio\to_thread.py", line 65, in run_sync
+    |     return await get_async_backend().run_sync_in_worker_thread(
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |         func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |     )
+    |     ^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 2706, in run_sync_in_worker_thread
+    |     return await future
+    |            ^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 1100, in run
+    |     result = context.run(func, *args)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\src\ai_commerce_gateway\api\buyer_chat\router.py", line 368, in list_buyer_transactions
+    |     queries = root.transaction_query_service
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    | AttributeError: 'TransactionCompositionRoot' object has no attribute 'transaction_query_service'
+    +------------------------------------
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 422, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 63, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\applications.py", line 1163, in __call__
+    await super().__call__(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\applications.py", line 96, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\src\ai_commerce_gateway\api\app.py", line 232, in correlation_id
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\src\ai_commerce_gateway\api\app.py", line 219, in buyer_session_auth
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\routing.py", line 670, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 2734, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 1780, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 2789, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 1800, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 1279, in handle
+    await app(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 158, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 144, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 706, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 354, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\concurrency.py", line 34, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\anyio\to_thread.py", line 65, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 2706, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 1100, in run
+    result = context.run(func, *args)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\src\ai_commerce_gateway\api\buyer_chat\router.py", line 368, in list_buyer_transactions
+    queries = root.transaction_query_service
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'TransactionCompositionRoot' object has no attribute 'transaction_query_service'
+request_completed method=POST route=/buyer/sessions status=201 duration_ms=1.685 correlation_id=corr_cac572c3dc2943cb90058955d98ee4ec
+request_completed method=GET route=/buyer/transactions status=500 duration_ms=1.236 correlation_id=corr_54d75677306b4518b96a890b89c802d9
+ERROR:    Exception in ASGI application
+  + Exception Group Traceback (most recent call last):
+  |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_utils.py", line 85, in create_collapsing_task_group
+  |     async with anyio.create_task_group() as tg:
+  |                ~~~~~~~~~~~~~~~~~~~~~~~^^
+  |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 847, in __aexit__
+  |     raise BaseExceptionGroup(
+  |         "unhandled errors in a TaskGroup", self._exceptions
+  |     ) from None
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Traceback (most recent call last):
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 422, in run_asgi
+    |     result = await app(  # type: ignore[func-returns-value]
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |         self.scope, self.receive, self.send
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |     )
+    |     ^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 63, in __call__
+    |     return await self.app(scope, receive, send)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\applications.py", line 1163, in __call__
+    |     await super().__call__(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\applications.py", line 96, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    |     raise exc
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    |     await self.app(scope, receive, _send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\src\ai_commerce_gateway\api\app.py", line 232, in correlation_id
+    |     response = await call_next(request)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\src\ai_commerce_gateway\api\app.py", line 219, in buyer_session_auth
+    |     return await call_next(request)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    |     await self.app(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\routing.py", line 670, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 2734, in app
+    |     await route.handle(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 1780, in handle
+    |     await self.original_router.handle(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 2789, in handle
+    |     await included_router._handle_selected(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 1800, in _handle_selected
+    |     await original_route.handle(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 1279, in handle
+    |     await app(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 158, in app
+    |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 144, in app
+    |     response = await f(request)
+    |                ^^^^^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 706, in app
+    |     raw_response = await run_endpoint_function(
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |     ...<3 lines>...
+    |     )
+    |     ^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 354, in run_endpoint_function
+    |     return await run_in_threadpool(dependant.call, **values)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\concurrency.py", line 34, in run_in_threadpool
+    |     return await anyio.to_thread.run_sync(func)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\anyio\to_thread.py", line 65, in run_sync
+    |     return await get_async_backend().run_sync_in_worker_thread(
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |         func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |     )
+    |     ^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 2706, in run_sync_in_worker_thread
+    |     return await future
+    |            ^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 1100, in run
+    |     result = context.run(func, *args)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\src\ai_commerce_gateway\api\buyer_chat\router.py", line 368, in list_buyer_transactions
+    |     queries = root.transaction_query_service
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    | AttributeError: 'TransactionCompositionRoot' object has no attribute 'transaction_query_service'
+    +------------------------------------
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 422, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 63, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\applications.py", line 1163, in __call__
+    await super().__call__(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\applications.py", line 96, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\src\ai_commerce_gateway\api\app.py", line 232, in correlation_id
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\src\ai_commerce_gateway\api\app.py", line 219, in buyer_session_auth
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\routing.py", line 670, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 2734, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 1780, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 2789, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 1800, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 1279, in handle
+    await app(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 158, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 144, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 706, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 354, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\concurrency.py", line 34, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\anyio\to_thread.py", line 65, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 2706, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 1100, in run
+    result = context.run(func, *args)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\src\ai_commerce_gateway\api\buyer_chat\router.py", line 368, in list_buyer_transactions
+    queries = root.transaction_query_service
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'TransactionCompositionRoot' object has no attribute 'transaction_query_service'
+request_completed method=GET route=/health/live status=200 duration_ms=5.323 correlation_id=corr_d003b6d7836d44bc8f7add1e43737586
+{"action": "session.issue", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": null, "before": null, "causation": null, "correlation_id": "corr_decb4b13bd854143bf25dd23ab8252f4", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T13:08:38.531145+00:00", "target_id": "user_1", "target_type": "session", "version_after": null, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/sessions status=201 duration_ms=4.133 correlation_id=corr_decb4b13bd854143bf25dd23ab8252f4
+[92m18:38:38 - LiteLLM:INFO[0m: utils.py:4023 - 
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+[92m18:38:41 - LiteLLM:INFO[0m: utils.py:1550 - Wrapper: Completed Call, calling success_handler
+Wrapper: Completed Call, calling success_handler
+request_completed method=POST route=/merchants/{merchant_id}/products/extract-draft status=200 duration_ms=2725.009 correlation_id=corr_f5afab390755478a9a875dfd3d8ca210
+{"action": "product.create", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": {"available_quantity": 100, "currency": "INR", "price_minor": 1000, "status": "DRAFT"}, "before": null, "causation": "test-product-1788613721428", "correlation_id": "corr_06a216a6c5fd4eeb8daec7728cd3a0a3", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T13:08:41.615041+00:00", "target_id": "prod_OwNt2cAaCgReT8CkkWtuXQ", "target_type": "product", "version_after": 1, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/products status=201 duration_ms=8.474 correlation_id=corr_06a216a6c5fd4eeb8daec7728cd3a0a3
+request_completed method=GET route=/merchants/{merchant_id}/products status=200 duration_ms=4.934 correlation_id=corr_d4fb05d0c2564b638b53ec9876f6be35
+request_completed method=POST route=/buyer/sessions status=201 duration_ms=1.567 correlation_id=corr_493b8e7ccfdf4e46bd8dd34c381d4502
+request_completed method=GET route=/buyer/transactions status=500 duration_ms=1.761 correlation_id=corr_c1588598fef94010b6e3d567b3978ff7
+ERROR:    Exception in ASGI application
+  + Exception Group Traceback (most recent call last):
+  |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_utils.py", line 85, in create_collapsing_task_group
+  |     async with anyio.create_task_group() as tg:
+  |                ~~~~~~~~~~~~~~~~~~~~~~~^^
+  |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 847, in __aexit__
+  |     raise BaseExceptionGroup(
+  |         "unhandled errors in a TaskGroup", self._exceptions
+  |     ) from None
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Traceback (most recent call last):
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 422, in run_asgi
+    |     result = await app(  # type: ignore[func-returns-value]
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |         self.scope, self.receive, self.send
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |     )
+    |     ^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 63, in __call__
+    |     return await self.app(scope, receive, send)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\applications.py", line 1163, in __call__
+    |     await super().__call__(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\applications.py", line 96, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    |     raise exc
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    |     await self.app(scope, receive, _send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\src\ai_commerce_gateway\api\app.py", line 232, in correlation_id
+    |     response = await call_next(request)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\src\ai_commerce_gateway\api\app.py", line 219, in buyer_session_auth
+    |     return await call_next(request)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    |     await self.app(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\routing.py", line 670, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 2734, in app
+    |     await route.handle(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 1780, in handle
+    |     await self.original_router.handle(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 2789, in handle
+    |     await included_router._handle_selected(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 1800, in _handle_selected
+    |     await original_route.handle(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 1279, in handle
+    |     await app(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 158, in app
+    |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 144, in app
+    |     response = await f(request)
+    |                ^^^^^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 706, in app
+    |     raw_response = await run_endpoint_function(
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |     ...<3 lines>...
+    |     )
+    |     ^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 354, in run_endpoint_function
+    |     return await run_in_threadpool(dependant.call, **values)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\concurrency.py", line 34, in run_in_threadpool
+    |     return await anyio.to_thread.run_sync(func)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\anyio\to_thread.py", line 65, in run_sync
+    |     return await get_async_backend().run_sync_in_worker_thread(
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |         func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |     )
+    |     ^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 2706, in run_sync_in_worker_thread
+    |     return await future
+    |            ^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 1100, in run
+    |     result = context.run(func, *args)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\src\ai_commerce_gateway\api\buyer_chat\router.py", line 368, in list_buyer_transactions
+    |     queries = root.transaction_query_service
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    | AttributeError: 'TransactionCompositionRoot' object has no attribute 'transaction_query_service'
+    +------------------------------------
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 422, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 63, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\applications.py", line 1163, in __call__
+    await super().__call__(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\applications.py", line 96, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\src\ai_commerce_gateway\api\app.py", line 232, in correlation_id
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\src\ai_commerce_gateway\api\app.py", line 219, in buyer_session_auth
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\routing.py", line 670, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 2734, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 1780, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 2789, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 1800, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 1279, in handle
+    await app(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 158, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 144, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 706, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 354, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\concurrency.py", line 34, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\anyio\to_thread.py", line 65, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 2706, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 1100, in run
+    result = context.run(func, *args)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\src\ai_commerce_gateway\api\buyer_chat\router.py", line 368, in list_buyer_transactions
+    queries = root.transaction_query_service
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'TransactionCompositionRoot' object has no attribute 'transaction_query_service'
+request_completed method=GET route=/merchants/{merchant_id}/transactions status=200 duration_ms=5.754 correlation_id=corr_8858a3437faa46c18e9268479c11ac9d
+request_completed method=GET route=/health/live status=200 duration_ms=1.205 correlation_id=corr_aab40e83f9c146cc828f6ac8358fa18a
+{"action": "session.issue", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": null, "before": null, "causation": null, "correlation_id": "corr_344bdd86342c4657947f80fccf84df68", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T13:08:50.533801+00:00", "target_id": "user_1", "target_type": "session", "version_after": null, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/sessions status=201 duration_ms=4.506 correlation_id=corr_344bdd86342c4657947f80fccf84df68
+[92m18:38:50 - LiteLLM:INFO[0m: utils.py:4023 - 
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+[92m18:38:53 - LiteLLM:INFO[0m: utils.py:1550 - Wrapper: Completed Call, calling success_handler
+Wrapper: Completed Call, calling success_handler
+request_completed method=POST route=/merchants/{merchant_id}/products/extract-draft status=200 duration_ms=2655.287 correlation_id=corr_a6efaa5944124d5684539d229cd84fd7
+{"action": "product.create", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": {"available_quantity": 100, "currency": "INR", "price_minor": 1000, "status": "DRAFT"}, "before": null, "causation": "test-product-1788613733360", "correlation_id": "corr_21457393e5ec492eb2ea629b18e940fd", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T13:08:53.555375+00:00", "target_id": "prod_yfBN9jEnhdYsJhJNHBW3hQ", "target_type": "product", "version_after": 1, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/products status=201 duration_ms=8.145 correlation_id=corr_21457393e5ec492eb2ea629b18e940fd
+request_completed method=GET route=/merchants/{merchant_id}/products status=200 duration_ms=5.983 correlation_id=corr_a584187ac7ed420cab11ffd8f7b03225
+request_completed method=POST route=/buyer/sessions status=201 duration_ms=2.190 correlation_id=corr_d8d70f3ff36542da80754bd8952ec19e
+request_completed method=GET route=/buyer/transactions status=500 duration_ms=1.290 correlation_id=corr_c757838e763b448c9d8aa1367837a304
+ERROR:    Exception in ASGI application
+  + Exception Group Traceback (most recent call last):
+  |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_utils.py", line 85, in create_collapsing_task_group
+  |     async with anyio.create_task_group() as tg:
+  |                ~~~~~~~~~~~~~~~~~~~~~~~^^
+  |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 847, in __aexit__
+  |     raise BaseExceptionGroup(
+  |         "unhandled errors in a TaskGroup", self._exceptions
+  |     ) from None
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Traceback (most recent call last):
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 422, in run_asgi
+    |     result = await app(  # type: ignore[func-returns-value]
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |         self.scope, self.receive, self.send
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |     )
+    |     ^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 63, in __call__
+    |     return await self.app(scope, receive, send)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\applications.py", line 1163, in __call__
+    |     await super().__call__(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\applications.py", line 96, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    |     raise exc
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    |     await self.app(scope, receive, _send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\src\ai_commerce_gateway\api\app.py", line 232, in correlation_id
+    |     response = await call_next(request)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\src\ai_commerce_gateway\api\app.py", line 219, in buyer_session_auth
+    |     return await call_next(request)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    |     await self.app(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\routing.py", line 670, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 2734, in app
+    |     await route.handle(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 1780, in handle
+    |     await self.original_router.handle(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 2789, in handle
+    |     await included_router._handle_selected(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 1800, in _handle_selected
+    |     await original_route.handle(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 1279, in handle
+    |     await app(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 158, in app
+    |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 144, in app
+    |     response = await f(request)
+    |                ^^^^^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 706, in app
+    |     raw_response = await run_endpoint_function(
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |     ...<3 lines>...
+    |     )
+    |     ^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 354, in run_endpoint_function
+    |     return await run_in_threadpool(dependant.call, **values)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\concurrency.py", line 34, in run_in_threadpool
+    |     return await anyio.to_thread.run_sync(func)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\anyio\to_thread.py", line 65, in run_sync
+    |     return await get_async_backend().run_sync_in_worker_thread(
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |         func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |     )
+    |     ^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 2706, in run_sync_in_worker_thread
+    |     return await future
+    |            ^^^^^^^^^^^^
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 1100, in run
+    |     result = context.run(func, *args)
+    |   File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\src\ai_commerce_gateway\api\buyer_chat\router.py", line 368, in list_buyer_transactions
+    |     queries = root.transaction_query_service
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    | AttributeError: 'TransactionCompositionRoot' object has no attribute 'transaction_query_service'
+    +------------------------------------
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 422, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 63, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\applications.py", line 1163, in __call__
+    await super().__call__(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\applications.py", line 96, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\src\ai_commerce_gateway\api\app.py", line 232, in correlation_id
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\src\ai_commerce_gateway\api\app.py", line 219, in buyer_session_auth
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\routing.py", line 670, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 2734, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 1780, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 2789, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 1800, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 1279, in handle
+    await app(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 158, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 144, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 706, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\fastapi\routing.py", line 354, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\starlette\concurrency.py", line 34, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\anyio\to_thread.py", line 65, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 2706, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 1100, in run
+    result = context.run(func, *args)
+  File "C:\Users\Galactus\OneDrive\Desktop\commerce-integrated\src\ai_commerce_gateway\api\buyer_chat\router.py", line 368, in list_buyer_transactions
+    queries = root.transaction_query_service
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'TransactionCompositionRoot' object has no attribute 'transaction_query_service'
+request_completed method=GET route=/merchants/{merchant_id}/transactions status=200 duration_ms=4.013 correlation_id=corr_7b796e79d7214d9ab686170e5f35b229
+request_completed method=GET route=/health/live status=200 duration_ms=1.113 correlation_id=corr_95893b50498e474fa529a7cc9a8b631c
+request_completed method=POST route=/buyer/sessions status=201 duration_ms=1.824 correlation_id=corr_79a6b018534c427686451fc963296658
+{"action": "session.issue", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": null, "before": null, "causation": null, "correlation_id": "corr_a7ca75d6c12c4479aefeb3cc123f3c56", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T13:10:28.801983+00:00", "target_id": "user_1", "target_type": "session", "version_after": null, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/sessions status=201 duration_ms=3.271 correlation_id=corr_a7ca75d6c12c4479aefeb3cc123f3c56
+request_completed method=GET route=/merchants/{merchant_id}/products status=200 duration_ms=11.736 correlation_id=corr_6656c967c2204565ab118c400dc65bd5
+request_completed method=GET route=/merchants/{merchant_id}/policy status=200 duration_ms=11.224 correlation_id=corr_788a914f4c0d4d8296be075a15ce955c
+request_completed method=GET route=/merchants/{merchant_id}/reviews status=200 duration_ms=13.606 correlation_id=corr_c8db991f980e4d098e950a122d2d36aa
+request_completed method=GET route=/merchants/{merchant_id}/transactions status=200 duration_ms=14.274 correlation_id=corr_eeb1469225e3455dbee4f12b798ae88b
+request_completed method=GET route=/health/live status=200 duration_ms=1.555 correlation_id=corr_38690558891b42488b9244a07bd3e54a
+request_completed method=POST route=/buyer/sessions status=201 duration_ms=2.508 correlation_id=corr_93f183025a05405fbf05fdd4355551d3
+{"action": "session.issue", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": null, "before": null, "causation": null, "correlation_id": "corr_66cdaaaf6ed64487bcab22c9d2236954", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T13:11:36.759412+00:00", "target_id": "user_1", "target_type": "session", "version_after": null, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/sessions status=201 duration_ms=4.855 correlation_id=corr_66cdaaaf6ed64487bcab22c9d2236954
+request_completed method=GET route=/merchants/{merchant_id}/transactions status=200 duration_ms=14.410 correlation_id=corr_d46249b0cd084338866cefc79832459f
+request_completed method=GET route=/merchants/{merchant_id}/policy status=200 duration_ms=16.814 correlation_id=corr_ebdf152f6c7c4b6ab96a6dff18272eb0
+request_completed method=GET route=/merchants/{merchant_id}/reviews status=200 duration_ms=17.398 correlation_id=corr_ee0e29eb0d424b69ab245c963fe65ae8
+request_completed method=GET route=/merchants/{merchant_id}/products status=200 duration_ms=24.323 correlation_id=corr_acc8e20b6f4e4766a9bbf746f58936bc
+request_completed method=GET route=/health/live status=200 duration_ms=0.735 correlation_id=corr_966897a0e899489ba84d16a5883c15ed
+request_completed method=POST route=/buyer/sessions status=201 duration_ms=2.126 correlation_id=corr_7a2f9279f6184a73b83f15535a22cc6b
+{"action": "session.issue", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": null, "before": null, "causation": null, "correlation_id": "corr_4ebc560320ae41cab173990020af2823", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T13:11:46.399935+00:00", "target_id": "user_1", "target_type": "session", "version_after": null, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/sessions status=201 duration_ms=3.922 correlation_id=corr_4ebc560320ae41cab173990020af2823
+request_completed method=GET route=/merchants/{merchant_id}/products status=200 duration_ms=11.735 correlation_id=corr_f16399ba0f334c23aa8718b4bee891c8
+request_completed method=GET route=/merchants/{merchant_id}/policy status=200 duration_ms=10.045 correlation_id=corr_b70644f24a17477d83ed7759e45360d0
+request_completed method=GET route=/merchants/{merchant_id}/transactions status=200 duration_ms=11.322 correlation_id=corr_7ba2b0d068384d629630b307436ea604
+request_completed method=GET route=/merchants/{merchant_id}/reviews status=200 duration_ms=11.378 correlation_id=corr_9a88f58ea48048ae8da85db988745586
+request_completed method=GET route=/health/live status=200 duration_ms=0.783 correlation_id=corr_470271b2860040fa91a431329cbbe4dd
+request_completed method=POST route=/buyer/sessions status=201 duration_ms=2.484 correlation_id=corr_36808d4799dd4c7f9e7031009758d560
+{"action": "session.issue", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": null, "before": null, "causation": null, "correlation_id": "corr_17c0a6ee6a4840968d692e05edacd871", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T13:11:53.937821+00:00", "target_id": "user_1", "target_type": "session", "version_after": null, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/sessions status=201 duration_ms=4.520 correlation_id=corr_17c0a6ee6a4840968d692e05edacd871
+request_completed method=GET route=/merchants/{merchant_id}/transactions status=200 duration_ms=16.481 correlation_id=corr_7db12859b6d94433857f3a6773d941eb
+request_completed method=GET route=/merchants/{merchant_id}/policy status=200 duration_ms=19.236 correlation_id=corr_d1760fcff12d42329d4eb208b2bba304
+request_completed method=GET route=/merchants/{merchant_id}/reviews status=200 duration_ms=18.954 correlation_id=corr_c7f7fafc0c734475ac964b981c2b0559
+request_completed method=GET route=/merchants/{merchant_id}/products status=200 duration_ms=27.745 correlation_id=corr_90b61653851d476e96e1ce0c5004982d
+request_completed method=GET route=/health/live status=200 duration_ms=1.405 correlation_id=corr_738919e9661e4c3786a2057c89ffeb82
+request_completed method=POST route=/buyer/sessions status=201 duration_ms=2.760 correlation_id=corr_3cb3037437734bcdacf0bfd12eb26254
+{"action": "session.issue", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": null, "before": null, "causation": null, "correlation_id": "corr_91074c28d0664af7aee88b30f6d49b11", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T13:11:54.699605+00:00", "target_id": "user_1", "target_type": "session", "version_after": null, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/sessions status=201 duration_ms=5.033 correlation_id=corr_91074c28d0664af7aee88b30f6d49b11
+request_completed method=GET route=/merchants/{merchant_id}/reviews status=200 duration_ms=12.957 correlation_id=corr_b12e3309e15b444694c374838938f2ad
+request_completed method=GET route=/merchants/{merchant_id}/transactions status=200 duration_ms=13.301 correlation_id=corr_711fb87418f54ce7865f58e2a7c43d39
+request_completed method=GET route=/merchants/{merchant_id}/policy status=200 duration_ms=17.853 correlation_id=corr_6d61e06bb4d74a3184a369eaca97ee42
+request_completed method=GET route=/merchants/{merchant_id}/products status=200 duration_ms=20.716 correlation_id=corr_dccc909f7aba4d3dad7542c37918d7d6
+[92m18:42:01 - LiteLLM:INFO[0m: utils.py:4023 - 
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+[92m18:42:02 - LiteLLM:INFO[0m: utils.py:1550 - Wrapper: Completed Call, calling success_handler
+Wrapper: Completed Call, calling success_handler
+ai_orchestration_audit request_id=req_d899bd11948d429c826006db67b93e53 correlation_id=corr_7909f26686104336b924a26fe2476b7d actor_id=buyer_1 turn=0 tool=search_catalog outcome=requested result_reference=None created_at=2026-09-05T13:12:02.908972+00:00
+search_catalog invoked [corr=corr_7909f26686104336b924a26fe2476b7d]
+ai_orchestration_audit request_id=req_d899bd11948d429c826006db67b93e53 correlation_id=corr_7909f26686104336b924a26fe2476b7d actor_id=buyer_1 turn=0 tool=search_catalog outcome=completed result_reference=search_catalog_items:0 created_at=2026-09-05T13:12:02.915270+00:00
+[92m18:42:02 - LiteLLM:INFO[0m: utils.py:4023 - 
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+[92m18:42:03 - LiteLLM:INFO[0m: utils.py:1550 - Wrapper: Completed Call, calling success_handler
+Wrapper: Completed Call, calling success_handler
+ai_orchestration_audit request_id=req_d899bd11948d429c826006db67b93e53 correlation_id=corr_7909f26686104336b924a26fe2476b7d actor_id=buyer_1 turn=1 tool=search_catalog outcome=requested result_reference=None created_at=2026-09-05T13:12:03.813036+00:00
+search_catalog invoked [corr=corr_7909f26686104336b924a26fe2476b7d]
+ai_orchestration_audit request_id=req_d899bd11948d429c826006db67b93e53 correlation_id=corr_7909f26686104336b924a26fe2476b7d actor_id=buyer_1 turn=1 tool=search_catalog outcome=completed result_reference=search_catalog_items:0 created_at=2026-09-05T13:12:03.815526+00:00
+ai_orchestration_audit request_id=req_d899bd11948d429c826006db67b93e53 correlation_id=corr_7909f26686104336b924a26fe2476b7d actor_id=buyer_1 turn=1 tool=search_catalog outcome=requested result_reference=None created_at=2026-09-05T13:12:03.815657+00:00
+search_catalog invoked [corr=corr_7909f26686104336b924a26fe2476b7d]
+ai_orchestration_audit request_id=req_d899bd11948d429c826006db67b93e53 correlation_id=corr_7909f26686104336b924a26fe2476b7d actor_id=buyer_1 turn=1 tool=search_catalog outcome=completed result_reference=search_catalog_items:0 created_at=2026-09-05T13:12:03.816700+00:00
+[92m18:42:03 - LiteLLM:INFO[0m: utils.py:4023 - 
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+[92m18:42:04 - LiteLLM:INFO[0m: utils.py:1550 - Wrapper: Completed Call, calling success_handler
+Wrapper: Completed Call, calling success_handler
+ai_orchestration_audit request_id=req_d899bd11948d429c826006db67b93e53 correlation_id=corr_7909f26686104336b924a26fe2476b7d actor_id=buyer_1 turn=2 tool=search_catalog outcome=requested result_reference=None created_at=2026-09-05T13:12:04.546329+00:00
+search_catalog invoked [corr=corr_7909f26686104336b924a26fe2476b7d]
+ai_orchestration_audit request_id=req_d899bd11948d429c826006db67b93e53 correlation_id=corr_7909f26686104336b924a26fe2476b7d actor_id=buyer_1 turn=2 tool=search_catalog outcome=completed result_reference=search_catalog_items:1 created_at=2026-09-05T13:12:04.549430+00:00
+[92m18:42:04 - LiteLLM:INFO[0m: utils.py:4023 - 
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+[92m18:42:05 - LiteLLM:INFO[0m: utils.py:1550 - Wrapper: Completed Call, calling success_handler
+Wrapper: Completed Call, calling success_handler
+request_completed method=POST route=/buyer/chat status=200 duration_ms=3733.004 correlation_id=corr_7909f26686104336b924a26fe2476b7d
+request_completed method=GET route=/health/live status=200 duration_ms=0.886 correlation_id=corr_b82ede576a534a86904f174a609b5748
+request_completed method=POST route=/buyer/sessions status=201 duration_ms=2.654 correlation_id=corr_0938bfa4ae7445fc9eab1afa432fec28
+{"action": "session.issue", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": null, "before": null, "causation": null, "correlation_id": "corr_c9f53417dfe549e38106579a712af899", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T13:12:24.755395+00:00", "target_id": "user_1", "target_type": "session", "version_after": null, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/sessions status=201 duration_ms=4.698 correlation_id=corr_c9f53417dfe549e38106579a712af899
+request_completed method=GET route=/merchants/{merchant_id}/policy status=200 duration_ms=15.553 correlation_id=corr_88ae3cc98a51423587a672299a89f333
+request_completed method=GET route=/merchants/{merchant_id}/reviews status=200 duration_ms=16.197 correlation_id=corr_a0ec8ddda1db4eae8a52cd4607a62c8a
+request_completed method=GET route=/merchants/{merchant_id}/products status=200 duration_ms=19.853 correlation_id=corr_5ff93eec493d4503b99ccaabcc2d975c
+request_completed method=GET route=/merchants/{merchant_id}/transactions status=200 duration_ms=16.533 correlation_id=corr_0dc8bc4de5314890b644cff288ac5ba0
+request_completed method=GET route=/health/live status=200 duration_ms=0.974 correlation_id=corr_487d430bd6ac45f4ae9e99ddf4d9d299
+request_completed method=POST route=/buyer/sessions status=201 duration_ms=2.888 correlation_id=corr_69194466474548bbbaebfc2a98e2b492
+{"action": "session.issue", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": null, "before": null, "causation": null, "correlation_id": "corr_025adb97935a4d31b00fb0d9df59cf14", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T13:12:50.985787+00:00", "target_id": "user_1", "target_type": "session", "version_after": null, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/sessions status=201 duration_ms=5.613 correlation_id=corr_025adb97935a4d31b00fb0d9df59cf14
+request_completed method=GET route=/merchants/{merchant_id}/products status=200 duration_ms=17.266 correlation_id=corr_798cb9b5f3464c4c92803ef11f4e20e4
+request_completed method=GET route=/merchants/{merchant_id}/reviews status=200 duration_ms=15.425 correlation_id=corr_84975c4da0894e019aef6fa45964fbd3
+request_completed method=GET route=/merchants/{merchant_id}/policy status=200 duration_ms=16.308 correlation_id=corr_068968f4a8764511b37f7606e1f3dcaf
+request_completed method=GET route=/merchants/{merchant_id}/transactions status=200 duration_ms=16.399 correlation_id=corr_223414956ee2474094e5888241c60b6a
+request_completed method=GET route=/health/live status=200 duration_ms=0.836 correlation_id=corr_6997ab274bab4209bcc244952ba5fe1b
+request_completed method=POST route=/buyer/sessions status=201 duration_ms=2.193 correlation_id=corr_4b87a958cbc54af0bf8f1069b222bda8
+{"action": "session.issue", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": null, "before": null, "causation": null, "correlation_id": "corr_cc07d25c16b4486ea5a6728481c15152", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T13:12:51.737604+00:00", "target_id": "user_1", "target_type": "session", "version_after": null, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/sessions status=201 duration_ms=4.453 correlation_id=corr_cc07d25c16b4486ea5a6728481c15152
+request_completed method=GET route=/merchants/{merchant_id}/reviews status=200 duration_ms=12.235 correlation_id=corr_b69d2adf0be44d10a0e4594f679e3ae4
+request_completed method=GET route=/merchants/{merchant_id}/policy status=200 duration_ms=14.412 correlation_id=corr_64e2f485ce424554b89dca1126d79746
+request_completed method=GET route=/merchants/{merchant_id}/transactions status=200 duration_ms=16.272 correlation_id=corr_aac0835417a140698386d3d1ea917838
+request_completed method=GET route=/merchants/{merchant_id}/products status=200 duration_ms=20.695 correlation_id=corr_feced6d92af64e26909eaf649d9b7e52
+[92m18:43:53 - LiteLLM:INFO[0m: utils.py:4023 - 
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+[92m18:43:58 - LiteLLM:INFO[0m: utils.py:1550 - Wrapper: Completed Call, calling success_handler
+Wrapper: Completed Call, calling success_handler
+request_completed method=POST route=/merchants/{merchant_id}/products/extract-draft status=200 duration_ms=4460.450 correlation_id=corr_56c0e67f5951498484f02cb805545b2d
+request_completed method=POST route=/buyer/sessions status=201 duration_ms=2.297 correlation_id=corr_faee1ac08e2f42158553a98d311da317
+request_completed method=GET route=/merchants/{merchant_id}/products/{product_id} status=200 duration_ms=8.320 correlation_id=corr_29e765d455414fcc829806eb69be2463
+[92m18:44:29 - LiteLLM:INFO[0m: utils.py:4023 - 
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+[92m18:44:33 - LiteLLM:INFO[0m: utils.py:1550 - Wrapper: Completed Call, calling success_handler
+Wrapper: Completed Call, calling success_handler
+request_completed method=POST route=/merchants/{merchant_id}/products/extract-draft status=200 duration_ms=4079.675 correlation_id=corr_794bfc42dfdf40dd8b3955af1f14bbc7
+request_completed method=POST route=/merchants/{merchant_id}/products/{product_id}/publication-confirmations status=200 duration_ms=4.409 correlation_id=corr_ac0d69a10ee34d7fbfb2ae691b6b0c6b
+{"action": "product.unpublish", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": {"available_quantity": 50, "currency": "INR", "price_minor": 100000, "status": "UNPUBLISHED"}, "before": {"available_quantity": 50, "currency": "INR", "price_minor": 100000, "status": "PUBLISHED"}, "causation": "ebda6ffd-86c7-4743-b641-2cadf71215ca", "correlation_id": "corr_aed6817fc3034660bd66112b36a06580", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T13:14:39.405052+00:00", "target_id": "prod_001", "target_type": "product", "version_after": 2, "version_before": 1}
+request_completed method=POST route=/merchants/{merchant_id}/products/{product_id}/unpublish status=200 duration_ms=21.923 correlation_id=corr_aed6817fc3034660bd66112b36a06580
+{"action": "product.update", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": {"available_quantity": 50, "currency": "INR", "price_minor": 100000, "status": "UNPUBLISHED"}, "before": {"available_quantity": 50, "currency": "INR", "price_minor": 100000, "status": "UNPUBLISHED"}, "causation": "e16c6dbb-b8e7-4fd9-aaca-f49638a6b94d", "correlation_id": "corr_fdeb508011aa40dea9fed2957356cd06", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T13:14:41.776891+00:00", "target_id": "prod_001", "target_type": "product", "version_after": 3, "version_before": 2}
+request_completed method=PATCH route=/merchants/{merchant_id}/products/{product_id} status=200 duration_ms=14.692 correlation_id=corr_fdeb508011aa40dea9fed2957356cd06
+request_completed method=GET route=/health/live status=200 duration_ms=1.164 correlation_id=corr_06492ebfec0b4ab2a1e4f4c75aa09a7b
+request_completed method=POST route=/buyer/sessions status=201 duration_ms=2.203 correlation_id=corr_86499e7e90cf4840aaccb6e793762007
+{"action": "session.issue", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": null, "before": null, "causation": null, "correlation_id": "corr_a31330710608499a9e86a1d6fa726012", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T13:16:34.470740+00:00", "target_id": "user_1", "target_type": "session", "version_after": null, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/sessions status=201 duration_ms=4.735 correlation_id=corr_a31330710608499a9e86a1d6fa726012
+request_completed method=GET route=/merchants/{merchant_id}/policy status=200 duration_ms=14.333 correlation_id=corr_6a2f4dee2473467591b239c3c398fe1e
+request_completed method=GET route=/merchants/{merchant_id}/reviews status=200 duration_ms=15.848 correlation_id=corr_531b97a8d09a4d008567f6ece76c2ec4
+request_completed method=GET route=/merchants/{merchant_id}/transactions status=200 duration_ms=16.325 correlation_id=corr_bda9ce83922f40e4b8b9cdb8a54a0db1
+request_completed method=GET route=/merchants/{merchant_id}/products status=200 duration_ms=21.629 correlation_id=corr_cfa8a0665ca5467a8e18a12ac48f6dbb
+request_completed method=GET route=/health/live status=200 duration_ms=1.368 correlation_id=corr_25b138b046fb4a29a63e72140a61d77b
+request_completed method=POST route=/buyer/sessions status=201 duration_ms=2.199 correlation_id=corr_3e8dd8fd186943819eff740999d2df78
+{"action": "session.issue", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": null, "before": null, "causation": null, "correlation_id": "corr_095a89bfea57442fb53764ac3bd41db4", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T13:16:36.370945+00:00", "target_id": "user_1", "target_type": "session", "version_after": null, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/sessions status=201 duration_ms=4.306 correlation_id=corr_095a89bfea57442fb53764ac3bd41db4
+request_completed method=GET route=/merchants/{merchant_id}/reviews status=200 duration_ms=12.802 correlation_id=corr_efbe045f210a434cbe9c831ac1b74939
+request_completed method=GET route=/merchants/{merchant_id}/transactions status=200 duration_ms=16.538 correlation_id=corr_bdeb8fc3468d40778ac098b4de920c71
+request_completed method=GET route=/merchants/{merchant_id}/policy status=200 duration_ms=19.659 correlation_id=corr_1eae59dda67c40f8b2752fb9e5a4d541
+request_completed method=GET route=/merchants/{merchant_id}/products status=200 duration_ms=23.111 correlation_id=corr_bcf62712dd5a461388b857dd9e40c359
+[92m18:46:39 - LiteLLM:INFO[0m: utils.py:4023 - 
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+[92m18:46:40 - LiteLLM:INFO[0m: utils.py:1550 - Wrapper: Completed Call, calling success_handler
+Wrapper: Completed Call, calling success_handler
+ai_orchestration_audit request_id=req_cd1f19ec5c594ac390d358e65ce5436e correlation_id=corr_ce96b9f5dc5d4eb3baa2fbc9c62ecf5b actor_id=buyer_1 turn=0 tool=search_catalog outcome=requested result_reference=None created_at=2026-09-05T13:16:40.523547+00:00
+search_catalog invoked [corr=corr_ce96b9f5dc5d4eb3baa2fbc9c62ecf5b]
+ai_orchestration_audit request_id=req_cd1f19ec5c594ac390d358e65ce5436e correlation_id=corr_ce96b9f5dc5d4eb3baa2fbc9c62ecf5b actor_id=buyer_1 turn=0 tool=search_catalog outcome=completed result_reference=search_catalog_items:0 created_at=2026-09-05T13:16:40.526195+00:00
+[92m18:46:40 - LiteLLM:INFO[0m: utils.py:4023 - 
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+[92m18:46:41 - LiteLLM:INFO[0m: utils.py:1550 - Wrapper: Completed Call, calling success_handler
+Wrapper: Completed Call, calling success_handler
+ai_orchestration_audit request_id=req_cd1f19ec5c594ac390d358e65ce5436e correlation_id=corr_ce96b9f5dc5d4eb3baa2fbc9c62ecf5b actor_id=buyer_1 turn=1 tool=search_catalog outcome=requested result_reference=None created_at=2026-09-05T13:16:41.677288+00:00
+search_catalog invoked [corr=corr_ce96b9f5dc5d4eb3baa2fbc9c62ecf5b]
+ai_orchestration_audit request_id=req_cd1f19ec5c594ac390d358e65ce5436e correlation_id=corr_ce96b9f5dc5d4eb3baa2fbc9c62ecf5b actor_id=buyer_1 turn=1 tool=search_catalog outcome=completed result_reference=search_catalog_items:0 created_at=2026-09-05T13:16:41.678816+00:00
+ai_orchestration_audit request_id=req_cd1f19ec5c594ac390d358e65ce5436e correlation_id=corr_ce96b9f5dc5d4eb3baa2fbc9c62ecf5b actor_id=buyer_1 turn=1 tool=search_catalog outcome=requested result_reference=None created_at=2026-09-05T13:16:41.678931+00:00
+search_catalog invoked [corr=corr_ce96b9f5dc5d4eb3baa2fbc9c62ecf5b]
+ai_orchestration_audit request_id=req_cd1f19ec5c594ac390d358e65ce5436e correlation_id=corr_ce96b9f5dc5d4eb3baa2fbc9c62ecf5b actor_id=buyer_1 turn=1 tool=search_catalog outcome=completed result_reference=search_catalog_items:0 created_at=2026-09-05T13:16:41.679563+00:00
+[92m18:46:41 - LiteLLM:INFO[0m: utils.py:4023 - 
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+[92m18:46:42 - LiteLLM:INFO[0m: utils.py:1550 - Wrapper: Completed Call, calling success_handler
+Wrapper: Completed Call, calling success_handler
+ai_orchestration_audit request_id=req_cd1f19ec5c594ac390d358e65ce5436e correlation_id=corr_ce96b9f5dc5d4eb3baa2fbc9c62ecf5b actor_id=buyer_1 turn=2 tool=search_catalog outcome=requested result_reference=None created_at=2026-09-05T13:16:42.498761+00:00
+search_catalog invoked [corr=corr_ce96b9f5dc5d4eb3baa2fbc9c62ecf5b]
+ai_orchestration_audit request_id=req_cd1f19ec5c594ac390d358e65ce5436e correlation_id=corr_ce96b9f5dc5d4eb3baa2fbc9c62ecf5b actor_id=buyer_1 turn=2 tool=search_catalog outcome=completed result_reference=search_catalog_items:0 created_at=2026-09-05T13:16:42.500686+00:00
+[92m18:46:42 - LiteLLM:INFO[0m: utils.py:4023 - 
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+[92m18:46:43 - LiteLLM:INFO[0m: utils.py:1550 - Wrapper: Completed Call, calling success_handler
+Wrapper: Completed Call, calling success_handler
+ai_orchestration_audit request_id=req_cd1f19ec5c594ac390d358e65ce5436e correlation_id=corr_ce96b9f5dc5d4eb3baa2fbc9c62ecf5b actor_id=buyer_1 turn=3 tool=search_catalog outcome=requested result_reference=None created_at=2026-09-05T13:16:43.328080+00:00
+search_catalog invoked [corr=corr_ce96b9f5dc5d4eb3baa2fbc9c62ecf5b]
+ai_orchestration_audit request_id=req_cd1f19ec5c594ac390d358e65ce5436e correlation_id=corr_ce96b9f5dc5d4eb3baa2fbc9c62ecf5b actor_id=buyer_1 turn=3 tool=search_catalog outcome=completed result_reference=search_catalog_items:0 created_at=2026-09-05T13:16:43.330000+00:00
+ai_orchestration_audit request_id=req_cd1f19ec5c594ac390d358e65ce5436e correlation_id=corr_ce96b9f5dc5d4eb3baa2fbc9c62ecf5b actor_id=buyer_1 turn=3 tool=search_catalog outcome=requested result_reference=None created_at=2026-09-05T13:16:43.330104+00:00
+search_catalog invoked [corr=corr_ce96b9f5dc5d4eb3baa2fbc9c62ecf5b]
+ai_orchestration_audit request_id=req_cd1f19ec5c594ac390d358e65ce5436e correlation_id=corr_ce96b9f5dc5d4eb3baa2fbc9c62ecf5b actor_id=buyer_1 turn=3 tool=search_catalog outcome=completed result_reference=search_catalog_items:0 created_at=2026-09-05T13:16:43.330812+00:00
+[92m18:46:43 - LiteLLM:INFO[0m: utils.py:4023 - 
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+[92m18:46:44 - LiteLLM:INFO[0m: utils.py:1550 - Wrapper: Completed Call, calling success_handler
+Wrapper: Completed Call, calling success_handler
+ai_orchestration_audit request_id=req_cd1f19ec5c594ac390d358e65ce5436e correlation_id=corr_ce96b9f5dc5d4eb3baa2fbc9c62ecf5b actor_id=buyer_1 turn=4 tool=search_catalog outcome=requested result_reference=None created_at=2026-09-05T13:16:44.603556+00:00
+search_catalog invoked [corr=corr_ce96b9f5dc5d4eb3baa2fbc9c62ecf5b]
+ai_orchestration_audit request_id=req_cd1f19ec5c594ac390d358e65ce5436e correlation_id=corr_ce96b9f5dc5d4eb3baa2fbc9c62ecf5b actor_id=buyer_1 turn=4 tool=search_catalog outcome=completed result_reference=search_catalog_items:0 created_at=2026-09-05T13:16:44.604263+00:00
+ai_orchestration_audit request_id=req_cd1f19ec5c594ac390d358e65ce5436e correlation_id=corr_ce96b9f5dc5d4eb3baa2fbc9c62ecf5b actor_id=buyer_1 turn=4 tool=search_catalog outcome=requested result_reference=None created_at=2026-09-05T13:16:44.604319+00:00
+search_catalog invoked [corr=corr_ce96b9f5dc5d4eb3baa2fbc9c62ecf5b]
+ai_orchestration_audit request_id=req_cd1f19ec5c594ac390d358e65ce5436e correlation_id=corr_ce96b9f5dc5d4eb3baa2fbc9c62ecf5b actor_id=buyer_1 turn=4 tool=search_catalog outcome=completed result_reference=search_catalog_items:0 created_at=2026-09-05T13:16:44.604664+00:00
+ai_orchestration_audit request_id=req_cd1f19ec5c594ac390d358e65ce5436e correlation_id=corr_ce96b9f5dc5d4eb3baa2fbc9c62ecf5b actor_id=buyer_1 turn=4 tool=search_catalog outcome=requested result_reference=None created_at=2026-09-05T13:16:44.604710+00:00
+search_catalog invoked [corr=corr_ce96b9f5dc5d4eb3baa2fbc9c62ecf5b]
+ai_orchestration_audit request_id=req_cd1f19ec5c594ac390d358e65ce5436e correlation_id=corr_ce96b9f5dc5d4eb3baa2fbc9c62ecf5b actor_id=buyer_1 turn=4 tool=search_catalog outcome=completed result_reference=search_catalog_items:0 created_at=2026-09-05T13:16:44.605020+00:00
+[92m18:46:44 - LiteLLM:INFO[0m: utils.py:4023 - 
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+
+LiteLLM completion() model= accounts/fireworks/models/qwen3p7-plus; provider = fireworks_ai
+[92m18:46:45 - LiteLLM:INFO[0m: utils.py:1550 - Wrapper: Completed Call, calling success_handler
+Wrapper: Completed Call, calling success_handler
+request_completed method=POST route=/buyer/chat status=200 duration_ms=6420.305 correlation_id=corr_ce96b9f5dc5d4eb3baa2fbc9c62ecf5b

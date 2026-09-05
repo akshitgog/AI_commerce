@@ -3,8 +3,8 @@ const backendOrigin = process.env.BACKEND_ORIGIN ?? "http://127.0.0.1:8000";
 export async function POST() {
   
 
-  const issuerKey = process.env.BUYER_SESSIONS_ISSUER_KEY || "dev_key_123";
-  const buyerId = process.env.E2E_BUYER_ID || "buyer_1";
+  const issuerKey = process.env.BUYER_SESSIONS_ISSUER_KEY;
+  const buyerId = process.env.E2E_BUYER_ID;
   if (!issuerKey || !buyerId) {
     return Response.json(
       { error: "E2E buyer session is not configured" },

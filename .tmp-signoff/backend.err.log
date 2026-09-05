@@ -1,0 +1,47 @@
+INFO:     Will watch for changes in these directories: ['C:\\Users\\Galactus\\OneDrive\\Desktop\\commerce-integrated']
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [20600] using WatchFiles
+INFO:     Started server process [1588]
+INFO:     Waiting for application startup.
+StreamableHTTP session manager started
+INFO:     Application startup complete.
+request_completed method=GET route=/health/live status=200 duration_ms=36.991 correlation_id=corr_ebb3c941af0f4a1eaabdf5c0a9caf099
+request_completed method=GET route=/health/live status=200 duration_ms=0.759 correlation_id=corr_7a9d89a2ee2940c8a17193a3f29adfd8
+request_completed method=POST route=/buyer/sessions status=503 duration_ms=3.283 correlation_id=corr_76853ad210414da19623d52bfa097015
+{"action": "session.issue", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": null, "before": null, "causation": null, "correlation_id": "corr_f5bd06ca6e2c4478b1c953b53f002986", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T12:45:05.794645+00:00", "target_id": "user_1", "target_type": "session", "version_after": null, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/sessions status=201 duration_ms=13.390 correlation_id=corr_f5bd06ca6e2c4478b1c953b53f002986
+request_completed method=GET route=/merchants/{merchant_id}/policy status=200 duration_ms=14.860 correlation_id=corr_dff7d46bdb2748e4905bd1b7eabcfae1
+request_completed method=GET route=/merchants/{merchant_id}/reviews status=200 duration_ms=17.478 correlation_id=corr_ba03b3f388bc44f3be050abfd6c6880b
+request_completed method=GET route=/merchants/{merchant_id}/transactions status=200 duration_ms=18.402 correlation_id=corr_3092bae5a03f412bb71bf4e373cc583a
+request_completed method=GET route=/merchants/{merchant_id}/products status=200 duration_ms=25.474 correlation_id=corr_ceaa106e29c145caaf8357f2ac52d3e7
+request_completed method=GET route=/health/live status=200 duration_ms=1.168 correlation_id=corr_9de25c7ec4344a198b4217d52042c063
+request_completed method=POST route=/buyer/sessions status=503 duration_ms=1.398 correlation_id=corr_14be0d17b3bb45af8abca35061d1660f
+{"action": "session.issue", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": null, "before": null, "causation": null, "correlation_id": "corr_38e97837e12340e2a86a679ed47439b8", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T12:45:10.221997+00:00", "target_id": "user_1", "target_type": "session", "version_after": null, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/sessions status=201 duration_ms=4.494 correlation_id=corr_38e97837e12340e2a86a679ed47439b8
+request_completed method=GET route=/merchants/{merchant_id}/policy status=200 duration_ms=9.347 correlation_id=corr_492e194028214eeeb35159c20ef28e12
+request_completed method=GET route=/merchants/{merchant_id}/products status=200 duration_ms=11.149 correlation_id=corr_00716719db12427393dd369a8ee0b1f9
+request_completed method=GET route=/merchants/{merchant_id}/reviews status=200 duration_ms=10.910 correlation_id=corr_9e3b42e011b94080a1cf7da7648936db
+request_completed method=GET route=/merchants/{merchant_id}/transactions status=200 duration_ms=11.083 correlation_id=corr_27c0615b5b72404fa65d466a64efab54
+LLM product draft extraction failed: litellm.BadRequestError: LLM Provider NOT provided. Pass in the LLM provider you are trying to call. You passed model=accounts/fireworks/models/qwen3-14b
+ Pass model as E.g. For 'Huggingface' inference endpoints pass in `completion(model='huggingface/starcoder',..)` Learn more: https://docs.litellm.ai/docs/providers
+request_completed method=POST route=/merchants/{merchant_id}/products/extract-draft status=502 duration_ms=23.142 correlation_id=corr_15c8d0a681be43b8ab103b9210de9e36
+request_completed method=GET route=/health/live status=200 duration_ms=1.280 correlation_id=corr_6bfe4e8ee3c04bfcbdc9381c985ffbe5
+request_completed method=POST route=/buyer/sessions status=503 duration_ms=2.018 correlation_id=corr_a851d5d281c244219efaf5885c76f89a
+{"action": "session.issue", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": null, "before": null, "causation": null, "correlation_id": "corr_5edb82415ccf4512a1376e60dc259c4c", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T12:47:27.126707+00:00", "target_id": "user_1", "target_type": "session", "version_after": null, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/sessions status=201 duration_ms=5.111 correlation_id=corr_5edb82415ccf4512a1376e60dc259c4c
+request_completed method=GET route=/merchants/{merchant_id}/products status=200 duration_ms=7.592 correlation_id=corr_62044a4c65f2442e9f5f4012059add91
+request_completed method=GET route=/merchants/{merchant_id}/reviews status=200 duration_ms=8.973 correlation_id=corr_0df04023367f4aa3bea215e9c2b14491
+request_completed method=GET route=/merchants/{merchant_id}/policy status=200 duration_ms=10.453 correlation_id=corr_5a58f8e4033c4c9b9b4ede61a024a9f1
+request_completed method=GET route=/merchants/{merchant_id}/transactions status=200 duration_ms=10.079 correlation_id=corr_68c823db031946ed996bf4401fa06831
+request_completed method=GET route=/health/live status=200 duration_ms=1.109 correlation_id=corr_3b5159c90c2142f5bd4ce15f9227c1b8
+request_completed method=GET route=/health/live status=200 duration_ms=0.964 correlation_id=corr_8785462598104ec89ff32f8b03e34fcf
+request_completed method=POST route=/buyer/sessions status=503 duration_ms=1.414 correlation_id=corr_967d7074f47144178bbc52828f206b5f
+{"action": "session.issue", "actor_id": "user_1", "actor_type": "MERCHANT_USER", "after": null, "before": null, "causation": null, "correlation_id": "corr_9ac5deb966b84f9db4f92aec3a9d0592", "event": "catalog.audit", "merchant_id": "mer_demo", "occurred_at": "2026-09-05T12:47:35.004098+00:00", "target_id": "user_1", "target_type": "session", "version_after": null, "version_before": null}
+request_completed method=POST route=/merchants/{merchant_id}/sessions status=201 duration_ms=4.149 correlation_id=corr_9ac5deb966b84f9db4f92aec3a9d0592
+request_completed method=GET route=/merchants/{merchant_id}/products status=200 duration_ms=8.525 correlation_id=corr_b416476e498a49a59503af559e47f1c7
+request_completed method=GET route=/merchants/{merchant_id}/policy status=200 duration_ms=10.727 correlation_id=corr_d1c5b1b947a14162956d6d0ce0c23eef
+request_completed method=GET route=/merchants/{merchant_id}/transactions status=200 duration_ms=10.401 correlation_id=corr_f194464b294d41f19dd5ff878e916492
+request_completed method=GET route=/merchants/{merchant_id}/reviews status=200 duration_ms=11.493 correlation_id=corr_a925da46375a435cb1299d4d4ee134a1
+LLM product draft extraction failed: litellm.BadRequestError: LLM Provider NOT provided. Pass in the LLM provider you are trying to call. You passed model=accounts/fireworks/models/qwen3-14b
+ Pass model as E.g. For 'Huggingface' inference endpoints pass in `completion(model='huggingface/starcoder',..)` Learn more: https://docs.litellm.ai/docs/providers
+request_completed method=POST route=/merchants/{merchant_id}/products/extract-draft status=502 duration_ms=9.455 correlation_id=corr_165041aa42ee412ab5016c7643ae2792
