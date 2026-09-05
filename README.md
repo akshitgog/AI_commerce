@@ -1,113 +1,135 @@
 # AI Commerce Gateway
 
-An intelligent, full-stack e-commerce gateway featuring an AI-driven buyer assistant, a comprehensive merchant dashboard, and secure, idempotent transaction execution via Razorpay.
+**A governed AI shopping experience that turns product discovery into safe, auditable commerce.**
 
-## Overview
+[Open the live app](https://ai-commerce-zeta.vercel.app) · [Try the buyer experience](https://ai-commerce-zeta.vercel.app/buyer) · [Open the merchant AI catalog](https://ai-commerce-zeta.vercel.app/merchant/ai-catalog) · [API health](https://ai-commerce-zeta.vercel.app/api/health/live)
 
-The **AI Commerce Gateway** reimagines the checkout experience by putting an AI agent at the center of the buyer journey. Buyers interact with a conversational interface that can search catalogs, answer questions, and dynamically generate purchase proposals. Merchants manage their catalog and policies via a modern dashboard, where they can review transactions that exceed automated policy limits.
+AI Commerce Gateway is more than a shopping chatbot. It gives buyers a natural-language assistant for finding products and preparing a purchase, while keeping merchants in control through policy checks, explicit approval, payment verification, and a complete audit trail.
 
-## System Architecture
+## Why it stands out
 
-The project is structured into two main components: a Next.js frontend and a FastAPI backend following strict Domain-Driven Design (DDD) principles.
+Most AI shopping demos stop at a recommendation. This project handles the difficult part: making an AI-assisted transaction trustworthy.
+
+- **AI with boundaries:** the assistant can search the catalog and create a proposal, but it cannot silently purchase on a buyer’s behalf.
+- **Merchant control:** every proposal is evaluated against merchant-defined rules; exceptions are routed to a review queue.
+- **Payment integrity:** checkout is handled through Razorpay with server-side signature verification and idempotent processing.
+- **Auditable by design:** a governed transaction state machine records the journey from proposal through payment.
+- **Real product surface:** separate buyer and merchant experiences are built as a polished Next.js application backed by a FastAPI service.
+
+## The experience
+
+| Buyer | Merchant | Platform |
+| --- | --- | --- |
+| Describe what you need in plain language and compare matching products. | Create and enrich catalog listings with AI assistance. | Enforces the lifecycle, authorization, policy rules, and payment verification. |
+| Review a transparent purchase proposal before authorizing it. | Set automatic approval limits and review exceptions. | Keeps pricing, stock, and transaction state server-authoritative. |
+| Complete checkout through Razorpay. | Track decisions and transactions from one dashboard. | Prevents duplicate charges with idempotency and webhook safeguards. |
+
+## Architecture
 
 ```mermaid
-graph TD
-    %% Actors
-    Buyer([Buyer / Browser])
-    Merchant([Merchant / Browser])
-
-    %% Frontend
-    subgraph Frontend [Frontend Application]
-        NextUI[Next.js App Router (React)]
-        StateStore[Centralized State Store]
-    end
-
-    %% Backend
-    subgraph Backend [FastAPI Backend - DDD]
-        Router[API Routers]
-        AppServices[Application Services]
-        
-        subgraph Domains [Core Domains]
-            Policy[Policy Engine]
-            Catalog[Catalog Domain]
-            TxMachine[Transaction State Machine]
-        end
-        
-        DBAdapter[SQLAlchemy Repository]
-    end
-
-    %% External Services
-    LLM[Fireworks AI Qwen 3p7+]
-    Razorpay[Razorpay Gateway]
-    Database[(PostgreSQL / SQLite)]
-
-    %% Flow
-    Buyer <-->|Chat / UI| NextUI
-    Merchant <-->|Dashboard| NextUI
-    NextUI <-->|State Sync| StateStore
-    StateStore <-->|REST API Proxy| Router
-    
-    Router <--> AppServices
-    AppServices <-->|Orchestration| Domains
-    AppServices <-->|Tool Calls| LLM
-    AppServices <-->|Checkout / Verification| Razorpay
-    
-    Domains <--> DBAdapter
-    DBAdapter <--> Database
+flowchart LR
+  B[Buyer] --> W[Next.js web app<br/>Vercel]
+  M[Merchant] --> W
+  W -->|/api proxy| A[FastAPI gateway<br/>Render]
+  A --> D[(PostgreSQL / SQLite)]
+  A --> L[Fireworks AI]
+  A --> P[Razorpay]
+  A --> S[Supabase Storage]
 ```
 
-### 1. Frontend (`/frontend`)
-* **Framework:** Next.js (App Router) with React.
-* **Styling & UI:** Tailwind CSS, `shadcn/ui`, and Lucide icons.
-* **State Management:** A custom React Context-based store (`store.ts`) that orchestrates API calls and local state synchronization.
-* **Proxy Routing:** API requests to `/api/*` are dynamically proxied to the Python backend via Next.js rewrites, bypassing CORS and standardizing routes.
+The frontend keeps browser requests on one origin through a Next.js API proxy. The backend follows a domain-driven structure: API routes orchestrate application services, which apply catalog, policy, and transaction-state rules before using external providers.
 
-### 2. Backend (`/src/ai_commerce_gateway`)
-* **Framework:** Python (FastAPI) and Uvicorn.
-* **Architecture:** Strict Domain-Driven Design (DDD). The logic is cleanly separated into Domain models, Application services, Infrastructure (adapters/DB), and API routers.
-* **Database:** SQLite (local development) or PostgreSQL (production via Supabase), managed via SQLAlchemy and Alembic.
-* **AI Integration:** Custom LLM clients integrated with Fireworks AI (Qwen 3p7 Plus) to power the Buyer Assistant. The AI executes deterministic tool calls (like `search_catalog` and `create_purchase_proposal`).
-* **Payment Gateway:** Razorpay integration for secure checkout. Includes HMAC signature verification and idempotent webhook processing.
-* **Security:** State-machine enforced transactions (e.g., preventing payment execution on unapproved proposals), fully audited event sourcing, and idempotency keys to prevent duplicate charges.
+### A controlled transaction lifecycle
 
-## Transaction State Machine
+```text
+PROPOSED → BUYER_AUTH_REQUIRED → POLICY_EVALUATION
+                                      ├─ auto-approved → PAYMENT_PENDING → PAID
+                                      └─ exception     → MERCHANT_REVIEW_REQUIRED
+```
 
-Transactions in the gateway follow a strict, auditable lifecycle:
-1. **PROPOSED:** AI or user generates a purchase proposal.
-2. **BUYER_AUTH_REQUIRED:** Buyer reviews the proposal and authorizes it.
-3. **MERCHANT_POLICY_PENDING:** The proposal is evaluated against the merchant's auto-accept policies.
-4. **MERCHANT_REVIEW_REQUIRED:** If the proposal exceeds the auto-accept limit, it enters a manual review queue in the merchant dashboard.
-5. **PAYMENT_PENDING:** Once approved, the Razorpay checkout widget is initialized.
-6. **VERIFYING:** Payment signature is validated on the backend.
-7. **SUCCEEDED / FAILED:** Final terminal states.
+That lifecycle is intentional: an LLM may help assemble a proposal, but buyers authorize it, merchant policy decides whether it can advance, and the server verifies payment before recording success.
 
-## Getting Started
+## Tech stack
+
+- **Frontend:** Next.js 16, React 19, TypeScript, Tailwind CSS, shadcn/ui
+- **Backend:** Python 3.12+, FastAPI, SQLAlchemy, Alembic, Pydantic
+- **AI:** Fireworks AI using an OpenAI-compatible API
+- **Payments:** Razorpay Orders, checkout, webhook/signature verification
+- **Data and media:** PostgreSQL or SQLite; Supabase Postgres and Storage supported
+- **Deployment:** Vercel for the web app and Render for the FastAPI service
+
+## Run locally
 
 ### Prerequisites
-* Node.js (v18+)
-* Python 3.10+
-* `uv` (Python package manager)
 
-### Local Development Setup
+- Python 3.12 or newer
+- Node.js 20 or newer
+- A Fireworks API key for AI features
+- Razorpay and Supabase credentials if you want to exercise payments and file storage
 
-1. **Backend Environment Variables:**
-   Copy the `.env.example.example` to `.env` in the root directory. Ensure your Razorpay and Fireworks AI keys are set. By default, it uses a local SQLite database (`commerce_dev.db`).
+### 1. Start the backend
 
-2. **Start the Backend:**
-   Run the provided batch script to initialize the virtual environment and start the FastAPI server on port 8001:
-   ```bash
-   .\start-backend.bat
-   ```
+```powershell
+uv sync
+Copy-Item .env.example.example .env
+# Add your local values to .env. Never commit this file.
+uv run uvicorn ai_commerce_gateway.api.app:app --host 127.0.0.1 --port 8000 --reload
+```
 
-3. **Start the Frontend:**
-   In a separate terminal window, run the frontend batch script to start the Next.js server on port 3000:
-   ```bash
-   .\start-frontend.bat
-   ```
+On Windows, `start-backend.bat` provides the same backend startup shortcut.
 
-4. **Access the Application:**
-   * **Buyer Chat:** `http://localhost:3000/buyer`
-   * **Merchant Dashboard:** `http://localhost:3000/merchant`
+### 2. Start the frontend
 
-## Project Documentation
-All previous architectural decisions, design specifications, and audit logs have been moved to the `/docs` directory to keep the root directory clean.
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+The frontend defaults to `http://127.0.0.1:8000` for the backend. For a different API origin, set `BACKEND_ORIGIN` in `frontend/.env.local`. The Windows helper uses port 8001, so keep its matching local override when using that shortcut.
+
+Open [http://localhost:3000](http://localhost:3000). `start-frontend.bat` is also available on Windows.
+
+## Validate the project
+
+```powershell
+# Backend tests
+uv run pytest
+
+# Frontend quality checks and production build
+cd frontend
+npm run lint
+npm run build
+```
+
+## Deploy
+
+The public deployment uses Vercel for the Next.js frontend and Render for the FastAPI backend.
+
+- **Web app:** [ai-commerce-zeta.vercel.app](https://ai-commerce-zeta.vercel.app)
+- **Backend health:** [ai-commerce-backend-bgc3.onrender.com/health/live](https://ai-commerce-backend-bgc3.onrender.com/health/live)
+- **Render blueprint:** [`render.yaml`](render.yaml)
+- **Deployment guide:** [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
+
+Production environment values belong in the Vercel and Render dashboards, never in Git. Configure `BACKEND_ORIGIN` on Vercel, plus the backend’s `DATABASE_URL`, Fireworks, Razorpay, Supabase, storage, and session-secret settings on Render. Use hosted PostgreSQL and strong production session secrets rather than the local SQLite defaults.
+
+## Repository map
+
+```text
+frontend/                         Next.js buyer and merchant experiences
+src/ai_commerce_gateway/
+  api/                            FastAPI routes and request handling
+  application/                    orchestration services and use cases
+  domain/                         catalog, policy, and transaction rules
+  infrastructure/                 database and provider adapters
+docs/                             architecture, API, deployment, and runbooks
+render.yaml                       Render production blueprint
+```
+
+For deeper technical detail, see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), [`docs/API.md`](docs/API.md), and [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+
+## The pitch
+
+AI Commerce Gateway demonstrates a practical answer to a hard question: **how do you let AI make commerce faster without letting it make commerce reckless?**
+
+It combines a familiar conversational buying flow with the controls a real merchant needs—clear buyer consent, configurable policy gates, verified payments, and traceable decisions. That makes it a strong foundation for AI-assisted storefronts, B2B procurement workflows, and marketplaces where trust matters as much as conversion.
