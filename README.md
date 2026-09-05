@@ -1,143 +1,105 @@
 # AI Commerce Gateway
 
-## Making a Razorpay merchant transactable by an AI buyer — end to end.
+## Make a merchant transactable by an AI buyer — end to end.
 
-**AI Commerce Gateway** is an agentic commerce infrastructure layer that allows AI buyers to discover a merchant's products, create a purchase proposal, obtain authorization, satisfy merchant policy, execute payment through Razorpay, verify the result, and produce a complete audit trail.
+**AI Commerce Gateway** lets an AI buyer discover a merchant's products, create a trusted purchase proposal, obtain buyer approval, pass merchant policy, pay through Razorpay, verify the payment, and produce a complete audit trail.
 
-The key idea is simple:
+> **Every money action is explainable, bounded, and gated.**
 
-> **Any AI can orchestrate commerce. The AI never becomes the financial authority.**
+The AI can understand intent and call narrow commerce tools.
 
-[Live App](https://ai-commerce-zeta.vercel.app) · [Buyer Experience](https://ai-commerce-zeta.vercel.app/buyer) · [Merchant AI Catalog](https://ai-commerce-zeta.vercel.app/merchant/ai-catalog) · [API Health](https://ai-commerce-zeta.vercel.app/api/health/live)
+**It cannot control price, approve itself, bypass merchant policy, call Razorpay directly, or declare a payment successful.**
 
----
-
-## The Problem
-
-AI agents are becoming capable of searching, reasoning and calling tools.
-
-But making a merchant actually **transactable by an AI buyer** requires much more than giving an LLM a payment API.
-
-A real agentic purchase must answer:
-
-* How does an AI discover a merchant's products?
-* Where does the trusted price come from?
-* How does the buyer approve the exact purchase?
-* Can the merchant automatically accept or manually review it?
-* How do we stop the AI from changing financial state?
-* How are duplicate payment attempts prevented?
-* What happens when a payment request times out after being sent?
-* How do we verify whether money actually moved?
-* Can external AI agents transact through the same system?
-* Can every money-related action be explained afterwards?
-
-**AI Commerce Gateway is our answer to that problem.**
+[Live Demo](https://ai-commerce-zeta.vercel.app) · [Buyer Experience](https://ai-commerce-zeta.vercel.app/buyer) · [Merchant Catalog](https://ai-commerce-zeta.vercel.app/merchant/ai-catalog)
 
 ---
 
-# End-to-End Agentic Commerce
+# The Problem
 
-A buyer can simply say:
+Making an AI recommend a product is easy.
+
+Making a merchant safely **transactable by an AI buyer** is much harder.
+
+Consider:
 
 > **“Find me a USB-C charger under ₹1,000 and buy one.”**
 
-The request becomes a controlled transaction:
+An AI can understand that request.
+
+But who decides:
+
+* the real product price?
+* whether the buyer actually approved ₹899?
+* whether the merchant accepts the transaction?
+* whether the same AI retry creates another payment?
+* whether Razorpay actually received or completed the payment?
+* what happens if the network dies after the payment request is sent?
+* who caused each financial state change?
+
+That is what AI Commerce Gateway solves.
+
+---
+
+# End-to-End AI Purchase
 
 ```text
 Buyer
   │
+  │ "Find me a charger under ₹1,000 and buy one"
   ▼
-AI Buyer
+Reference AI Buyer
   │
   │ search_catalog
   ▼
-Agent-Readable Merchant Catalog
+Merchant's Published Catalog
   │
   ▼
-Immutable Purchase Proposal
+AI selects a matching product
   │
-  │ server derives trusted price
+  │ create_purchase_proposal
+  ▼
+Server-Derived Purchase Proposal
+  │
+  │ ₹899 calculated from trusted catalog
   ▼
 Buyer Authorization
   │
   ▼
-Merchant Policy / Manual Review
+Merchant Policy
+  │
+  ├── allowed automatically
+  ├── requires merchant review
+  └── denied
   │
   ▼
-Transaction Authority
+READY
   │
-  │ revalidates commercial + authorization state
+  ▼
+Trusted Transaction Authority
+  │
+  ├── revalidates proposal
+  ├── revalidates price/version/stock
+  ├── verifies buyer authorization
+  ├── verifies merchant acceptance
+  └── enforces idempotency
+  │
   ▼
 Razorpay
   │
   ▼
 Payment Verification
   │
-  ├── verified ──────────────► SUCCEEDED
-  │
-  └── uncertain ─────────────► UNKNOWN
-                                  │
-                                  ▼
-                             RECONCILING
-                                  │
-                                  ▼
-                           Provider Lookup
-                                  │
-                                  ▼
-                             Final State
-
-Every consequential action
-            │
-            ▼
-      Structured Audit Trail
+  ▼
+SUCCEEDED
 ```
 
-The AI participates throughout the buying experience without receiving unrestricted control over money.
+The important part is that the **LLM is never the transaction authority**.
 
 ---
 
-# 1. Make the Merchant Agent-Readable
+# 1. Bounded
 
-The merchant creates and publishes products through the merchant experience.
-
-The backend maintains authoritative:
-
-```text
-Product
-├── product ID
-├── name
-├── description
-├── price
-├── currency
-├── stock
-├── publication state
-├── version
-└── images
-```
-
-AI can assist merchants with descriptive catalog metadata, but it cannot become authoritative for price, currency, stock or publication state.
-
-The published catalog can then be consumed by the reference AI buyer or compatible external AI clients.
-
----
-
-# 2. AI Buyer
-
-The Reference Buyer Chat provides the primary end-to-end experience.
-
-Instead of navigating a traditional storefront, a buyer can express intent naturally:
-
-```text
-"Find me a charger under ₹1,000."
-
-"Show me the best match."
-
-"Buy one."
-```
-
-The LLM translates that intent into a small set of typed commerce operations.
-
-Examples include:
+The AI receives only narrow commerce tools.
 
 ```text
 search_catalog
@@ -149,19 +111,157 @@ get_transaction_status
 get_transaction_audit
 ```
 
-These are intentionally narrow tools.
+It does **not** receive tools such as:
 
-The AI can **discover, explain, propose and orchestrate**.
+```text
+charge_card(amount)
+set_transaction_state(SUCCEEDED)
+approve_purchase()
+override_merchant_policy()
+```
 
-It cannot independently authorize or settle a transaction.
+Trusted financial decisions remain in deterministic backend services.
+
+### AI can
+
+* understand buyer intent
+* search products
+* explain results
+* create a proposal request
+* request authorization
+* request transaction execution
+* read safe transaction status
+* read the audit trail
+
+### AI cannot
+
+* set authoritative price
+* set authoritative total
+* approve its own purchase
+* accept on behalf of the merchant
+* mutate transaction state directly
+* call Razorpay directly
+* access payment credentials
+* mark payment successful
 
 ---
 
-# 3. Trusted Purchase Proposal
+# 2. Gated
 
-The AI never decides the authoritative transaction amount.
+A purchase cannot move directly from:
 
-When a purchase is proposed, the backend creates a server-derived commercial snapshot:
+```text
+"I want this"
+```
+
+to:
+
+```text
+charge ₹899
+```
+
+There are independent gates.
+
+```text
+                Purchase Proposal
+                       │
+              ┌────────┴────────┐
+              │                 │
+              ▼                 ▼
+      Buyer Authorization   Merchant Acceptance
+                                │
+                       ┌────────┼────────┐
+                       ▼        ▼        ▼
+                     AUTO     REVIEW    DENY
+                       │        │
+                       └───┬────┘
+                           ▼
+                          READY
+```
+
+## Gate 1 — Buyer authorization
+
+The buyer must approve the exact proposed purchase.
+
+The AI **cannot authorize itself**.
+
+## Gate 2 — Merchant acceptance
+
+The merchant defines how transactions are accepted.
+
+For example:
+
+```text
+AUTO_BELOW_LIMIT
+max amount = ₹1,000
+```
+
+A ₹899 transaction may proceed automatically.
+
+A ₹1,499 transaction can instead enter:
+
+```text
+MERCHANT_REVIEW_REQUIRED
+```
+
+The buyer's approval does not replace merchant approval.
+
+Merchant policy does not replace buyer consent.
+
+---
+
+# 3. Explainable
+
+Every consequential action produces a structured transaction event.
+
+We don't use the AI chat transcript as the financial audit log.
+
+Example:
+
+```text
+Actor: BUYER
+Action: AUTHORIZATION_APPROVED
+Reason: Buyer confirmed purchase proposal
+Previous State: BUYER_AUTH_REQUIRED
+New State: MERCHANT_POLICY_PENDING
+Correlation ID: cor_...
+Timestamp: ...
+```
+
+Later:
+
+```text
+Actor: SYSTEM
+Action: MERCHANT_POLICY_ALLOWED
+Reason: Amount ₹899 <= merchant auto-approval limit ₹1,000
+Previous State: MERCHANT_POLICY_PENDING
+New State: READY
+Correlation ID: cor_...
+```
+
+And during payment:
+
+```text
+Actor: RAZORPAY_VERIFIER
+Action: PAYMENT_VERIFIED
+Reason: Provider payment evidence successfully verified
+Previous State: VERIFYING
+New State: SUCCEEDED
+Provider Reference: redacted
+Correlation ID: cor_...
+```
+
+This gives us a **causal audit trail**, not simply:
+
+> “AI says the payment worked.”
+
+---
+
+# Trusted Purchase Proposal
+
+The AI never supplies the trusted transaction total.
+
+The backend creates an immutable commercial snapshot:
 
 ```text
 PurchaseProposal
@@ -170,101 +270,44 @@ PurchaseProposal
 ├── product version
 ├── quantity
 ├── trusted unit amount
-├── trusted total
+├── trusted total amount
 ├── currency
 ├── expiry
-└── proposal identity/hash
+└── proposal hash
 ```
 
-This means an AI cannot turn:
+For example:
 
 ```text
-₹899 product
+Merchant catalog price: ₹899
+Quantity: 1
+
+Trusted backend total:
+89900 minor units
+INR
 ```
 
-into:
+If an AI attempts to send:
 
-```text
-₹1 transaction
+```json
+{
+  "product_id": "charger_65w",
+  "quantity": 1,
+  "total": 100
+}
 ```
 
-by supplying a manipulated price.
+the client-supplied total does not become financial authority.
 
-Trusted commercial values come from the merchant-controlled backend.
+The transaction amount is derived from trusted merchant state.
 
 ---
 
-# 4. Buyer Authorization + Merchant Acceptance
+# Payment Safety
 
-A transaction requires independent authority.
+Creating a Razorpay order is **not payment success**.
 
-```text
-                 Purchase Proposal
-                        │
-              ┌─────────┴─────────┐
-              ▼                   ▼
-       Buyer Authorization   Merchant Policy
-                                  │
-                           ┌──────┼──────┐
-                           ▼      ▼      ▼
-                         AUTO   REVIEW  DENY
-                           │      │
-                           └──┬───┘
-                              ▼
-                            READY
-```
-
-The AI cannot approve itself.
-
-Merchant acceptance cannot replace buyer consent.
-
-Merchant policies can automatically accept eligible transactions or send exceptions to a human review queue.
-
-Only after the required gates are satisfied can execution proceed.
-
----
-
-# 5. Transaction Authority
-
-The most important component is the trusted **Transaction Authority**.
-
-```text
-AI / MCP
-    │
-    ▼
-Buyer Adapter
-    │
-    ▼
-Application Services
-    │
-    ▼
-Transaction Authority
-    │
-    ├── validates proposal
-    ├── validates buyer authorization
-    ├── validates merchant decision
-    ├── revalidates trusted commercial state
-    ├── enforces transaction lifecycle
-    ├── enforces idempotency
-    └── records causal events
-              │
-              ▼
-        Razorpay Adapter
-```
-
-Neither the LLM nor MCP can directly call Razorpay.
-
-The backend remains the financial authority.
-
----
-
-# 6. Razorpay Payment Execution
-
-Razorpay is integrated behind the trusted transaction boundary.
-
-A provider order being created is **not** treated as payment success.
-
-The system verifies provider evidence before recording a successful transaction.
+Our transaction lifecycle separates execution from verification.
 
 ```text
 READY
@@ -272,390 +315,429 @@ READY
   ▼
 EXECUTING
   │
-  ├──────────────► UNKNOWN
-  │                    │
-  ▼                    ▼
-PAYMENT_PENDING    RECONCILING
-  │                    │
-  ▼                    │
-VERIFYING ◄─────────────┘
+  ▼
+PAYMENT_PENDING
   │
-  ├────────► SUCCEEDED
+  ▼
+VERIFYING
   │
-  └────────► FAILED
+  ├── verified ─────► SUCCEEDED
+  │
+  └── rejected ─────► FAILED
 ```
 
-This prevents an AI, frontend response or provider-order creation from incorrectly declaring that money moved.
+`SUCCEEDED` requires verified provider truth.
+
+The AI cannot force that state.
+
+The frontend cannot force that state.
+
+Razorpay order creation alone cannot force that state.
 
 ---
 
-# 7. Idempotency & Duplicate Payment Protection
+# Graceful Failure — Unknown Payment Outcome
 
-Agentic systems naturally retry tool calls.
+This is the failure case we intentionally handle.
 
-That makes idempotency especially important.
-
-Mutating commerce operations are protected by trusted idempotency semantics so retries of the same logical operation cannot silently become multiple physical payment attempts.
-
-The AI does not control the financial idempotency mechanism.
-
-This is particularly important when an agent, network or payment provider retries after a timeout.
-
----
-
-# 8. Graceful Recovery from Unknown Outcomes
-
-One of the hardest payment cases is:
+Imagine:
 
 ```text
-Request sent to provider
-        │
-        ▼
-Provider may have processed it
-        │
-        X
-Application loses response
+Transaction Authority
+       │
+       │ create Razorpay order
+       ▼
+    Razorpay
+       │
+       │ order actually created
+       ▼
+
+       X
+
+Network response is lost
 ```
 
-Blind retrying is dangerous because another payment/order may be created.
+The dangerous solution would be:
 
-AI Commerce Gateway therefore models uncertainty explicitly:
+```text
+"Request timed out. Try payment again."
+```
+
+That could create a duplicate provider operation.
+
+AI Commerce Gateway does **not** blindly retry.
+
+Instead:
 
 ```text
 EXECUTING
     │
+    │ provider response lost
     ▼
  UNKNOWN
     │
     ▼
 RECONCILING
     │
+    │ lookup provider truth
     ▼
-Provider Lookup
+ Razorpay
     │
-    ├── payment exists ──► continue verification
+    ├── operation exists
+    │       │
+    │       ▼
+    │  PAYMENT_PENDING / VERIFYING
     │
-    └── failed/not found ─► safe resolution
+    └── operation failed/not found
+            │
+            ▼
+       safe final resolution
 ```
 
-The system asks the provider for truth rather than allowing the AI to guess.
+The system asks Razorpay what actually happened before deciding what to do next.
+
+This protects the transaction from duplicate financial effects.
 
 ---
 
-# 9. Structured Financial Audit Trail
+# Idempotency
 
-A chat transcript is not an audit log.
+AI agents retry.
 
-Every consequential transaction action creates structured causal evidence containing information such as:
+Networks retry.
 
-```text
-Actor
-Action
-Reason
-Previous State
-New State
-Correlation ID
-Timestamp
-Redacted Provider Reference
-Metadata
-```
+Users double-click.
 
-This makes it possible to answer:
+Payment systems therefore cannot treat every repeated request as a new transaction.
 
-> Who caused this transaction to move?
-
-> Why was it approved?
-
-> Did the buyer authorize it?
-
-> Did merchant policy accept it?
-
-> What did Razorpay report?
-
-> How was an uncertain outcome recovered?
-
-The transaction can therefore be reconstructed independently of the AI conversation.
-
----
-
-# 10. Native MCP — Any Compatible AI Can Use the Same Commerce Engine
-
-The public demo uses our Reference Buyer Chat, but the commerce engine is not tied to that interface.
-
-We built native **Model Context Protocol (MCP)** adapters for both buyer and merchant experiences.
+Mutating operations use trusted idempotency metadata.
 
 ```text
-Reference Buyer Chat
+First execution
+Idempotency-Key: idem_abc123
         │
         ▼
-   Buyer Adapter
-        │
-        ┐
-        │
-        ▼
-Trusted Commerce Services
-        ▲
-        │
-        ┘
-External MCP AI
+Provider operation created
+
+
+Retry
+Idempotency-Key: idem_abc123
         │
         ▼
-    MCP Adapter
+Same logical operation returned
 ```
 
-The same backend remains authoritative regardless of which AI is connected.
+The LLM does not decide whether two payment attempts are financially equivalent.
 
-### Buyer MCP
-
-Compatible external AI clients can access narrow buyer operations such as catalog discovery, controlled proposal creation, transaction status and audit operations without receiving direct payment authority.
-
-### Merchant MCP
-
-The Merchant MCP toolkit allows an authorized external AI to assist with store-management operations.
-
-For example, merchant tools can support operations such as:
-
-```text
-/update
-```
-
-for safely modifying product drafts.
-
-Updates use expected-version locking so an AI cannot silently overwrite newer merchant changes.
+Idempotency is enforced by the trusted backend.
 
 ---
 
-# 11. Human Authority Cannot Be Bypassed Through MCP
+# Agent-Readable Merchant
 
-MCP is an interoperability layer — **not a trust bypass**.
-
-High-impact operations remain gated.
-
-For example, sensitive operations such as publishing a product require a trusted `confirmation_token` generated outside the AI's ordinary tool context.
-
-Therefore:
+The merchant controls the authoritative catalog:
 
 ```text
-External AI
-     │
-     │ publish_product
-     ▼
-Confirmation required
-     │
-     X  AI cannot manufacture authority
-     │
-     ▼
-Trusted Backend
+Product
+├── name
+├── description
+├── price
+├── currency
+├── stock
+├── version
+├── publication state
+└── images
 ```
 
-An external AI cannot gain additional financial or merchant authority simply because it connects through MCP.
+AI can assist with descriptive metadata.
+
+But AI-generated metadata cannot modify authoritative:
+
+```text
+price
+currency
+stock
+publication state
+```
+
+Once published, the merchant becomes discoverable by AI buyers through structured commerce operations.
 
 ---
 
-# 12. MCP Idempotency and Safety
+# MCP — The Same Merchant Can Work With Other AI Clients
 
-Mutating MCP operations enforce transport-level idempotency keys.
+The built-in Reference Buyer Chat is our primary end-to-end demo.
 
-The MCP adapter translates untrusted AI intent into typed backend commands while the application layer retains authority.
+But the commerce engine is **not tied to our chatbot**.
 
-The MCP boundary is designed to prevent:
-
-* bypassing role-based access controls;
-* manipulating transaction state directly;
-* overriding trusted prices;
-* bypassing buyer consent;
-* bypassing merchant authority;
-* directly invoking payment providers.
-
-The MCP buyer and merchant adapters are covered by dedicated test suites, including:
+We also implemented Model Context Protocol adapters for buyer and merchant operations.
 
 ```text
-test_buyer_mcp.py
-test_merchant_mcp.py
+             Reference Buyer Chat
+                     │
+                     ▼
+                Buyer Adapter
+                     │
+                     │
+                     ▼
+             Trusted Backend
+                     ▲
+                     │
+                     │
+                 MCP Adapter
+                     ▲
+                     │
+             External AI Client
 ```
 
-The public deployment currently demonstrates the Reference Buyer Chat, while the MCP implementation is maintained and tested in the codebase as the interoperability path for compatible external AI clients.
+An MCP-compatible AI can use the same commerce capabilities without bypassing the trusted transaction boundary.
+
+## Buyer MCP
+
+External AI clients can use controlled buyer capabilities such as:
+
+```text
+search_catalog
+get_product
+create_purchase_proposal
+request_authorization
+execute_transaction
+get_transaction_status
+get_transaction_audit
+```
+
+## Merchant MCP
+
+Authorized merchant AI clients can perform controlled store-management actions, including product draft operations.
+
+Mutation tools use safeguards such as:
+
+* expected-version checks
+* role validation
+* idempotency keys
+* confirmation requirements for sensitive operations
+
+For high-impact actions such as publication, authority cannot simply be invented by the AI.
+
+MCP is therefore an **interoperability layer**, not a payment engine.
 
 ---
 
-# Architecture
+# Trust Architecture
 
 ```text
-                        ┌──────────────────────┐
-                        │       Merchant       │
-                        └──────────┬───────────┘
-                                   │
-                                   ▼
-                         Merchant Dashboard
-                                   │
-                                   ▼
-                         Agent-Readable Catalog
-                                   │
-             ┌─────────────────────┴─────────────────────┐
-             │                                           │
-             ▼                                           ▼
-    Reference Buyer Chat                         External AI Client
-             │                                           │
-             ▼                                           ▼
-       Buyer Adapter                                MCP Adapter
-             │                                           │
-             └─────────────────────┬─────────────────────┘
-                                   ▼
-                        Application Services
-                                   │
-                 ┌─────────────────┼─────────────────┐
-                 ▼                 ▼                 ▼
-              Catalog          Authorization     Merchant Policy
-                 │                 │                 │
-                 └─────────────────┼─────────────────┘
-                                   ▼
-                         Transaction Authority
-                                   │
-                     ┌─────────────┼─────────────┐
-                     ▼             ▼             ▼
-                Idempotency     Audit Log     Recovery
-                                   │
-                                   ▼
-                            Razorpay Adapter
-                                   │
-                                   ▼
-                         Razorpay Test Mode
-                                   │
-                                   ▼
-                         Verification / Lookup
+┌───────────────────────┐
+│        BUYER          │
+└───────────┬───────────┘
+            │
+            ▼
+┌───────────────────────┐
+│  Reference AI Buyer   │
+│                       │
+│  UNTRUSTED FOR MONEY  │
+└───────────┬───────────┘
+            │
+            │ Narrow typed tools
+            ▼
+┌─────────────────────────────┐
+│       Buyer Adapter         │
+└──────────────┬──────────────┘
+               │
+               ▼
+┌───────────────────────────────────────────┐
+│          TRUSTED APPLICATION LAYER        │
+│                                           │
+│ Catalog                                   │
+│ Purchase Proposals                        │
+│ Buyer Authorization                       │
+│ Merchant Policy                           │
+│ Transaction State Machine                 │
+│ Idempotency                               │
+│ Audit                                     │
+└────────────────────┬──────────────────────┘
+                     │
+                     ▼
+             Transaction Authority
+                     │
+                     ▼
+               Razorpay Adapter
+                     │
+                     ▼
+              Razorpay Test Mode
+                     │
+                     ▼
+          Verification / Reconciliation
 ```
 
 ---
 
-# Trust Boundaries
+# What We Demonstrate
 
-| AI can                          | AI cannot                         |
-| ------------------------------- | --------------------------------- |
-| Understand buyer intent         | Set authoritative price           |
-| Search catalog                  | Approve its own purchase          |
-| Explain products                | Override buyer consent            |
-| Create controlled proposals     | Override merchant policy          |
-| Request authorization           | Directly change transaction state |
-| Request transaction execution   | Call Razorpay directly            |
-| Read safe transaction status    | Declare payment successful        |
-| Read redacted audit information | Access provider credentials       |
-| Use MCP commerce tools          | Bypass human confirmation         |
+### Happy path
 
-This boundary is the core of the project.
+```text
+Merchant publishes ₹899 charger
+        ↓
+Buyer asks AI for charger under ₹1,000
+        ↓
+AI searches merchant catalog
+        ↓
+Backend creates ₹899 proposal
+        ↓
+Buyer explicitly approves
+        ↓
+Merchant AUTO_BELOW_LIMIT policy accepts
+        ↓
+Transaction becomes READY
+        ↓
+Trusted backend executes Razorpay flow
+        ↓
+Provider evidence verified
+        ↓
+SUCCEEDED
+        ↓
+Complete audit trail
+```
+
+### Safety proof
+
+We also demonstrate:
+
+```text
+same execute request
+        ↓
+idempotency protection
+        ↓
+no duplicate logical payment execution
+```
+
+### Failure proof
+
+```text
+provider request dispatched
+        ↓
+response lost
+        ↓
+UNKNOWN
+        ↓
+RECONCILING
+        ↓
+provider lookup
+        ↓
+safe recovery
+```
+
+### Interoperability proof
+
+```text
+External MCP-capable AI
+        ↓
+search_catalog
+        ↓
+same merchant catalog
+        ↓
+same trusted backend
+        ↓
+same financial boundaries
+```
 
 ---
 
 # Tech Stack
 
-### Frontend
+**Frontend**
 
-* Next.js 16
-* React 19
+* Next.js
+* React
 * TypeScript
 * Tailwind CSS
 * shadcn/ui
 
-### Backend
+**Backend**
 
-* Python 3.12+
+* Python
 * FastAPI
 * SQLAlchemy
 * Alembic
 * Pydantic
 
-### AI
+**AI**
 
 * Fireworks AI
-* OpenAI-compatible inference API
+* OpenAI-compatible tool calling
 
-### Agent Interoperability
+**Agent Interoperability**
 
 * Model Context Protocol
 * Buyer MCP adapter
 * Merchant MCP adapter
-* Typed commerce tools
 
-### Payments
+**Payments**
 
-* Razorpay
-* Orders
-* Checkout
-* Signature verification
-* Webhook verification
-* Provider reconciliation
+* Razorpay Orders
+* Checkout verification
+* Webhook/signature verification
+* Provider lookup/reconciliation
 
-### Data / Storage
+**Infrastructure**
 
 * PostgreSQL
 * Supabase Storage
-
-### Deployment
-
-* Vercel — frontend
-* Render — backend
+* Vercel
+* Render
 
 ---
 
 # Live Demo
 
-### Buyer
+### AI Buyer
 
-[Open Buyer Experience](https://ai-commerce-zeta.vercel.app/buyer)
+[Try the Buyer Experience](https://ai-commerce-zeta.vercel.app/buyer)
 
-Try:
+Example:
 
-> **“Find me a USB-C charger under ₹1,000.”**
-
-Then follow the proposal → authorization → merchant policy → Razorpay payment → verification flow.
+> **Find me a USB-C charger under ₹1,000 and buy one.**
 
 ### Merchant
 
-[Open Merchant AI Catalog](https://ai-commerce-zeta.vercel.app/merchant/ai-catalog)
+[Open the Merchant Catalog](https://ai-commerce-zeta.vercel.app/merchant/ai-catalog)
 
-The merchant can manage products, control commercial data and participate in governed AI commerce.
+### Application
+
+[Open AI Commerce Gateway](https://ai-commerce-zeta.vercel.app)
 
 ### API
 
-[Check API Health](https://ai-commerce-zeta.vercel.app/api/health/live)
+[Health Check](https://ai-commerce-zeta.vercel.app/api/health/live)
 
 ---
 
-# Why This Matters
+# Why This Is Agentic Commerce
 
-The interesting problem in agentic commerce is not:
+This project is not about connecting an LLM to a `charge()` function.
 
-> **Can an LLM call a checkout API?**
-
-It can.
-
-The harder problem is:
-
-> **How can a merchant become transactable by AI buyers without making the AI the financial authority?**
-
-AI Commerce Gateway demonstrates one answer:
+It is about making a real merchant **transactable by AI buyers** while preserving the controls normally expected from financial infrastructure.
 
 ```text
-Agent-readable merchant
-        +
-Natural-language buyer
-        +
-Explicit buyer consent
-        +
-Merchant-controlled acceptance
-        +
-Trusted transaction authority
-        +
-Razorpay execution
-        +
-Provider verification
-        +
-Idempotency & recovery
-        +
-Structured audit trail
-        +
-MCP interoperability
+AI understands intent
+        ↓
+Backend owns truth
+        ↓
+Buyer grants consent
+        ↓
+Merchant grants acceptance
+        ↓
+Transaction authority controls execution
+        ↓
+Razorpay moves money
+        ↓
+Provider truth determines success
+        ↓
+Audit explains what happened
 ```
 
-## The result
+## AI can orchestrate commerce.
 
-**A merchant that can be discovered and transacted with by AI buyers end to end, while every money action remains bounded, gated, explainable and auditable.**
+## It cannot become the financial authority.
+
+That is the core of **AI Commerce Gateway**.
